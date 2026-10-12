@@ -31,8 +31,12 @@ native API credential.
 5. In **Transmitter setup**, choose the advertising action ending in
    `_adv_svc_v1` and the BLE Adv Proxy Name sensor belonging to that same proxy.
    Save. An existing setup can be changed here without recreating its entities.
-6. Check the actual panel and use **It is on** or **It is off** to synchronize
-   power. HA's standard light controls, effects and dim buttons are now available.
+6. Select **Download Home Assistant dashboard card**, then add it through
+   **Edit dashboard → Add card → Manual** by pasting the download.
+7. **Match the state before first use.** Look at the physical panel and select
+   **Correct recorded state** on the card. Choose **Panel is on/off** and the
+   mode you can see (or **Mode unknown**), then **Done**. This records the
+   starting state without sending a command. Repeat after pairing if needed.
 
 If you already use the Philips Skylight integration, the add-on preserves your
 existing entities, transmitter setup and pairing. Repeat pairing only if the
@@ -70,7 +74,9 @@ The physical remote's held dim packets are recognized. Dashboard dim buttons
 send one relative step per tap; holding a tile does not continuously dim.
 
 Power and the selected scene are tracked from sent commands and authenticated
-remote presses. A remote power press toggles the synchronized power state;
+BLE button calls from other compatible remote/control panels in range, including
+commands relayed by light panels. A remote power press toggles the synchronized
+power state;
 each scene button updates the selected effect. Dim taps and holds update the
 last command, without inventing an absolute brightness value. Receive events
 update Home Assistant directly and do not send another command to the panel.
@@ -85,6 +91,24 @@ The panel does not report physical status. Synchronize after a Core/proxy
 restart, panel mains cycle, outage or missed remote press. Standard on/off
 requests require a known baseline; repeating the same request does nothing.
 Toggle is explicit and never retried automatically.
+
+### Reliability and command-only use
+
+Recorded state is an estimate, not status feedback from the light. Missed BLE
+events, wall switches or mains interruptions, Home Assistant/proxy downtime,
+ignored commands and calls intended for other nearby panels can make it wrong.
+Matching the state at setup, and correcting it later, only establishes the
+current baseline; it does not prevent future drift.
+
+If tracking is unreliable in your installation, use the card's direct power
+toggle, mode buttons and relative dim buttons without relying on entity states
+or the selected-mode highlight. Automations can use `light.toggle` or the
+appropriate native `button.press` action. Do not use estimated state as a
+condition or as confirmation that the physical light responded. Standard
+`light.turn_on`/`light.turn_off` choose whether to toggle based on the recorded
+power; a wrong baseline can cause a no-op or an unwanted toggle. Direct commands
+avoid that decision, but still need physical verification when the final state
+matters. A toggle cannot guarantee on or off with an unknown baseline.
 
 Scenes: Refresh, Energize, Focus, Relax, Rest and Auto rhythm. Dimming is relative;
 the exact increment has not been measured, so no absolute slider or color

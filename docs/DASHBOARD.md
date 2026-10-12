@@ -11,6 +11,9 @@ The companion integration supplies the entities.
    This fills in the entity IDs from your installation, including renamed ones.
 3. Open the dashboard you want to use, select **Edit dashboard**, then **Add card**
    and **Manual**. Paste the downloaded configuration and save.
+4. **Before using the card for the first time**, select **Correct recorded state**
+   and match the panel's actual power and mode, then select **Done**. Choose
+   **Mode unknown** if you cannot identify its mode. Repeat after pairing.
 
 The [static card](../philips_skylight/app/static/skylight-card.yaml) is also
 available from this repository. Replace its entity IDs if yours differ. Once
@@ -47,10 +50,20 @@ integration's shared state immediately. They do not change the physical light,
 the last transmitted/received command, or the Mesh sequence counter.
 
 After synchronization, received remote toggles and scene presses keep that
-state current. A toggle received while power is unknown cannot establish which
+state updated, including compatible calls from other remote/control panels.
+A toggle received while power is unknown cannot establish which
 state is correct. Restart, proxy outage and missed reception still require an
 observation. Absolute brightness is not tracked or editable because the panel's
 relative dim step and physical level have not been measured.
+
+Tracking can drift because of missed BLE events, power switches, mains cycles,
+Home Assistant/proxy downtime, ignored commands or other compatible controllers
+within range. The power label and blue mode icon are estimates. If this proves
+unreliable, use the normal panel's power toggle, mode buttons and dim steps as
+direct commands and observe the physical result. Avoid state-dependent
+automations or relying on entity states as confirmation. In automations, use
+`light.toggle` and the appropriate `button.press`; standard on/off actions rely
+on the recorded baseline to decide whether to toggle.
 
 The correction entities appear in the device's Configuration section. Keep them
 enabled to use the complete card; the card download reports a missing or disabled

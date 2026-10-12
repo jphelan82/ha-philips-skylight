@@ -2,7 +2,8 @@
 
 Control your Philips Skylight from a Home Assistant dashboard: toggle power,
 choose a mode, and dim or brighten the panel. Your original remote can still be
-used, and received remote presses update Home Assistant's recorded state.
+used. We also listen for BLE button presses from other compatible remote/control
+panels in range and use those received commands to update Home Assistant's record.
 
 The add-on uses an ESPHome Bluetooth proxy. **No MQTT broker, cloud account,
 custom dashboard card, or additional Bluetooth adapter is required.**
@@ -39,6 +40,8 @@ control of individual nearby panels is not supported.
    perform Home Assistant actions** so remote presses can be received.
 6. In the add-on's **Transmitter setup**, select the advertising action and
    **BLE Adv Proxy Name** sensor from the same proxy, then save.
+7. Add the dashboard card below, then complete **Match the state before first
+   use** before relying on the recorded power or mode.
 
 Repository installation requires a published add-on on the repository's default
 branch and access to that repository. If the add-on is not yet available in the
@@ -59,6 +62,21 @@ card uses standard Home Assistant controls, so no HACS card or dashboard
 resource needs to be installed. See the [dashboard guide](docs/DASHBOARD.md)
 for customization and adding individual controls.
 
+## Match the state before first use
+
+**Include this step when you first set up the add-on.** Home Assistant needs an
+observed starting state; listening for a power toggle cannot tell whether the
+panel started on or off.
+
+1. Look at the physical Skylight and select **Correct recorded state** at the
+   bottom of the dashboard card.
+2. Select **Panel is on** or **Panel is off** to match what you can see.
+3. Select its current mode, or **Mode unknown** if you cannot identify it.
+4. Select **Done** to return to normal controls.
+
+This records your observation without operating the light. If you pair the
+transmitter afterward, repeat state matching after pairing completes.
+
 ## Everyday controls
 
 | Control | What it does |
@@ -77,19 +95,51 @@ brightness slider and color-temperature controls are not available.
 
 ## When the state is unknown or incorrect
 
-The Skylight does not report whether it is on or off. Home Assistant tracks
-commands and received remote presses, so its record can become incorrect after
-a restart, proxy outage, mains power cycle or missed press. **Unknown** means
-Home Assistant needs a starting power state; it does not mean the light is off.
+**Unknown** means Home Assistant needs a starting power state; it does not mean
+the light is off. Repeat the state-matching steps above after a restart, pairing,
+proxy outage, mains power cycle, or whenever the record no longer matches the
+physical panel. Correction only updates Home Assistant's record.
 
-1. Select **Correct recorded state** at the bottom of the dashboard card.
-2. Look at the physical panel and select **Panel is on** or **Panel is off**.
-3. Select the mode you can see, or **Mode unknown** if you cannot identify it.
-4. Select **Done** to return to normal controls.
+## How state tracking works, and its limits
 
-These choices **only update Home Assistant's record; they do not change the
-physical light**. Received remote power and mode presses then keep the record
-current. Repeat these steps whenever the record no longer matches the panel.
+The Skylight does **not** report its actual power or mode. We estimate those from
+commands sent by Home Assistant and BLE button calls received from other
+compatible remote/control panels, including commands relayed by light panels.
+A received power press flips the known recorded power state; a received mode
+press records that mode. Duplicate relay packets are filtered to avoid
+double-counting a press. Relative dim presses are recognized, but no absolute brightness
+level is tracked.
+
+The estimate can drift out of sync:
+
+- **Missed BLE events:** distance, interference or reception loss can hide a
+  remote press from the proxy even when the light receives it.
+- **Power switches:** a wall switch, mains interruption or power cycle can
+  change the panel without sending a BLE command we can observe.
+- **Downtime:** Home Assistant or the proxy cannot track presses while offline;
+  restarts require a new observed baseline.
+- **Ignored commands:** sending a command, or receiving another controller's
+  command, does not prove the physical panel accepted it.
+- **Other nearby controllers:** compatible calls intended for another panel
+  can affect our record; reception does not identify which panel responded.
+
+The displayed state and blue mode icon are therefore **estimates, not physical
+confirmation**. State matching corrects the current record, but cannot prevent
+future missed events.
+
+### If tracking is unreliable, use commands only
+
+Use the dashboard's **power toggle**, **mode buttons** and **relative dim buttons**
+to issue deliberate commands, and check the physical result. You can keep using
+these controls while ignoring the recorded power, mode highlight and entity
+states. In automations, the equivalent direct actions are `light.toggle` and
+`button.press` for the desired mode or dim button.
+
+Avoid making automation decisions from the estimated state or treating it as
+proof that a command worked. Standard `light.turn_on` and `light.turn_off` use
+the recorded power to decide whether to send a toggle, so a wrong record can
+cause a skipped command or an unexpected toggle. A direct toggle always requests
+a change; it cannot guarantee a final on/off state without a trustworthy baseline.
 
 ## Pair only if commands are ignored
 
