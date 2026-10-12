@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1
+
+- Track power, scene selection and the last dim command from compatible external
+  remote senders, rather than only the original remote's fixed Mesh address.
+- Deduplicate rapid transaction repeats per sender, including interleaved
+  remotes and buttons; ignore our own commands returning through panel relays.
+- Preserve unknown power until synchronized and keep dimming relative.
+
 ## 0.2.0
 
 - Supervisor add-on for amd64 and aarch64, with protected Home Assistant ingress.

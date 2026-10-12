@@ -53,7 +53,18 @@ the captured vendor request, without factory reset or mesh provisioning.
 
 ## State and controls
 
-Power is tracked from sent commands and authenticated original-remote presses.
+Power and the selected scene are tracked from sent commands and authenticated
+remote presses. A remote power press toggles the synchronized power state;
+each scene button updates the selected effect. Dim taps and holds update the
+last command, without inventing an absolute brightness value. Receive events
+update Home Assistant directly and do not send another command to the panel.
+
+Compatible remote senders on the factory mesh are accepted regardless of their
+unicast address. Relay copies and rapid transaction repeats are deduplicated
+per sender, and the HA transmitter's own packets are ignored. Factory keys are
+shared: reception cannot prove a sender is paired to this particular panel.
+Another compatible remote in radio range can therefore affect assumed state.
+
 The panel does not report physical status. Synchronize after a Core/proxy
 restart, panel mains cycle, outage or missed remote press. Standard on/off
 requests require a known baseline; repeating the same request does nothing.

@@ -85,7 +85,8 @@ updated real platform test also passes, including registration, confirmation,
 and invocation of the pairing action against a fake transport. It was run with
 an explicit process exit after pytest and fixture cleanup to avoid the previously
 observed Python 3.14.5/3.14.8 interpreter-finalization segfault. That runner issue
-remains unresolved; Linux CI is configured but has not been run from this workspace.
+remains unresolved locally. The full 47-test suite subsequently passed normally
+in GitHub Actions on Linux with Python 3.14 and Home Assistant 2026.6.0.
 
 ## Add-on 0.2.0
 
@@ -113,9 +114,18 @@ remains unresolved; Linux CI is configured but has not been run from this worksp
   inspected through a local preview using a fake transport; the live app API
   was tested separately. No MQTT dependency was configured.
 
-The aarch64 container build and full Linux CI remain unrun until the release
-branch is published. The package supports both architectures and includes a
-build matrix; only the amd64 container has been built in this session.
+Both amd64 and aarch64 container builds passed in GitHub Actions after the
+release branch was published. Only amd64 has been installed on physical hardware.
+
+## Remote tracking 0.2.1
+
+Regression tests cover a second Mesh sender's power, all six scenes and dim
+commands, independent sender transactions, interleaved button retransmissions,
+relay duplicate suppression and rejection of our own or invalid senders. The
+real Home Assistant platform test checks authenticated receive events update
+the native light entity without emitting further control calls. Unknown power
+and the captured repeat cadence for dim holds retain their existing behavior.
+Additional physical remotes have not been tested.
 
 ## Rollback
 

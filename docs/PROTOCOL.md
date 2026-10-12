@@ -49,6 +49,25 @@ Every command ends in `0x41`. Its meaning is unknown.
 - **Store the sequence counter.** It must only go up, across restarts.
 - **The panel sends no status.** Home Assistant has no way to read the light's state. It can track the remote's presses through the proxy, because it can decrypt them.
 
+## Tracking external controls
+
+The integration accepts recognized, authenticated access commands addressed to
+`0xFFFF` from external unicast senders (`0x0001` through `0x7FFF`). It excludes
+its own `0x7FFE` sender even when those packets return through a panel relay.
+Power toggles change a known baseline; scene buttons update the stored effect;
+dim taps and holds update the last command. Unknown power remains unknown until
+explicitly synchronized. No receive event sends an additional command.
+
+Duplicate identities use sender and Mesh sequence; rapid repeats with new Mesh
+sequences use sender and complete access payload, including transaction byte.
+Interleaved remotes and buttons do not reset each other's filtering. Repeated
+dim holds at the captured 0.6-second cadence remain accepted.
+
+Factory keys authenticate the protocol, but do not prove that a remote is paired
+to this particular panel. Other compatible remotes within radio range may also
+affect assumed state. Additional sender addresses are covered by software tests;
+only the original remote has been physically tested.
+
 ## Open questions
 
 - Does the panel accept an unpaired sender other than `0x7FFF`? Turn-on attempts from `0x7FFE` did not illuminate the panel, even after correcting the advertising bearer. The owner reports that the original remote also required pairing before it worked.

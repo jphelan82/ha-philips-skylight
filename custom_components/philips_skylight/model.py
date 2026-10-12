@@ -4,7 +4,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from time import monotonic
 
-from .const import DESTINATION, EFFECTS, REMOTE_SOURCE
+from .const import DESTINATION, EFFECTS, SOURCE
 from .protocol import MeshMessage, identify_command
 
 
@@ -26,11 +26,16 @@ class AssumedState:
 class RemoteTracker:
     # Relays change TTL and encryption, so compare decrypted identity, not raw bytes.
     _seen: OrderedDict = field(default_factory=OrderedDict)
-    _last_payload: bytes | None = None
-    _last_payload_time: float = 0
+    _recent_payloads: OrderedDict = field(default_factory=OrderedDict)
 
     def accept(self, message: MeshMessage, now: float | None = None) -> str | None:
-        if message.source != REMOTE_SOURCE or message.destination != DESTINATION:
+        # Compatible remotes need not use the captured remote's 0x7FFF address.
+        # Own packets can return through panel relays; never apply them twice.
+        if (
+            not 1 <= message.source <= 0x7FFF
+            or message.source == SOURCE
+            or message.destination != DESTINATION
+        ):
             return None
         command = identify_command(message.payload)
         if command is None:
@@ -43,8 +48,12 @@ class RemoteTracker:
         if len(self._seen) > 512:
             self._seen.popitem(last=False)
         # Same transaction may be retransmitted with a different mesh sequence.
-        if message.payload == self._last_payload and now - self._last_payload_time < 0.4:
+        transaction = (message.source, message.payload)
+        last_time = self._recent_payloads.get(transaction)
+        if last_time is not None and now - last_time < 0.4:
             return None
-        self._last_payload = message.payload
-        self._last_payload_time = now
+        self._recent_payloads[transaction] = now
+        self._recent_payloads.move_to_end(transaction)
+        if len(self._recent_payloads) > 512:
+            self._recent_payloads.popitem(last=False)
         return command

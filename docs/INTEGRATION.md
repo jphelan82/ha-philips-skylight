@@ -14,7 +14,8 @@ control. See [validation notes](VALIDATION.md) for checks and remaining limits.
 - Assumed-state power and six effects: Refresh, Energize, Focus, Relax, Rest,
   and Auto rhythm.
 - Buttons for relative dim up/down and direct scene selection.
-- Authenticated remote press tracking, with duplicate filtering for panel relays.
+- Authenticated remote press tracking across compatible factory-mesh senders,
+  with duplicate filtering per sender for panel relays and rapid repeats.
 - Separate sender address `0x7FFE`, with durable sequence reservations.
 
 The only confirmed power message is **toggle**. The panel reports no state.

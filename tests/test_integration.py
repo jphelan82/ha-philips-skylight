@@ -13,7 +13,10 @@ from custom_components.philips_skylight.const import (
     CONF_PROXY_ENTITY,
     CONF_TRANSMIT_SERVICE,
     DOMAIN,
+    EFFECTS,
+    RECEIVE_EVENT,
 )
+from custom_components.philips_skylight.protocol import MeshCodec, command_payload
 
 DATA = {
     CONF_NAME: "Philips Skylight",
@@ -96,6 +99,31 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     )
     assert hass.states.get(entity_id).state == "on"
     assert hass.states.get(entity_id).attributes["effect"] == "Focus"
+    assert len(calls) == 2
+    # Own packets relayed by the panel must not toggle an already updated entity.
+    hass.bus.async_fire(RECEIVE_EVENT, {"raw": calls[0].data["raw"]})
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state == "on"
+
+    # A second remote updates the real entity via authenticated receive events,
+    # without echoing any command back to the panel.
+    with monkeypatch.context() as sender:
+        sender.setattr("custom_components.philips_skylight.protocol.SOURCE", 0x1234)
+        codec = MeshCodec()
+        commands = ["toggle", "toggle", *EFFECTS, "dim_down", "dim_up"]
+        for sequence, command in enumerate(commands):
+            raw = codec.encode(command_payload(command, 0x80 + sequence), sequence).hex()
+            hass.bus.async_fire(RECEIVE_EVENT, {"raw": raw})
+            await hass.async_block_till_done()
+            state = hass.states.get(entity_id)
+            assert state.state == ("off" if sequence == 0 else "on")
+            assert state.attributes["last_command"] == command
+            if command in EFFECTS:
+                assert state.attributes["effect"] == command
+            # Receiving a relay copy does not alter the entity a second time.
+            hass.bus.async_fire(RECEIVE_EVENT, {"raw": raw})
+            await hass.async_block_till_done()
+            assert hass.states.get(entity_id) == state
     assert len(calls) == 2
     with pytest.raises(HomeAssistantError, match="may replace"):
         await hass.services.async_call(
