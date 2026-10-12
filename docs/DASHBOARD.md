@@ -4,22 +4,45 @@ The Skylight card combines Home Assistant's built-in tiles, grids, headings and
 conditional cards. It needs no HACS card, dashboard resource, helper or automation.
 The companion integration supplies the entities.
 
-## Add the card
+## Optional dashboard setup
 
-1. Install/update the add-on and restart Home Assistant when requested.
-2. Open the add-on and select **Download Home Assistant dashboard card**.
-   This fills in the entity IDs from your installation, including renamed ones.
-3. Open the dashboard you want to use, select **Edit dashboard**, then **Add card**
-   and **Manual**. Paste the downloaded configuration and save.
-4. **Before using the card for the first time**, select **Correct recorded state**
-   and match the panel's actual power and mode, then select **Done**. Choose
-   **Mode unknown** if you cannot identify its mode. Repeat after pairing.
+You do not need a dedicated dashboard to finish setup or use the integration.
+Match the starting state in the add-on, then optionally choose **Compact** or
+**Full** in its **Dashboard controls** section:
 
-The [static card](../philips_skylight/app/static/skylight-card.yaml) is also
-available from this repository. Replace its entity IDs if yours differ. Once
-added, the card is ordinary dashboard configuration: customize it in Home
-Assistant or copy it to another dashboard. If you rename an entity afterward,
-download the card again or update the affected dashboard references.
+- **Create Skylight dashboard** creates the dedicated dashboard. If it exists,
+  it is opened without changing its configuration.
+- **Add card to an existing dashboard** adds the card to an editable view you
+  select, preserving the rest of that dashboard. Sections views get a new
+  section; masonry/sidebar views get an additional card.
+
+Compact fits a shared dashboard with a three-column mode grid and less prose.
+Full keeps headings and everyday instructions. Both retain the selected mode's
+blue icon, gray unselected icons and the separate state-correction view.
+
+For manual installation, download the chosen card in the add-on, then use
+**Edit dashboard → Add card → Manual** and paste it. The download fills in
+actual entity IDs, including renamed ones. This is also the route for YAML
+and panel views. Automatically generated dashboards must first be taken over
+through Home Assistant if you want to edit their cards; the add-on never does
+that for you.
+
+An identical card is not added twice, and a dashboard changed since you selected
+its view must be refreshed before adding. Existing controls are preserved.
+Home Assistant's API does not provide an atomic compare-and-save operation;
+avoid editing the same dashboard in another session during an add-card request.
+
+The generated [full card](../philips_skylight/app/static/skylight-card.yaml) and
+[compact card](../philips_skylight/app/static/skylight-card-compact.yaml) are also
+available in this repository. Replace entity IDs if yours differ. These are
+ordinary built-in card configurations, not a registered custom type in the card
+picker. Once added, customize them in Home Assistant or copy them elsewhere.
+After an entity rename, download the card again or update its references.
+
+**Before first use**, record the panel's observed power and mode in the add-on,
+or use **Correct recorded state** on the card. Choose **Mode unknown** if unsure.
+Repeat after pairing. Dashboard creation does not operate the light or set an
+observed baseline for you.
 
 The native entities can also be added individually with the dashboard editor:
 

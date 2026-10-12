@@ -148,7 +148,7 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
         },
     ]
     client = await aiohttp_client(panel.app())
-    response = await client.get("/api/dashboard-card")
+    response = await client.get("/api/dashboard-card?style=full")
     assert response.status == 200
     content = await response.text()
     assert "light.renamed" in content
@@ -210,4 +210,50 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
     assert not panel.ha.calls
     panel.ha.registry[-1]["disabled_by"] = "user"
     response = await client.get("/api/dashboard-card")
+    assert response.status == 400
+
+
+async def test_friendly_proxy_setup_requires_explicit_save_and_does_not_create_dashboard(panel):
+    panel.ha.registry = [
+        *panel.ha.registry,
+        {"entity_id": "sensor.proxy_ble_adv_proxy_name", "platform": "esphome"},
+    ]
+    assert len(panel.snapshot()["proxies"]) == 1
+    assert not panel.ha.calls
+    await panel.perform(
+        {"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name", "name": "Office"}
+    )
+    assert panel.ha.calls == [
+        (("Office", "proxy_adv_svc_v1", "sensor.proxy_ble_adv_proxy_name"), {})
+    ]
+    with pytest.raises(ValueError, match="available Skylight proxy"):
+        await panel.perform({"action": "setup", "proxy": "sensor.missing"})
+
+
+async def test_compact_export_and_initial_matching_never_send_light_commands(panel, aiohttp_client):
+    from skylight_addon.server import CARD_ENTITIES
+
+    panel.ha.registry = [
+        {"entity_id": entity, "unique_id": unique, "platform": "philips_skylight"}
+        for entity, unique in CARD_ENTITIES.items()
+    ]
+    panel.ha.states = {"light.philips_skylight": panel.ha.states["light.renamed"]}
+    client = await aiohttp_client(panel.app())
+    response = await client.get("/api/dashboard-card")
+    assert response.status == 200
+    compact = yaml.safe_load(await response.text())
+    assert len(compact["cards"]) == 2
+    assert compact == panel.card_config()
+    await panel.perform({"action": "sync_state", "power": "off", "effect": "Unknown"})
+    assert panel.ha.calls == [
+        (("button", "press", "button.philips_skylight_record_panel_off"), {}),
+        (
+            ("select", "select_option", "select.philips_skylight_recorded_scene"),
+            {"option": "Unknown"},
+        ),
+    ]
+    with pytest.raises(ValueError, match="Record the power"):
+        await panel.perform({"action": "sync_state", "power": "on", "effect": "invented"})
+    assert len(panel.ha.calls) == 2
+    response = await client.get("/api/dashboard-card?style=custom")
     assert response.status == 400

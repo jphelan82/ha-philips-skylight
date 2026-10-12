@@ -14,17 +14,27 @@ panel has been tested with an ESP32-C3 proxy.
 
 1. Install and start the add-on, enable **Start on boot**, and open its web UI.
 2. Restart Home Assistant if requested to activate the light integration.
-3. In **Transmitter setup**, choose the advertising action and **BLE Adv Proxy
-   Name** sensor from the same proxy, then save. If your proxy needs updating,
-   download the firmware configuration and follow the **Documentation** tab.
+3. Follow the setup checklist. If needed, download the ESPHome local package,
+   add its `packages`/`!include` entry to your existing node YAML, and compile
+   and install it with ESPHome Device Builder. Preserve Wi-Fi, API, OTA and board
+   settings. Choose your **Bluetooth proxy** and save; a sole proxy is preselected.
 4. Enable **Allow the device to perform Home Assistant actions** in the proxy's
-   ESPHome integration options so remote presses can be received.
-5. Select **Download Home Assistant dashboard card**. In your dashboard, choose
-   **Edit dashboard → Add card → Manual**, paste the download, and save.
-6. **Before first use, match the recorded state to the physical panel.** Select
-   **Correct recorded state**, choose **Panel is on/off** and the mode you can
-   see (or **Mode unknown**), then select **Done**. This sets the starting state
-   without changing the light. Repeat it after pairing if pairing is needed.
+   ESPHome options so remote presses can be received.
+5. **Pair the transmitter on first setup.** Cycle the panel's mains power, then
+   confirm and send the pairing request promptly. Check the panel and original
+   remote. Skip this step if the HA transmitter already works; updates do not
+   require re-pairing.
+6. **Before first use, match the recorded state to the physical panel.** In
+   **Match the starting state**, record the power and mode you can see, or
+   **Unknown** for the mode. This records observations without operating the light.
+7. **Optional:** choose Compact or Full, then **Create Skylight dashboard** or
+   **Add card to an existing dashboard**. Existing dashboards are preserved.
+   No dashboard is required to use the native entities.
+
+The compact and full cards use built-in Home Assistant controls and include a
+separate state-correction view. You can also download their configuration and
+paste it into **Edit dashboard → Add card → Manual**. Entity IDs are filled in.
+This reusable configuration does not register a custom card type in the picker.
 
 ## Use the card
 
@@ -62,9 +72,9 @@ when the baseline is unreliable: those on/off actions decide whether to toggle
 using the recorded state. A direct toggle cannot guarantee a final on/off state;
 observe the physical result.
 
-## If commands are ignored
+## Pairing and recovery
 
-Open **Pair this transmitter**, cycle the panel's mains power, then confirm and
+Open **Pair the transmitter on first setup**, cycle the panel's mains power, then confirm and
 send the pairing request promptly. The request lasts about ten seconds; the
 panel should blink. Check the original remote afterward and correct the
 recorded state. Other models may require pairing the original remote again.

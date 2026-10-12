@@ -1,5 +1,9 @@
-# Merge this into the EXISTING bluetooth-proxy-1 YAML; preserve Wi-Fi, OTA,
-# API encryption, node name, and board settings. No separate ESP32 is needed.
+# Local package: add `skylight: !include skylight-transmitter.yaml` under
+# packages in your EXISTING node YAML. Copy components beside that YAML.
+# Preserve Wi-Fi, OTA, API encryption, node name, and board settings.
+esphome:
+  min_version: 2026.4.5
+
 api:
   custom_services: true
   homeassistant_services: true

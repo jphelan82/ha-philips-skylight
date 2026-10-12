@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.4
+
+- Guided setup with one matched proxy selector, an advanced fallback, explicit
+  first-time pairing, remote-tracking permission instructions and initial state matching.
+- Downloadable ESPHome local package, added with one packages/include entry.
+- Optional dashboard creation or additive card installation into an existing
+  editable dashboard view through Home Assistant's native API.
+- Compact and full reusable cards using standard controls, including selected
+  mode colors and a separate correction view. Dashboard setup is not required.
+- Existing dashboards are preserved; stale edits and duplicate cards are rejected.
+- Native integration remains at 0.2.3; this add-on update needs no Core restart.
+
 ## 0.2.3
 
 - One power toggle on the dashboard, matching the verified BLE power command.

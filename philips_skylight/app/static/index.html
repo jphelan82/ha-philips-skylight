@@ -11,37 +11,77 @@
 </head>
 <body>
 <main>
-  <header><div><p class="eyebrow">PHILIPS · LOCAL CONTROL</p><h1>Skylight</h1></div><span id="connection" class="badge">Connecting</span></header>
+  <header><div><p class="eyebrow">PHILIPS · LOCAL CONTROL</p><h1>Skylight setup</h1></div><span id="connection" class="badge">Connecting</span></header>
   <div id="notice" role="status" aria-live="polite" hidden></div>
   <section id="installation" hidden>
-    <h2>Finish installation</h2>
-    <p id="install-message"></p>
+    <h2>1. Home Assistant integration</h2><p id="install-message"></p>
     <button data-action="install" id="install">Install companion integration</button>
     <button data-action="restart" id="restart">Restart Home Assistant</button>
   </section>
-  <section id="controls" hidden>
-    <div class="panel-light" id="light"><span id="power">Unknown</span><span id="effect">Select a scene</span></div>
-    <div class="row"><button data-action="on" class="primary">Turn on</button><button data-action="off">Turn off</button><button data-action="toggle">Toggle</button></div>
-    <h2>Scenes</h2><div class="scenes" id="scenes"></div>
-    <h2>Brightness</h2><div class="row"><button data-action="dim_down">− Dim down</button><button data-action="dim_up">+ Dim up</button></div>
-    <p class="hint">Relative steps. The panel does not report an exact brightness level.</p>
-    <div class="sync" id="sync"><h2>Keep power in sync</h2><p>Check the physical panel, then tell Home Assistant its current power state. This does not send a command.</p><div class="row"><button data-sync="true">It is on</button><button data-sync="false">It is off</button></div></div>
-    <p class="hint">Power is tracked from commands and remote presses. Check it again after a restart, outage, or missed remote press.</p>
-    <p><a href="api/dashboard-card" download>Download Home Assistant dashboard card</a></p>
-    <p class="hint">Built-in dashboard controls, including power and scene state correction. Add a Manual card to your dashboard and paste the downloaded configuration. Entity IDs are filled in for your installation.</p>
+  <section>
+    <h2>Setup checklist</h2><ol id="checklist"></ol>
+    <p class="hint">The panel does not report its physical state. Setup never pairs, sends a test command, or creates a dashboard automatically.</p>
   </section>
-  <details id="setup"><summary>Transmitter setup</summary><form id="setup-form">
-    <p>Choose the advertising action and name sensor from the same ESPHome Bluetooth proxy.</p>
-    <label>Light name<input name="name" value="Philips Skylight" required maxlength="80"></label>
-    <label>Advertising action<select name="transmit_service" id="service" required></select></label>
-    <label>Proxy name sensor<select name="proxy_entity" id="proxy" required></select></label>
-    <button class="primary" type="submit">Save transmitter</button>
-    <p class="hint">Already configured lights retain their entity IDs and sequence storage.</p>
-    <a href="api/firmware" download>Download proxy firmware configuration</a>
-    <p class="hint">Merge it with your existing ESPHome configuration, preserving Wi-Fi, API and OTA settings. Compile and install with ESPHome Device Builder. Enable the proxy’s permission to perform Home Assistant actions for remote tracking.</p>
+  <details id="firmware"><summary>2. Prepare your Bluetooth proxy</summary>
+    <p id="firmware-status">Looking for compatible firmware…</p>
+    <p><a href="api/firmware" download>Download ESPHome Skylight package</a></p>
+    <p>Extract <code>skylight-transmitter.yaml</code> and the <code>components</code> folder beside your existing ESPHome node YAML. Add this entry to its <code>packages</code> mapping:</p>
+    <pre>packages:
+  skylight: !include skylight-transmitter.yaml</pre>
+    <p class="hint">Keep your node name, board, Wi-Fi, API encryption and OTA settings. If you already have a packages mapping, add just its skylight entry. Compile and install with ESPHome Device Builder. The download includes full instructions; an already compatible proxy needs no update.</p>
+  </details>
+  <details id="setup"><summary>3. Choose a transmitter</summary><form id="setup-form">
+    <label>Light name<input name="name" id="light-name" value="Philips Skylight" required maxlength="80"></label>
+    <label>Bluetooth proxy<select name="proxy" id="proxy-choice"></select></label>
+    <p id="proxy-hint" class="hint"></p>
+    <details id="advanced"><summary>Advanced transmitter selection</summary>
+      <p class="hint">Use this only if your proxy has a custom adapter name or cannot be matched automatically. Select an action and sensor from the same device.</p>
+      <label>Advertising action<select id="service"></select></label>
+      <label>Proxy name sensor<select id="proxy"></select></label>
+    </details>
+    <button id="save-transmitter" class="primary" type="submit">Save transmitter</button>
+    <p class="hint">Existing entity IDs, pairing and sequence storage are preserved. Saving a transmitter does not pair it or operate the light.</p>
   </form></details>
-  <details id="pairing"><summary>Pair this transmitter</summary><p>Use pairing if the panel ignores commands. Cycle its mains power, then send the pairing request. The panel should blink. Pairing may replace the original remote’s pairing on some panels.</p><label class="check"><input id="pair-confirm" type="checkbox">I am ready to pair and may need to pair the original remote again.</label><button data-action="pair">Send pairing request</button><p class="hint">The request lasts about ten seconds. Check the panel and original remote afterward, then synchronize power above.</p></details>
-  <footer><span id="entity"></span><span id="version"></span></footer>
+  <details id="tracking"><summary>4. Enable remote tracking</summary>
+    <p>In the proxy's ESPHome integration options, enable <strong>Allow the device to perform Home Assistant actions</strong>. This lets BLE presses from other compatible remote/control panels update the recorded state.</p>
+    <p><a href="/config/integrations/integration/esphome" target="_top">Open ESPHome integrations</a></p>
+    <p class="hint">Check this permission yourself; finding a transmitter does not verify it. After recording the starting state, press a remote button and check the native light entity. A received press is not confirmation that the panel acted on it.</p>
+  </details>
+  <details id="pairing" hidden><summary>5. Pair the transmitter on first setup</summary>
+    <p>A new HA transmitter needs to be paired before the panel accepts commands. If this transmitter already controls your panel, skip this step; updates do not require re-pairing. Cycle the panel's mains power, then send the request promptly. It lasts about ten seconds and the panel should blink. Pairing may replace the original remote's pairing on some panels.</p>
+    <label class="check"><input id="pair-confirm" type="checkbox">I am ready to pair and may need to pair the original remote again.</label>
+    <button data-action="pair">Send pairing request</button>
+    <p class="hint">Check the physical panel and original remote afterward. Pairing completion is not an acknowledgment; record the starting state again.</p>
+  </details>
+  <details id="matching" hidden><summary>6. Match the starting state</summary>
+    <p>Look at the physical panel and record what you see. These choices only update Home Assistant's record; they do not operate the light.</p>
+    <form id="match-form">
+      <label>Panel power<select id="observed-power" required><option value="">Choose what you can see</option><option value="on">Panel is on</option><option value="off">Panel is off</option></select></label>
+      <label>Mode I can see<select id="observed-mode"></select></label>
+      <button type="submit" class="primary">Record starting state</button>
+    </form>
+    <p id="recorded-state" class="hint"></p>
+    <p class="hint">Repeat after a restart, outage, mains power change or missed BLE press. State is estimated from commands and received remote presses. If unreliable, use direct toggle, mode and dim commands and ignore the estimates.</p>
+  </details>
+  <section id="dashboard" hidden>
+    <h2>Dashboard controls · optional</h2>
+    <p>Use the native entities as they are, or add the Skylight card. It combines standard Home Assistant controls with a separate state-correction view. No HACS or custom resource is needed.</p>
+    <label>Card size<select id="card-style"><option value="compact">Compact — for an existing dashboard</option><option value="full">Full — with headings and instructions</option></select></label>
+    <div class="row"><button data-action="create_dashboard">Create Skylight dashboard</button><button id="choose-dashboard">Add card to an existing dashboard</button></div>
+    <p class="hint">Create opens an existing Skylight dashboard if one is already present. Your current dashboards are never replaced.</p>
+    <div id="dashboard-target" hidden>
+      <label>Dashboard<select id="dashboard-choice"></select></label>
+      <label>View<select id="view-choice"></select></label>
+      <p id="dashboard-hint" class="hint"></p>
+      <button id="add-card">Add Skylight card</button>
+    </div>
+    <p><a id="dashboard-link" target="_top" hidden>Open dashboard</a></p>
+    <details><summary>Download card configuration instead</summary>
+      <p><a id="card-download" href="api/dashboard-card?style=compact" download>Download compact Skylight card</a></p>
+      <p class="hint">In any dashboard, use Edit dashboard → Add card → Manual and paste the download. Actual entity IDs are filled in. YAML dashboards, generated dashboards and panel views use this manual route; for generated dashboards, take control in Home Assistant first if you want to edit cards.</p>
+    </details>
+  </section>
+  <footer><a id="entity" href="/config/integrations/integration/philips_skylight" target="_top">Awaiting setup</a><span id="version"></span></footer>
 </main>
 </body>
 </html>

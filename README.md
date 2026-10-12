@@ -32,16 +32,24 @@ control of individual nearby panels is not supported.
    its web UI.
 3. If the add-on asks you to restart Home Assistant, do so to activate the
    light integration.
-4. If your proxy needs the Skylight firmware, download the configuration from
-   the add-on and install it with ESPHome Device Builder. Follow the
-   [detailed proxy setup instructions](philips_skylight/DOCS.md#installation),
-   preserving the proxy's existing Wi-Fi, API and OTA settings.
-5. In the proxy's ESPHome integration options, enable **Allow the device to
-   perform Home Assistant actions** so remote presses can be received.
-6. In the add-on's **Transmitter setup**, select the advertising action and
-   **BLE Adv Proxy Name** sensor from the same proxy, then save.
-7. Add the dashboard card below, then complete **Match the state before first
-   use** before relying on the recorded power or mode.
+4. Follow the add-on's **Setup checklist**. If your proxy needs firmware,
+   download the ESPHome package and add its single `packages`/`!include` entry
+   to the existing node configuration. Keep the node's Wi-Fi, API, OTA and board
+   settings. Compile and install with ESPHome Device Builder. See the
+   [package instructions](esphome/README.md).
+5. Choose your **Bluetooth proxy** and save. A single compatible proxy is
+   selected for you; advanced action/sensor selectors remain available for
+   custom configurations.
+6. In the proxy's ESPHome integration options, enable **Allow the device to
+   perform Home Assistant actions** so received remote presses can update state.
+7. **Pair the HA transmitter on first setup**, following the explicit pairing
+   step below. An already paired, working installation can skip this; updating
+   the add-on does not require re-pairing.
+8. **Match the state before first use** using the add-on's **Record starting
+   state** form. Observe the panel and record its power and mode, or choose
+   **Unknown** for the mode. This works without a dashboard.
+9. **Optional:** create a Skylight dashboard or add its card to an existing one.
+   You can instead use the native entities in your own dashboard or automations.
 
 Repository installation requires a published add-on on the repository's default
 branch and access to that repository. If the add-on is not yet available in the
@@ -51,16 +59,26 @@ If you already use the Philips Skylight integration, the add-on keeps your
 existing light, settings and pairing. You do not need to pair again unless
 commands are ignored.
 
-## Add the Skylight dashboard card
+## Dashboard controls (optional)
 
-1. In the add-on's web UI, select **Download Home Assistant dashboard card**.
-2. Open your preferred dashboard, select **Edit dashboard → Add card → Manual**.
-3. Paste the downloaded configuration and save.
+The integration works without creating a dashboard. In the add-on's optional
+**Dashboard controls** section, choose **Compact** or **Full**, then either:
 
-The download fills in your actual entity IDs, including renamed entities. The
-card uses standard Home Assistant controls, so no HACS card or dashboard
-resource needs to be installed. See the [dashboard guide](docs/DASHBOARD.md)
-for customization and adding individual controls.
+- **Create Skylight dashboard** creates a dedicated dashboard, or opens the
+  existing one without changing it.
+- **Add card to an existing dashboard** lets you choose an editable dashboard
+  and view. It adds the Skylight card while preserving the existing controls.
+
+The compact card is intended for a shared dashboard; the full card includes
+extra headings and everyday instructions. Both have one power toggle, six modes,
+relative dim controls and the separate state-correction view.
+
+For manual setup, download either card configuration and paste it into
+**Edit dashboard → Add card → Manual**. Use this route for YAML dashboards or
+views the add-on cannot edit. The card uses standard Home Assistant controls;
+it requires no HACS or custom dashboard resource and does not register a new
+custom type in the card picker. Individual native entities remain available
+through **Add card**. See the [dashboard guide](docs/DASHBOARD.md).
 
 ## Match the state before first use
 
@@ -68,11 +86,12 @@ for customization and adding individual controls.
 observed starting state; listening for a power toggle cannot tell whether the
 panel started on or off.
 
-1. Look at the physical Skylight and select **Correct recorded state** at the
-   bottom of the dashboard card.
+1. Look at the physical Skylight. Use **Match the starting state** in the add-on,
+   or select **Correct recorded state** at the bottom of the optional card.
 2. Select **Panel is on** or **Panel is off** to match what you can see.
 3. Select its current mode, or **Mode unknown** if you cannot identify it.
-4. Select **Done** to return to normal controls.
+4. In the add-on, select **Record starting state**. On the card, select **Done**
+   to return to normal controls.
 
 This records your observation without operating the light. If you pair the
 transmitter afterward, repeat state matching after pairing completes.
@@ -141,11 +160,13 @@ the recorded power to decide whether to send a toggle, so a wrong record can
 cause a skipped command or an unexpected toggle. A direct toggle always requests
 a change; it cannot guarantee a final on/off state without a trustworthy baseline.
 
-## Pair only if commands are ignored
+## Pair the transmitter on first setup
 
-If the proxy is connected but commands have no effect:
+A new HA transmitter needs pairing before the panel accepts commands. Pairing
+was necessary on the tested panel. If this transmitter already operates the
+light, keep its existing pairing; normal updates do not require this step:
 
-1. Open **Pair this transmitter** in the add-on's web UI.
+1. Open **Pair the transmitter on first setup** in the add-on's web UI.
 2. Switch the Skylight's mains power off and back on.
 3. Confirm that you are ready, then select **Send pairing request** promptly.
 4. Wait about ten seconds. The panel should blink. Check the light and the

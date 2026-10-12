@@ -34,8 +34,9 @@ matching panels in radio range; only one integration entry is allowed.
 Requires Home Assistant 2026.6 or newer. Firmware was compiled with ESPHome
 2026.4.5 for the ESP32-C3 `bluetooth-proxy-1`.
 
-1. Back up the proxy YAML. Merge
-   [esphome/skylight-transmitter.yaml](../esphome/skylight-transmitter.yaml) into it,
+1. Back up the proxy YAML. Add
+   [esphome/skylight-transmitter.yaml](../esphome/skylight-transmitter.yaml) as a local
+   package (`packages: {skylight: !include skylight-transmitter.yaml}`),
    preserving node name, Wi-Fi secrets, API security, OTA, and board settings.
    Copy `esphome/components/ble_adv_proxy` to
    `/config/esphome/components/ble_adv_proxy` on the server first. It contains
@@ -85,7 +86,7 @@ It never runs during setup,
 reconnect, or normal light controls. No factory reset or network provisioning
 is performed.
 
-When ready for that last-resort test, cycle the panel's mains power and invoke
+On first setup, when ready to pair, cycle the panel's mains power and invoke
 the action with `confirm: true`, targeting only `light.philips_skylight`. It
 sends 30 requests at approximately three per second, using a freshly reserved
 sequence for each. Afterward, check the physical light and both controllers.

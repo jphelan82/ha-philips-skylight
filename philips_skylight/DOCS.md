@@ -19,24 +19,36 @@ native API credential.
    `custom_components/philips_skylight`. If requested, use **Restart Home
    Assistant** in the panel to activate it. The add-on never restarts Core
    automatically. Existing integration settings and sequence storage remain intact.
-3. For a new transmitter, download the proxy firmware configuration from the
-   panel. Copy its `components/ble_adv_proxy` folder next to your ESPHome YAML.
-   Merge `skylight-transmitter.yaml` into your existing configuration, retaining
-   the node name, Wi-Fi secrets, API encryption, OTA and board settings. Compile
-   and install through ESPHome Device Builder. Firmware was tested with
-   ESPHome 2026.4.5; the component requires at least that version.
-4. In the proxy's ESPHome integration options, enable **Allow the device to
-   perform Home Assistant actions**. This allows captured remote presses to
-   reach the native light integration.
-5. In **Transmitter setup**, choose the advertising action ending in
-   `_adv_svc_v1` and the BLE Adv Proxy Name sensor belonging to that same proxy.
-   Save. An existing setup can be changed here without recreating its entities.
-6. Select **Download Home Assistant dashboard card**, then add it through
-   **Edit dashboard → Add card → Manual** by pasting the download.
-7. **Match the state before first use.** Look at the physical panel and select
-   **Correct recorded state** on the card. Choose **Panel is on/off** and the
-   mode you can see (or **Mode unknown**), then **Done**. This records the
-   starting state without sending a command. Repeat after pairing if needed.
+3. For a new transmitter, download the ESPHome Skylight package from the
+   panel. Extract `skylight-transmitter.yaml` and `components/ble_adv_proxy`
+   beside the existing node YAML. Add a local package entry:
+
+   ```yaml
+   packages:
+     skylight: !include skylight-transmitter.yaml
+   ```
+
+   If `packages` already exists, add just the `skylight` entry. Preserve the
+   node name, Wi-Fi secrets, API encryption, OTA and board settings. Validate,
+   compile and install through ESPHome Device Builder, using ESPHome 2026.4.5
+   or newer. The download includes instructions and tested component source.
+   Your node's settings can override the package; remove conflicting disabled
+   API custom/Home Assistant services and allow the package's BLE scan settings.
+4. In **Choose a transmitter**, select a **Bluetooth proxy** and save. One
+   compatible proxy is automatically selected. Advanced action/sensor selectors
+   are available for custom adapter names or unmatched proxies; both must refer
+   to the same device. Existing settings are not changed until you save.
+5. Enable **Allow the device to perform Home Assistant actions** in the proxy's
+   ESPHome integration options. This allows received remote presses to reach
+   the integration. Finding a transmitter does not verify this permission.
+6. **Pair the HA transmitter on first setup**, following the explicit pairing
+   procedure below. Already paired, working installations skip this step.
+7. **Match the state before first use.** In the add-on's **Match the starting
+   state** form, observe the physical panel and record its power and mode (or
+   **Unknown**). This sends no light command. Repeat after pairing or an outage.
+8. **Optional:** choose Compact or Full in **Dashboard controls** and create a
+   dedicated dashboard or add a card to an existing editable view. You can use
+   only native entities instead; creating a dashboard is not a setup requirement.
 
 If you already use the Philips Skylight integration, the add-on preserves your
 existing entities, transmitter setup and pairing. Repeat pairing only if the
@@ -45,8 +57,9 @@ introduce a second transmitter or sequence counter.
 
 ## Pairing
 
-If the panel ignores commands despite a working advertising proxy, open
-**Pair this transmitter**. Switch the panel's mains power off and back on, then
+A new HA transmitter needs pairing before the panel accepts its commands. Open
+**Pair the transmitter on first setup**. Skip it if the existing transmitter
+already works; normal add-on updates do not require re-pairing. Switch the panel's mains power off and back on, then
 confirm and send the request promptly. It lasts approximately ten seconds; the
 panel should blink. Check power, scenes and the original remote afterward.
 
@@ -57,10 +70,19 @@ the captured vendor request, without factory reset or mesh provisioning.
 
 ## State and controls
 
-For everyday use, add the standard Skylight card to a Home Assistant dashboard.
-Open this add-on, select **Download Home Assistant dashboard card**, then paste
-it into **Edit dashboard → Add card → Manual**. The download fills in your actual
-entity IDs. It uses built-in cards with no custom resource or HACS dependency.
+For everyday use, optionally add the standard Skylight card to a Home Assistant
+dashboard. **Create Skylight dashboard** creates a dedicated dashboard or opens
+the existing one without replacing it. **Add card to an existing dashboard**
+adds the selected card to a chosen editable view and preserves its other cards.
+Compact is the default; Full adds headings and everyday instructions.
+
+The add-on uses the Lovelace API, never storage-file edits. It checks a dashboard
+revision before adding a card and avoids an identical duplicate. It cannot take
+control of generated dashboards or add to panel views; use the manual download
+for those cases and for YAML dashboards. Download either card and paste it into
+**Edit dashboard → Add card → Manual**. The actual entity IDs are filled in.
+These are reusable built-in card configurations, rather than a new custom card
+type in the picker. No custom resource or HACS dependency is required.
 
 The card has one power toggle and highlights the recorded mode in blue; other
 modes are gray. **Correct recorded state** at the bottom replaces the normal
@@ -124,7 +146,8 @@ may respond. Only one factory-network integration is supported.
 
 The add-on needs the native Core API to operate/configure its integration and a
 writable Home Assistant configuration mount to install that integration's code.
-It writes only the `custom_components/philips_skylight` directory. It never edits
+Its filesystem installer writes only the `custom_components/philips_skylight`
+directory. Optional dashboard changes use the native Lovelace API. It never edits
 `configuration.yaml`, `.storage`, Wi-Fi secrets or HA credentials. Code backups
 and the installation marker live in the add-on's persistent `/data` volume and
 are included in Supervisor backups. The native mesh sequence Store remains in
