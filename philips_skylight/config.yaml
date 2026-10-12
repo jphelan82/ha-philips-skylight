@@ -1,0 +1,31 @@
+name: Philips Skylight
+version: "0.2.0"
+slug: philips_skylight
+description: Local Skylight control, pairing and setup through your ESPHome Bluetooth proxy
+url: https://github.com/jphelan82/ha-philips-skylight
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+timeout: 30
+homeassistant: "2026.6.0"
+homeassistant_api: true
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:ceiling-light
+panel_title: Skylight
+panel_admin: true
+watchdog: http://[HOST]:8099/health
+map:
+  - type: homeassistant_config
+    read_only: false
+    path: /homeassistant
+options:
+  auto_install_integration: true
+  log_level: info
+schema:
+  auto_install_integration: bool
+  log_level: list(debug|info|warning|error)
+stage: experimental

@@ -1,0 +1,28 @@
+set_assumed_power:
+  name: Set assumed power
+  description: Tell Home Assistant the physical light's current power state without sending a command. Required after restart or a proxy outage before using turn_on or turn_off.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
+  fields:
+    is_on:
+      name: Currently on
+      description: Whether the physical Skylight is currently illuminated.
+      required: true
+      selector:
+        boolean:
+pair_transmitter:
+  name: Pair transmitter (experimental)
+  description: Send the captured pairing request for 10 seconds after cycling the panel's mains power. May replace the existing remote's pairing. Completion does not confirm success; check the panel and original remote afterward.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
+  fields:
+    confirm:
+      name: Accept pairing change
+      description: Confirm that you are ready to test pairing, which may require pairing the original remote again.
+      required: true
+      selector:
+        boolean:

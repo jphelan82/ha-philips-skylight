@@ -1,0 +1,110 @@
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+from skylight_addon.ha import HAError
+from skylight_addon.server import Panel
+
+ROOT = Path(__file__).resolve().parents[1] / "philips_skylight/app"
+
+
+class FakeHA:
+    ready = True
+    error = None
+    entries = []
+    services = {"esphome": {"proxy_adv_svc_v1": {}}}
+    registry = [
+        {
+            "platform": "philips_skylight",
+            "unique_id": "factory_mesh_7ffe_light",
+            "entity_id": "light.renamed",
+        },
+        {
+            "platform": "philips_skylight",
+            "unique_id": "factory_mesh_7ffe_rest",
+            "entity_id": "button.renamed_scene",
+        },
+    ]
+    states = {
+        "light.renamed": {
+            "state": "on",
+            "attributes": {"integration_version": "0.2.0", "power_synchronized": True},
+        },
+        "sensor.proxy_ble_adv_proxy_name": {"state": "proxy"},
+    }
+
+    def __init__(self):
+        self.calls = []
+
+    async def call(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
+
+    async def configure(self, *args):
+        self.calls.append((args, {}))
+
+
+@pytest.fixture
+def panel():
+    installer = SimpleNamespace(version="0.2.0", pending_restart=False, installed=lambda: True)
+    return Panel(FakeHA(), installer, ROOT, allowed_ips={"127.0.0.1"})
+
+
+async def test_ingress_rejects_forged_forwarded_ip(aiohttp_client, panel):
+    panel.allowed_ips = {"172.30.32.2"}
+    client = await aiohttp_client(panel.app())
+    response = await client.get("/api/status", headers={"X-Forwarded-For": "172.30.32.2"})
+    assert response.status == 403
+
+
+async def test_actions_require_page_session_and_use_registered_entities(aiohttp_client, panel):
+    client = await aiohttp_client(panel.app())
+    response = await client.post("/api/action", json={"action": "toggle"})
+    assert response.status == 403
+    assert not panel.ha.calls
+    response = await client.get("/", headers={"X-Ingress-Path": "/api/hassio_ingress/session"})
+    markup = await response.text()
+    assert '<base href="/api/hassio_ingress/session/">' in markup
+    assert panel.csrf in markup
+    assert "script-src 'self'" in response.headers["Content-Security-Policy"]
+    response = await client.post(
+        "/api/action",
+        json={"action": "scene", "effect": "Rest"},
+        headers={"X-Skylight-CSRF": panel.csrf},
+    )
+    assert response.status == 200
+    assert panel.ha.calls == [(("button", "press", "button.renamed_scene"), {})]
+
+
+async def test_pairing_confirmation_and_action_allowlist(panel):
+    with pytest.raises(ValueError, match="Confirm"):
+        await panel.perform({"action": "pair", "confirm": False})
+    assert not panel.ha.calls
+    await panel.perform({"action": "pair", "confirm": True})
+    assert panel.ha.calls == [
+        (("philips_skylight", "pair_transmitter", "light.renamed"), {"confirm": True})
+    ]
+    with pytest.raises(ValueError, match="Unknown"):
+        await panel.perform({"action": "call_any_service", "service": "lock.unlock"})
+    with pytest.raises(ValueError, match="Specify"):
+        await panel.perform({"action": "sync_power", "is_on": "false"})
+
+
+async def test_ambiguous_failure_is_not_retried(panel, aiohttp_client):
+    async def fail(*args, **kwargs):
+        panel.ha.calls.append((args, kwargs))
+        raise HAError("Result uncertain")
+
+    panel.ha.call = fail
+    client = await aiohttp_client(panel.app())
+    response = await client.post(
+        "/api/action", json={"action": "toggle"}, headers={"X-Skylight-CSRF": panel.csrf}
+    )
+    assert response.status == 400
+    assert len(panel.ha.calls) == 1
+
+
+async def test_stale_integration_blocks_controls_and_setup(panel):
+    panel.installer.pending_restart = True
+    with pytest.raises(ValueError, match="Restart"):
+        await panel.perform({"action": "toggle"})
+    assert not panel.ha.calls

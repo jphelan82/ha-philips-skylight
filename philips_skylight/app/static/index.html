@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="csrf" content="__CSRF__">
+  <base href="__BASE__">
+  <title>Skylight</title>
+  <link rel="stylesheet" href="static/style.css">
+  <script defer src="static/app.js"></script>
+</head>
+<body>
+<main>
+  <header><div><p class="eyebrow">PHILIPS · LOCAL CONTROL</p><h1>Skylight</h1></div><span id="connection" class="badge">Connecting</span></header>
+  <div id="notice" role="status" aria-live="polite" hidden></div>
+  <section id="installation" hidden>
+    <h2>Finish installation</h2>
+    <p id="install-message"></p>
+    <button data-action="install" id="install">Install companion integration</button>
+    <button data-action="restart" id="restart">Restart Home Assistant</button>
+  </section>
+  <section id="controls" hidden>
+    <div class="panel-light" id="light"><span id="power">Unknown</span><span id="effect">Select a scene</span></div>
+    <div class="row"><button data-action="on" class="primary">Turn on</button><button data-action="off">Turn off</button><button data-action="toggle">Toggle</button></div>
+    <h2>Scenes</h2><div class="scenes" id="scenes"></div>
+    <h2>Brightness</h2><div class="row"><button data-action="dim_down">− Dim down</button><button data-action="dim_up">+ Dim up</button></div>
+    <p class="hint">Relative steps. The panel does not report an exact brightness level.</p>
+    <div class="sync" id="sync"><h2>Keep power in sync</h2><p>Check the physical panel, then tell Home Assistant its current power state. This does not send a command.</p><div class="row"><button data-sync="true">It is on</button><button data-sync="false">It is off</button></div></div>
+    <p class="hint">Power is tracked from commands and remote presses. Check it again after a restart, outage, or missed remote press.</p>
+  </section>
+  <details id="setup"><summary>Transmitter setup</summary><form id="setup-form">
+    <p>Choose the advertising action and name sensor from the same ESPHome Bluetooth proxy.</p>
+    <label>Light name<input name="name" value="Philips Skylight" required maxlength="80"></label>
+    <label>Advertising action<select name="transmit_service" id="service" required></select></label>
+    <label>Proxy name sensor<select name="proxy_entity" id="proxy" required></select></label>
+    <button class="primary" type="submit">Save transmitter</button>
+    <p class="hint">Already configured lights retain their entity IDs and sequence storage.</p>
+    <a href="api/firmware" download>Download proxy firmware configuration</a>
+    <p class="hint">Merge it with your existing ESPHome configuration, preserving Wi-Fi, API and OTA settings. Compile and install with ESPHome Device Builder. Enable the proxy’s permission to perform Home Assistant actions for remote tracking.</p>
+  </form></details>
+  <details id="pairing"><summary>Pair this transmitter</summary><p>Use pairing if the panel ignores commands. Cycle its mains power, then send the pairing request. The panel should blink. Pairing may replace the original remote’s pairing on some panels.</p><label class="check"><input id="pair-confirm" type="checkbox">I am ready to pair and may need to pair the original remote again.</label><button data-action="pair">Send pairing request</button><p class="hint">The request lasts about ten seconds. Check the panel and original remote afterward, then synchronize power above.</p></details>
+  <footer><span id="entity"></span><span id="version"></span></footer>
+</main>
+</body>
+</html>

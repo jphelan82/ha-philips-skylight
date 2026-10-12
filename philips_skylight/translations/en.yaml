@@ -1,0 +1,7 @@
+configuration:
+  auto_install_integration:
+    name: Install the companion integration
+    description: Install or update the bundled native light integration when this add-on starts. Existing entity IDs and sequence storage are preserved. A Home Assistant restart may be needed; it is never started automatically.
+  log_level:
+    name: Log level
+    description: Amount of detail shown in the add-on log. Credentials are never logged.

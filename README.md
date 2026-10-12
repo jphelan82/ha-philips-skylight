@@ -1,67 +1,89 @@
-# Philips Skylight: Bluetooth Mesh protocol
+# Philips Skylight for Home Assistant
 
-The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7 x 25.6 in). Philips sells it as remote-only: no app, no Hue, no Matter, no Wi-Fi. Inside, it runs standard Bluetooth Mesh, and its remote uses factory-default keys. This file records what we decoded on 2026-10-12, so Home Assistant can send the same commands as the remote.
+A Home Assistant add-on for local Philips Skylight power, scenes, relative
+dimming, pairing and setup through an ESPHome Bluetooth proxy.
 
-## The hardware
+**No MQTT broker or cloud account is required.** The add-on installs a bundled
+native integration that exposes `light.philips_skylight` and scene/dim buttons.
+Its authenticated ingress panel manages setup and controls through the native
+Home Assistant API. The integration owns the BLE protocol and durable sequence
+counter; the add-on does not create a second transmitter.
 
-| Part | What we found |
-|---|---|
-| Panel radio | Bluetooth Low Energy (BLE) Mesh module, address `4C:3C:8F:EA:96:76`. The address prefix belongs to Shenzhen Jingxun Technology. The panel advertises the name `BK_MESH_light`, which points to a Beken chip. |
-| Panel beacon | The panel always sends the "unprovisioned device" beacon (service `0x1827`), even after pairing. Ignore it. The panel is on the default network from the start, and it relays the remote's packets. |
-| Remote | A battery mesh node. It sends from mesh address `0x7FFF` to `0xFFFF` (all nodes). Its BLE address for the proxy advert is `F6:E2:99:FE:DE:B1`. The ESPHome proxy reports its command packets under `FF:FF:FF:FF:FF:FF`. |
-| FCC ID | `2AGBW929004709X`, 2402 to 2480 MHz. |
+Physically verified after transmitter pairing: power off/on, Rest/Energize scene
+switching, relative dimming, and continued original remote control.
 
-## The keys
+## Install
 
-Both keys are factory defaults. Every unit of this model very likely uses the same pair.
+Requires Home Assistant OS/Supervised, Core 2026.6+, and an ESPHome advertising
+proxy. Firmware is tested on ESP32-C3 with ESPHome 2026.4.5.
 
-| Key | Value | How we know |
-|---|---|---|
-| Network key (NetKey) | `11111111111111111111111111111111` | The remote's 64-bit network ID is `c7cd5342d1544cd5`. The mesh function k3 of this key gives exactly that ID. |
-| Application key (AppKey) | `00000000000000000000000000000000` | Its 6-bit key ID matches (`0x38`), and it decrypts every captured command with a valid message check. |
-| IV index | `0` | From the remote's secure network beacon. |
+1. Add this repository to Settings → Apps/Add-ons → Store → Repositories:
+   `https://github.com/jphelan82/ha-philips-skylight`.
+2. Install **Philips Skylight**, start it, and open its web UI.
+3. If prompted, restart Home Assistant to activate the bundled integration.
+4. Select your advertising proxy in **Transmitter setup**. The panel provides
+   downloadable firmware configuration for a proxy that needs the advertising
+   component. Compile/install it through ESPHome Device Builder.
+5. Synchronize the panel's current power. If commands are ignored, follow the
+   explicit transmitter-pairing procedure in the panel.
 
-## The commands
+The repository must contain this release before repository installation will
+work. Until then, copy the `philips_skylight` folder into HA's `/addons` directory,
+reload the store, and install it from **Local apps/add-ons**.
 
-Each command is a vendor message with company ID `0x0211` (Telink Semiconductor). The bytes below are the decrypted access payload. `TT` is a transaction number. The remote counts it up by one per press, from `0x80` to `0xFF`, and then wraps back to `0x80`.
+See [add-on documentation](philips_skylight/DOCS.md) for firmware, installation,
+permissions, pairing, recovery and removal. Existing users of the prototype keep
+their native entity IDs, integration settings, pairing and sequence Store.
 
-| Button | Payload | Notes |
-|---|---|---|
-| On/off | `C8 11 02 TT 03 01 41` | A toggle. We have not found separate on and off codes yet. |
-| Dim down, tap | `C8 11 02 TT 01 00 14 41` | `0x14` is 20, likely a 20 percent step. |
-| Dim up, tap | `C8 11 02 TT 01 01 14 41` | |
-| Dim down, hold | `C8 11 02 TT 01 02 14 41` | The remote repeats it about every 0.6 s while held. |
-| Dim up, hold | `C8 11 02 TT 01 03 14 41` | Same repeat as dim down. |
-| Refresh | `C9 11 02 TT 04 FF 01 41` | `C9` is the scene command. |
-| Energize | `C9 11 02 TT 04 FF 02 41` | |
-| Focus | `C9 11 02 TT 04 FF 03 41` | |
-| Relax | `C9 11 02 TT 04 FF 04 41` | |
-| Rest | `C9 11 02 TT 04 FF 05 41` | |
-| Auto rhythm | `C9 11 02 TT 04 FF 06 41` | |
-| Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11 11` | Sent about three times a second for the whole hold. |
+## Controls and state
 
-Every command ends in `0x41`. Its meaning is unknown.
+- Native light: power and six effects (Refresh, Energize, Focus, Relax, Rest,
+  Auto rhythm).
+- Buttons: relative dim up/down and direct scene selection.
+- Ingress: controls, power synchronization, transmitter setup/reconfiguration,
+  firmware download and explicit pairing.
+- Authenticated original-remote tracking and panel-relay duplicate filtering.
 
-## Rules for sending from Home Assistant
+The panel reports no physical status. Power is assumed from commands and remote
+presses. Synchronize it after a Core/proxy restart, panel mains cycle, outage or
+missed press. The dim increment is not measured, so no absolute brightness or
+color-temperature slider is exposed. Same-state on/off requests do nothing;
+uncertain toggle requests are never automatically retried.
 
-- **Never send as the remote's address `0x7FFF`.**
-  A mesh node drops any packet whose sequence number is not higher than the last one from the same sender. If Home Assistant sends as `0x7FFF` with a high sequence number, the panel ignores the real remote until the remote catches up. Use a separate unicast address, such as `0x7FFE`, and keep its own sequence counter.
-- **Store the sequence counter.** It must only go up, across restarts.
-- **The panel sends no status.** Home Assistant has no way to read the light's state. It can track the remote's presses through the proxy, because it can decrypt them.
+The transmitter uses `0x7FFE`, while the original remote uses `0x7FFF`. Keep the
+native integration's sequence Store across removal/reinstallation; never reset
+or restore an older counter or run a second sender with that address. Matching
+factory-key panels in range can all respond. Only one factory-network setup is
+supported.
 
-## Open questions
+## Development
 
-- Does the panel accept commands from a sender address other than `0x7FFF`? Not tested. This is the first test once a transmitter exists.
-- Do separate on and off codes exist? Candidates to try: `03 00 41` and `03 02 41`.
-- What does a dim step value other than `0x14` do?
+The native integration in `custom_components/philips_skylight` and firmware in
+`esphome` are canonical. `python tools/sync_addon.py` bundles them into the add-on's
+self-contained Docker build context; `--check` verifies the bundle without edits.
+CI checks source parity, runs software tests and builds amd64/aarch64 containers.
+Container publishing is a separate release step; the add-on currently supports
+Supervisor source builds.
 
-## Capture setup
+Use Python 3.14 for the complete HA test suite. The add-on alone can be tested
+on Python 3.12 with `pytest addon_tests` and its HTTP/test dependencies installed.
 
-The proxy `bluetooth-proxy-1` (ESP32-C3, `esphome-web-ece638`) did the capture. At ESPHome's default scan settings it listens 30 ms of every 320 ms, and it missed most single presses. On 2026-10-12 its config got `esp32_ble_tracker` scan interval and window of 1100 ms each. After that it caught every press. It dropped off Wi-Fi once, for about 18 seconds, right after the change. It stayed up for the rest of the session. The backup of the old config is `/config/esphome/esphome-web-ece638.yaml.bak-20261012` on the server.
+```sh
+python -m pip install homeassistant==2026.6.0 pytest pytest-asyncio pytest-aiohttp ruff
+python tools/sync_addon.py --check
+python -m pytest -q
+ruff check .
+```
 
-Home Assistant's `bluetooth/subscribe_advertisements` feed does not help. It sends a device only when the device first appears or disappears, not on each advert. The capture polled the Bluetooth diagnostics instead, about twice a second.
+Tests cover captured protocol authentication, sequence reservations, HA entities
+and reconfiguration, installer rollback, ingress/session access and native API
+reconnects. The macOS Python 3.14 finalization caveat and physical checks are in
+[validation notes](docs/VALIDATION.md).
 
-## Files
+The native integration remains usable independently through manual installation
+or HACS; see [integration-only instructions](docs/INTEGRATION.md).
 
-- `tools/meshdec.py` decrypts a capture log. Run `uv run --with cryptography python meshdec.py 11111111111111111111111111111111 capture-2026-10-12.log`.
-- `tools/capture-2026-10-12.log` holds the raw mesh adverts from the session, with the panel's constant beacon removed.
+Protocol research: [decoded commands](docs/PROTOCOL.md). The firmware adapts
+[NicoIIT's MIT-licensed BLE advertising component](https://github.com/NicoIIT/esphome-ble_adv_proxy),
+retaining its license and attribution. Our adaptation uses non-connectable Mesh
+advertisements and GAP completion callbacks. See its [component notes](esphome/components/ble_adv_proxy/README.md).

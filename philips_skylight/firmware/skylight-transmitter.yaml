@@ -1,0 +1,19 @@
+# Merge this into the EXISTING bluetooth-proxy-1 YAML; preserve Wi-Fi, OTA,
+# API encryption, node name, and board settings. No separate ESP32 is needed.
+api:
+  custom_services: true
+  homeassistant_services: true
+
+ble_adv_proxy:
+  use_max_tx_power: true
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [ble_adv_proxy]
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1100ms
+    window: 1100ms

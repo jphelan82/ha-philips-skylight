@@ -1,0 +1,34 @@
+{
+  "title": "Philips Skylight",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect your Skylight transmitter",
+        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. This integration controls the factory mesh network, so all matching panels in range may respond. Power is assumed; synchronize it after setup or reconnect.",
+        "data": {
+          "name": "Light name",
+          "transmit_service": "ESPHome advertising action",
+          "proxy_entity": "Proxy BLE Adv Proxy Name sensor"
+        }
+      },
+      "reconfigure": {
+        "title": "Change Skylight transmitter",
+        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. This integration controls the factory mesh network, so all matching panels in range may respond. Power is assumed; synchronize it after setup or reconnect.",
+        "data": {
+          "name": "Light name",
+          "transmit_service": "ESPHome advertising action",
+          "proxy_entity": "Proxy BLE Adv Proxy Name sensor"
+        }
+      }
+    },
+    "error": {
+      "transmitter_missing": "The proxy advertising action is unavailable.",
+      "proxy_missing": "The selected proxy sensor could not be found."
+    },
+    "abort": {
+      "already_configured": "The factory Skylight mesh is already configured.",
+      "no_transmitter": "No BLE advertising transmitter was found. Install the ble_adv_proxy firmware on your ESPHome proxy, wait for it to reconnect, then try again.",
+      "reconfigure_successful": "Transmitter updated. Synchronize the light\u2019s power state again."
+    }
+  }
+}
