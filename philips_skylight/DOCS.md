@@ -53,6 +53,17 @@ the captured vendor request, without factory reset or mesh provisioning.
 
 ## State and controls
 
+For everyday use, add the standard Skylight card to a Home Assistant dashboard.
+Open this add-on, select **Download Home Assistant dashboard card**, then paste
+it into **Edit dashboard → Add card → Manual**. The download fills in your actual
+entity IDs. It uses built-in cards with no custom resource or HACS dependency.
+
+The card includes **Correct recorded state**: **Panel is on/off** buttons and a
+**Scene I can see** selector. These native entities update assumed state without
+sending a command. Choose **Unknown** if you cannot identify the scene. They can
+also be added individually from the dashboard editor; no helper or automation
+is needed. They appear in the Skylight device's Configuration section.
+
 Power and the selected scene are tracked from sent commands and authenticated
 remote presses. A remote power press toggles the synchronized power state;
 each scene button updates the selected effect. Dim taps and holds update the

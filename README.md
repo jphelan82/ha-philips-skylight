@@ -42,6 +42,8 @@ their native entity IDs, integration settings, pairing and sequence Store.
 - Buttons: relative dim up/down and direct scene selection.
 - Ingress: controls, power synchronization, transmitter setup/reconfiguration,
   firmware download and explicit pairing.
+- Native state correction buttons and a recorded-scene selector, plus a
+  [reusable dashboard card](docs/DASHBOARD.md) using built-in Home Assistant controls.
 - Authenticated remote tracking for power, scenes and dim commands, with
   duplicate filtering per sender and exclusion of our own relayed commands.
 

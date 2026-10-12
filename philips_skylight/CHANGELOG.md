@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2
+
+- Native state correction entities: Record panel on/off buttons and a Recorded
+  scene selector. These update assumed state without transmitting BLE commands.
+- Reusable Skylight dashboard card built from standard Home Assistant controls.
+- Download a card with the installation's actual entity IDs, including renames.
+- Expose the recorded scene even while power is off or unknown.
+
 ## 0.2.1
 
 - Track power, scene selection and the last dim command from compatible external

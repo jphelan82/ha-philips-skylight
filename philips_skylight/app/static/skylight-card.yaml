@@ -1,0 +1,135 @@
+# Standard Home Assistant cards. Replace entity IDs if using this static copy.
+# The add-on's dashboard download resolves your actual entity IDs automatically.
+type: vertical-stack
+cards:
+  - type: heading
+    heading: Skylight
+    heading_style: title
+    icon: mdi:ceiling-light
+  - type: tile
+    entity: light.philips_skylight
+    name: Skylight
+    state_content: [state, assumed_effect]
+    tap_action: {action: more-info}
+    icon_tap_action: {action: more-info}
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: tile
+        entity: light.philips_skylight
+        name: Turn on
+        icon: mdi:power
+        hide_state: true
+        tap_action:
+          action: perform-action
+          perform_action: light.turn_on
+          target: {entity_id: light.philips_skylight}
+        icon_tap_action:
+          action: perform-action
+          perform_action: light.turn_on
+          target: {entity_id: light.philips_skylight}
+      - type: tile
+        entity: light.philips_skylight
+        name: Turn off
+        icon: mdi:power-off
+        hide_state: true
+        tap_action:
+          action: perform-action
+          perform_action: light.turn_off
+          target: {entity_id: light.philips_skylight}
+        icon_tap_action:
+          action: perform-action
+          perform_action: light.turn_off
+          target: {entity_id: light.philips_skylight}
+  - type: heading
+    heading: Scenes
+    heading_style: subtitle
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: tile
+        entity: button.philips_skylight_refresh
+        name: Refresh
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_refresh}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_refresh}}
+      - type: tile
+        entity: button.philips_skylight_energize
+        name: Energize
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_energize}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_energize}}
+      - type: tile
+        entity: button.philips_skylight_focus
+        name: Focus
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_focus}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_focus}}
+      - type: tile
+        entity: button.philips_skylight_relax
+        name: Relax
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_relax}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_relax}}
+      - type: tile
+        entity: button.philips_skylight_rest
+        name: Rest
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_rest}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_rest}}
+      - type: tile
+        entity: button.philips_skylight_auto_rhythm
+        name: Auto rhythm
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_auto_rhythm}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_auto_rhythm}}
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: tile
+        entity: button.philips_skylight_dim_down
+        name: Dim down
+        icon: mdi:brightness-4
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_dim_down}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_dim_down}}
+      - type: tile
+        entity: button.philips_skylight_dim_up
+        name: Dim up
+        icon: mdi:brightness-7
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_dim_up}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_dim_up}}
+  - type: heading
+    heading: Correct recorded state
+    heading_style: subtitle
+    icon: mdi:eye-check-outline
+  - type: markdown
+    content: >-
+      If the recorded state is wrong, look at the panel and record what you see
+      below. These controls **do not change the light**. Use them after a restart
+      or missed remote press. Brightness is relative and is not recorded.
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: tile
+        entity: button.philips_skylight_record_panel_on
+        name: Panel is on
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_record_panel_on}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_record_panel_on}}
+      - type: tile
+        entity: button.philips_skylight_record_panel_off
+        name: Panel is off
+        hide_state: true
+        tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_record_panel_off}}
+        icon_tap_action: {action: perform-action, perform_action: button.press, target: {entity_id: button.philips_skylight_record_panel_off}}
+  - type: tile
+    entity: select.philips_skylight_recorded_scene
+    name: Scene I can see
+    features:
+      - type: select-options

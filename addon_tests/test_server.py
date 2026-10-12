@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 from skylight_addon.ha import HAError
 from skylight_addon.server import Panel
 
@@ -108,3 +109,55 @@ async def test_stale_integration_blocks_controls_and_setup(panel):
     with pytest.raises(ValueError, match="Restart"):
         await panel.perform({"action": "toggle"})
     assert not panel.ha.calls
+
+
+async def test_dashboard_download_resolves_renamed_entities_and_keeps_corrections_local(
+    aiohttp_client, panel
+):
+    commands = [
+        "dim_down",
+        "dim_up",
+        "Refresh",
+        "Energize",
+        "Focus",
+        "Relax",
+        "Rest",
+        "Auto rhythm",
+        "record_panel_on",
+        "record_panel_off",
+    ]
+    panel.ha.registry = [
+        panel.ha.registry[0],
+        *[
+            {
+                "platform": "philips_skylight",
+                "unique_id": f"factory_mesh_7ffe_{command.lower().replace(' ', '_')}",
+                "entity_id": f"button.custom_{index}",
+            }
+            for index, command in enumerate(commands)
+        ],
+        {
+            "platform": "philips_skylight",
+            "unique_id": "factory_mesh_7ffe_recorded_scene",
+            "entity_id": "select.observed_scene",
+        },
+    ]
+    client = await aiohttp_client(panel.app())
+    response = await client.get("/api/dashboard-card")
+    assert response.status == 200
+    content = await response.text()
+    assert "light.renamed" in content
+    assert "select.observed_scene" in content
+    assert "button.philips_skylight" not in content
+    card = yaml.safe_load(content)
+    assert card["type"] == "vertical-stack"
+    # State correction targets the integration's native buttons/select, not
+    # light.turn_on/off, and the export itself does not call any service.
+    correction = card["cards"][-2]["cards"]
+    assert correction[0]["tap_action"]["target"]["entity_id"] == "button.custom_8"
+    assert correction[1]["tap_action"]["target"]["entity_id"] == "button.custom_9"
+    assert card["cards"][-1]["features"] == [{"type": "select-options"}]
+    assert not panel.ha.calls
+    panel.ha.registry[-1]["disabled_by"] = "user"
+    response = await client.get("/api/dashboard-card")
+    assert response.status == 400

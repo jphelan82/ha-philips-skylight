@@ -127,6 +127,16 @@ the native light entity without emitting further control calls. Unknown power
 and the captured repeat cadence for dim holds retain their existing behavior.
 Additional physical remotes have not been tested.
 
+## Native dashboard controls 0.2.2
+
+The real Home Assistant platform test registers the recorded-scene select and
+power correction buttons. It verifies both on and off observations, scene
+correction and clearing, remote-driven select updates, invalid-option rejection,
+and outage availability. Corrections do not add any transmit calls. The card
+export test resolves renamed entities, parses the standard card configuration,
+checks correction targets and rejects disabled entities. The local suites now
+contain 63 passing tests; the macOS platform runner retains its exit workaround.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store

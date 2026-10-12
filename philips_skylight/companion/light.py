@@ -45,6 +45,7 @@ class SkylightLight(SkylightEntity, LightEntity):
             "state_feedback": "assumed; panel does not report state",
             "last_command": self.controller.state.last_command,
             "power_synchronized": self.is_on is not None,
+            "assumed_effect": self.controller.state.effect,
         }
 
     async def async_set_assumed_power(self, is_on: bool) -> None:

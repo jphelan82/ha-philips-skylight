@@ -4,6 +4,7 @@ import asyncio
 import hmac
 import html
 import io
+import re
 import secrets
 import zipfile
 from pathlib import Path
@@ -15,6 +16,20 @@ from . import DOMAIN, VERSION
 from .ha import HAError
 
 EFFECTS = ("Refresh", "Energize", "Focus", "Relax", "Rest", "Auto rhythm")
+CARD_ENTITIES = {
+    "light.philips_skylight": "factory_mesh_7ffe_light",
+    "select.philips_skylight_recorded_scene": "factory_mesh_7ffe_recorded_scene",
+    **{
+        f"button.philips_skylight_{slug}": f"factory_mesh_7ffe_{slug}"
+        for slug in (
+            "dim_down",
+            "dim_up",
+            *(effect.lower().replace(" ", "_") for effect in EFFECTS),
+            "record_panel_on",
+            "record_panel_off",
+        )
+    },
+}
 
 
 class Panel:
@@ -84,7 +99,7 @@ class Panel:
             "entity_id": entity,
             "name": attributes.get("friendly_name", "Philips Skylight"),
             "state": state.get("state", "unknown") if self.ha.ready else "unavailable",
-            "effect": attributes.get("effect"),
+            "effect": attributes.get("assumed_effect", attributes.get("effect")),
             "last_command": attributes.get("last_command"),
             "power_synchronized": attributes.get("power_synchronized", False),
             "effects": list(EFFECTS),
@@ -207,12 +222,46 @@ class Panel:
             headers={"Content-Disposition": 'attachment; filename="skylight-proxy-firmware.zip"'},
         )
 
+    async def dashboard_card(self, request):
+        """Export built-in cards using registry IDs, including renamed entities."""
+        if not self.ha.ready or self.snapshot()["restart_required"]:
+            raise web.HTTPBadRequest(text="Wait for Home Assistant to load the updated integration")
+        card = (self.root / "static/skylight-card.yaml").read_text()
+        replacements = {}
+        for default, unique_id in CARD_ENTITIES.items():
+            entity = next(
+                (
+                    item["entity_id"]
+                    for item in self.ha.registry
+                    if item.get("platform") == DOMAIN
+                    and item.get("unique_id") == unique_id
+                    and not item.get("disabled_by")
+                ),
+                None,
+            )
+            if (
+                not entity
+                or not re.fullmatch(r"[a-z_]+\.[a-z0-9_]+", entity)
+                or entity.split(".")[0] != default.split(".")[0]
+            ):
+                raise web.HTTPBadRequest(text=f"Enable the Skylight control entity: {unique_id}")
+            replacements[default] = entity
+        # Replace once so a renamed entity that matches another default is safe.
+        pattern = re.compile(r"\b(?:" + "|".join(map(re.escape, replacements)) + r")\b")
+        card = pattern.sub(lambda match: replacements[match[0]], card)
+        return web.Response(
+            text=card,
+            content_type="application/yaml",
+            headers={"Content-Disposition": 'attachment; filename="skylight-card.yaml"'},
+        )
+
     def app(self):
         app = web.Application(middlewares=[self.access], client_max_size=8192)
         app.router.add_get("/", self.index)
         app.router.add_get("/api/status", self.status)
         app.router.add_post("/api/action", self.action)
         app.router.add_get("/api/firmware", self.firmware)
+        app.router.add_get("/api/dashboard-card", self.dashboard_card)
         app.router.add_get("/health", self.health)
         app.router.add_static("/static/", self.root / "static")
         return app

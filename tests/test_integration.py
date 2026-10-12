@@ -90,7 +90,12 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     ]
     assert len(lights) == 1
     entity_id = lights[0]
+    recorded_scene = registry.async_get_entity_id(
+        "select", DOMAIN, "factory_mesh_7ffe_recorded_scene"
+    )
+    assert recorded_scene
     assert hass.states.get(entity_id).state == "unknown"
+    assert hass.states.get(recorded_scene).state == "Unknown"
     await hass.services.async_call(
         DOMAIN, "set_assumed_power", {"entity_id": entity_id, "is_on": False}, blocking=True
     )
@@ -99,6 +104,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     )
     assert hass.states.get(entity_id).state == "on"
     assert hass.states.get(entity_id).attributes["effect"] == "Focus"
+    assert hass.states.get(recorded_scene).state == "Focus"
     assert len(calls) == 2
     # Own packets relayed by the panel must not toggle an already updated entity.
     hass.bus.async_fire(RECEIVE_EVENT, {"raw": calls[0].data["raw"]})
@@ -120,6 +126,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             assert state.attributes["last_command"] == command
             if command in EFFECTS:
                 assert state.attributes["effect"] == command
+                assert hass.states.get(recorded_scene).state == command
             # Receiving a relay copy does not alter the entity a second time.
             hass.bus.async_fire(RECEIVE_EVENT, {"raw": raw})
             await hass.async_block_till_done()
@@ -141,9 +148,47 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         )
     assert len(calls) == 32
     assert hass.states.get(entity_id).state == "unknown"
+    assert hass.states.get(recorded_scene).state == "Unknown"
+    # Native dashboard correction entities update only the recorded state.
+    for is_on in (True, False):
+        power = "on" if is_on else "off"
+        sync_button = registry.async_get_entity_id(
+            "button", DOMAIN, f"factory_mesh_7ffe_record_panel_{power}"
+        )
+        assert sync_button
+        await hass.services.async_call("button", "press", {"entity_id": sync_button}, blocking=True)
+        assert hass.states.get(entity_id).state == power
+        await hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": recorded_scene, "option": "Rest"},
+            blocking=True,
+        )
+        assert hass.states.get(recorded_scene).state == "Rest"
+        assert hass.states.get(entity_id).attributes["assumed_effect"] == "Rest"
+        assert hass.states.get(entity_id).state == power
+        await hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": recorded_scene, "option": "Unknown"},
+            blocking=True,
+        )
+        assert hass.states.get(recorded_scene).state == "Unknown"
+        assert hass.states.get(entity_id).attributes["assumed_effect"] is None
+        assert len(calls) == 32
+    with pytest.raises(HomeAssistantError, match="not valid"):
+        await hass.services.async_call(
+            "select",
+            "select_option",
+            {"entity_id": recorded_scene, "option": "invalid"},
+            blocking=True,
+        )
+    assert hass.states.get(recorded_scene).state == "Unknown"
+    assert len(calls) == 32
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"
+    assert hass.states.get(recorded_scene).state == "unavailable"
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "esphome-web-ece638")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unknown"
