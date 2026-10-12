@@ -1,92 +1,123 @@
 # Philips Skylight for Home Assistant
 
-A Home Assistant add-on for local Philips Skylight power, scenes, relative
-dimming, pairing and setup through an ESPHome Bluetooth proxy.
+Control your Philips Skylight from a Home Assistant dashboard: toggle power,
+choose a mode, and dim or brighten the panel. Your original remote can still be
+used, and received remote presses update Home Assistant's recorded state.
 
-**No MQTT broker or cloud account is required.** The add-on installs a bundled
-native integration that exposes `light.philips_skylight` and scene/dim buttons.
-Its authenticated ingress panel manages setup and controls through the native
-Home Assistant API. The integration owns the BLE protocol and durable sequence
-counter; the add-on does not create a second transmitter.
+The add-on uses an ESPHome Bluetooth proxy. **No MQTT broker, cloud account,
+custom dashboard card, or additional Bluetooth adapter is required.**
 
-Physically verified after transmitter pairing: power off/on, Rest/Energize scene
-switching, relative dimming, and continued original remote control.
+## What you need
 
-## Install
+- Home Assistant OS or Supervised, with Core 2026.6 or newer.
+- A Philips Skylight panel. The NatureConnect/BioUp 17.7 × 25.6 inch model has
+  been tested; other models have not yet been verified.
+- An ESPHome Bluetooth proxy configured to send Skylight commands. The add-on
+  provides the firmware configuration if your proxy needs updating. Firmware
+  has been tested with an ESP32-C3 and ESPHome 2026.4.5.
 
-Requires Home Assistant OS/Supervised, Core 2026.6+, and an ESPHome advertising
-proxy. Firmware is tested on ESP32-C3 with ESPHome 2026.4.5.
+For Home Assistant Container or Core installations without add-on support,
+see the [integration-only installation guide](docs/INTEGRATION.md).
 
-1. Add this repository to Settings → Apps/Add-ons → Store → Repositories:
+Multiple compatible panels within radio range may respond together; independent
+control of individual nearby panels is not supported.
+
+## Install and set up
+
+1. In Home Assistant, open **Settings → Apps → App store → Repositories**
+   (called **Add-ons** on older versions). Add:
    `https://github.com/jphelan82/ha-philips-skylight`.
-2. Install **Philips Skylight**, start it, and open its web UI.
-3. If prompted, restart Home Assistant to activate the bundled integration.
-4. Select your advertising proxy in **Transmitter setup**. The panel provides
-   downloadable firmware configuration for a proxy that needs the advertising
-   component. Compile/install it through ESPHome Device Builder.
-5. Synchronize the panel's current power. If commands are ignored, follow the
-   explicit transmitter-pairing procedure in the panel.
+2. Install **Philips Skylight**, enable **Start on boot**, start it, and open
+   its web UI.
+3. If the add-on asks you to restart Home Assistant, do so to activate the
+   light integration.
+4. If your proxy needs the Skylight firmware, download the configuration from
+   the add-on and install it with ESPHome Device Builder. Follow the
+   [detailed proxy setup instructions](philips_skylight/DOCS.md#installation),
+   preserving the proxy's existing Wi-Fi, API and OTA settings.
+5. In the proxy's ESPHome integration options, enable **Allow the device to
+   perform Home Assistant actions** so remote presses can be received.
+6. In the add-on's **Transmitter setup**, select the advertising action and
+   **BLE Adv Proxy Name** sensor from the same proxy, then save.
 
-The repository must contain this release before repository installation will
-work. Until then, copy the `philips_skylight` folder into HA's `/addons` directory,
-reload the store, and install it from **Local apps/add-ons**.
+Repository installation requires a published add-on on the repository's default
+branch and access to that repository. If the add-on is not yet available in the
+store, use the [local development installation](docs/PROTOCOL.md#development-installation).
 
-See [add-on documentation](philips_skylight/DOCS.md) for firmware, installation,
-permissions, pairing, recovery and removal. Existing users of the prototype keep
-their native entity IDs, integration settings, pairing and sequence Store.
+If you already use the Philips Skylight integration, the add-on keeps your
+existing light, settings and pairing. You do not need to pair again unless
+commands are ignored.
 
-## Controls and state
+## Add the Skylight dashboard card
 
-- Native light: power and six effects (Refresh, Energize, Focus, Relax, Rest,
-  Auto rhythm).
-- Buttons: relative dim up/down and direct scene selection.
-- Ingress: controls, power synchronization, transmitter setup/reconfiguration,
-  firmware download and explicit pairing.
-- Native state correction buttons and a recorded-scene selector, plus a
-  [reusable dashboard card](docs/DASHBOARD.md) using built-in Home Assistant controls.
-- Authenticated remote tracking for power, scenes and dim commands, with
-  duplicate filtering per sender and exclusion of our own relayed commands.
+1. In the add-on's web UI, select **Download Home Assistant dashboard card**.
+2. Open your preferred dashboard, select **Edit dashboard → Add card → Manual**.
+3. Paste the downloaded configuration and save.
 
-The panel reports no physical status. Power is assumed from commands and remote
-presses. Synchronize it after a Core/proxy restart, panel mains cycle, outage or
-missed press. The dim increment is not measured, so no absolute brightness or
-color-temperature slider is exposed. Same-state on/off requests do nothing;
-uncertain toggle requests are never automatically retried.
+The download fills in your actual entity IDs, including renamed entities. The
+card uses standard Home Assistant controls, so no HACS card or dashboard
+resource needs to be installed. See the [dashboard guide](docs/DASHBOARD.md)
+for customization and adding individual controls.
 
-The transmitter uses `0x7FFE`, while the original remote uses `0x7FFF`. Keep the
-native integration's sequence Store across removal/reinstallation; never reset
-or restore an older counter or run a second sender with that address. Matching
-factory-key panels in range can all respond. Only one factory-network setup is
-supported.
+## Everyday controls
 
-## Development
+| Control | What it does |
+|---|---|
+| Power tile | Toggles the physical panel once, like the remote's power button. |
+| Mode buttons | Select Refresh, Energize, Focus, Relax, Rest or Auto rhythm. |
+| Dim down / Dim up | Dim or brighten by one relative step per tap. |
+| Correct recorded state | Opens a separate panel for recording what you can see. |
 
-The native integration in `custom_components/philips_skylight` and firmware in
-`esphome` are canonical. `python tools/sync_addon.py` bundles them into the add-on's
-self-contained Docker build context; `--check` verifies the bundle without edits.
-CI checks source parity, runs software tests and builds amd64/aarch64 containers.
-Container publishing is a separate release step; the add-on currently supports
-Supervisor source builds.
+The recorded mode has a **blue icon**; the other mode icons are gray. This shows
+Home Assistant's record, rather than a status reported by the light.
 
-Use Python 3.14 for the complete HA test suite. The add-on alone can be tested
-on Python 3.12 with `pytest addon_tests` and its HTTP/test dependencies installed.
+Holding a dashboard dim button does **not** continuously dim the panel. The
+receiver recognizes the physical remote's held dim commands. An absolute
+brightness slider and color-temperature controls are not available.
 
-```sh
-python -m pip install homeassistant==2026.6.0 pytest pytest-asyncio pytest-aiohttp ruff
-python tools/sync_addon.py --check
-python -m pytest -q
-ruff check .
-```
+## When the state is unknown or incorrect
 
-Tests cover captured protocol authentication, sequence reservations, HA entities
-and reconfiguration, installer rollback, ingress/session access and native API
-reconnects. The macOS Python 3.14 finalization caveat and physical checks are in
-[validation notes](docs/VALIDATION.md).
+The Skylight does not report whether it is on or off. Home Assistant tracks
+commands and received remote presses, so its record can become incorrect after
+a restart, proxy outage, mains power cycle or missed press. **Unknown** means
+Home Assistant needs a starting power state; it does not mean the light is off.
 
-The native integration remains usable independently through manual installation
-or HACS; see [integration-only instructions](docs/INTEGRATION.md).
+1. Select **Correct recorded state** at the bottom of the dashboard card.
+2. Look at the physical panel and select **Panel is on** or **Panel is off**.
+3. Select the mode you can see, or **Mode unknown** if you cannot identify it.
+4. Select **Done** to return to normal controls.
 
-Protocol research: [decoded commands](docs/PROTOCOL.md). The firmware adapts
-[NicoIIT's MIT-licensed BLE advertising component](https://github.com/NicoIIT/esphome-ble_adv_proxy),
-retaining its license and attribution. Our adaptation uses non-connectable Mesh
-advertisements and GAP completion callbacks. See its [component notes](esphome/components/ble_adv_proxy/README.md).
+These choices **only update Home Assistant's record; they do not change the
+physical light**. Received remote power and mode presses then keep the record
+current. Repeat these steps whenever the record no longer matches the panel.
+
+## Pair only if commands are ignored
+
+If the proxy is connected but commands have no effect:
+
+1. Open **Pair this transmitter** in the add-on's web UI.
+2. Switch the Skylight's mains power off and back on.
+3. Confirm that you are ready, then select **Send pairing request** promptly.
+4. Wait about ten seconds. The panel should blink. Check the light and the
+   original remote afterward, then correct the recorded state.
+
+The original remote continued working on the tested panel. Pairing behavior
+may differ on other models and may require pairing the original remote again.
+Pairing is never performed automatically.
+
+## Troubleshooting
+
+| Problem | What to check |
+|---|---|
+| Add-on not listed in the store | Confirm repository access and that an add-on release is published; otherwise use the local installation linked above. |
+| No transmitter appears | Install the supplied proxy firmware and wait for the proxy to reconnect. |
+| Remote presses do not update the card | Check the proxy's permission to perform Home Assistant actions and its reception range, then correct the recorded state. |
+| Card shows Unknown or the wrong power/mode | Use **Correct recorded state** and record the physical panel's current state. |
+| Card download reports a missing control | Keep the Skylight's configuration entities enabled in **Settings → Devices & services**. |
+| Commands have no physical effect | Check the proxy connection, then try the explicit pairing procedure above. |
+| An update asks for a restart | Restart Home Assistant from the add-on's web UI, then correct the recorded state. |
+
+For add-on options, recovery and removal, see the
+[full add-on documentation](philips_skylight/DOCS.md). Protocol research,
+implementation details and developer instructions are in the separate
+[protocol document](docs/PROTOCOL.md).

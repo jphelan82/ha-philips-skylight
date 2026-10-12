@@ -34,10 +34,10 @@ native API credential.
 6. Check the actual panel and use **It is on** or **It is off** to synchronize
    power. HA's standard light controls, effects and dim buttons are now available.
 
-For this owner's existing installation, setup and pairing are already complete.
-Installing the add-on preserves `light.philips_skylight` and the eight buttons.
-The add-on is a manager/UI for that native integration; it does not introduce a
-second BLE transmitter or a second sequence counter.
+If you already use the Philips Skylight integration, the add-on preserves your
+existing entities, transmitter setup and pairing. Repeat pairing only if the
+panel ignores commands. The add-on manages the same integration and does not
+introduce a second transmitter or sequence counter.
 
 ## Pairing
 

@@ -1,5 +1,9 @@
 # Philips Skylight: Bluetooth Mesh protocol
 
+This document contains protocol research, implementation notes and developer
+instructions moved out of the README files. For installation and everyday use,
+start with the [end-user README](../README.md).
+
 The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7 x 25.6 in). Philips sells it as remote-only: no app, no Hue, no Matter, no Wi-Fi. Inside, it runs standard Bluetooth Mesh, and its remote uses factory-default keys. This file records what we decoded on 2026-10-12, so Home Assistant can send the same commands as the remote.
 
 ## The hardware
@@ -85,3 +89,81 @@ Home Assistant's `bluetooth/subscribe_advertisements` feed does not help. It sen
 
 - `tools/meshdec.py` decrypts a capture log. Run `uv run --with cryptography python meshdec.py 11111111111111111111111111111111 capture-2026-10-12.log`.
 - `tools/capture-2026-10-12.log` holds the raw mesh adverts from the session, with the panel's constant beacon removed.
+
+## Implementation and packaging
+
+The Home Assistant add-on installs and manages the bundled native integration.
+The integration owns command encoding, authenticated reception and the durable
+Mesh sequence counter. The add-on uses Home Assistant's native API and does not
+create another transmitter or counter. Its Supervisor ingress panel handles
+setup, firmware downloads and explicit pairing. The dashboard uses standard
+Home Assistant cards and native light, button, select and switch entities.
+
+The light supports the six captured effects and relative dim commands. Separate
+on/off BLE commands remain unverified: HA's normal on/off actions decide whether
+to send the captured toggle using synchronized power. Same-state requests do
+nothing; uncertain toggle requests are never automatically retried. The panel
+provides no status feedback, and an exact dim increment remains unmeasured.
+
+Existing integration users retain their entity IDs, config entry, pairing and
+sequence Store. Power/effect assumptions are invalidated on restart or proxy
+outage. State-correction entities change only those assumptions; the view switch
+changes only the dashboard mode. Neither path transmits a BLE command.
+
+Retain the sequence Store across removal or reinstallation. Never reset it,
+restore an older counter, or run another sender using `0x7FFE`. Matching factory-key
+panels within radio range may all respond; only one factory-network integration
+is supported. Permissions, code backup/rollback and removal procedures are in
+the [add-on documentation](../philips_skylight/DOCS.md).
+
+Power off/on, Rest/Energize scene changes, relative dimming and original remote
+coexistence were physically verified after pairing. Keep that evidence separate
+from broader software coverage; see the [validation record](VALIDATION.md).
+
+The firmware adapts
+[NicoIIT's MIT-licensed BLE advertising component](https://github.com/NicoIIT/esphome-ble_adv_proxy),
+retaining its license and attribution. It uses non-connectable Mesh advertisements,
+GAP completion callbacks and a 20 ms advertising interval. Its upstream commit
+and local transport changes are recorded in the
+[component notes](../esphome/components/ble_adv_proxy/README.md).
+
+## Development installation
+
+Supervisor repository installation needs an accessible repository with the
+add-on release on its default branch. Before publishing a release, copy the
+`philips_skylight` folder from this checkout to Home Assistant's `/addons`
+directory, reload the app store, and install **Philips Skylight** from
+**Local apps/add-ons**. The add-on currently uses Supervisor source builds;
+publishing prebuilt container images is a separate release step.
+
+The native integration can also be installed independently through manual
+installation or HACS; see the [integration-only guide](INTEGRATION.md).
+
+## Source layout and developer checks
+
+The native integration in `custom_components/philips_skylight` and the firmware
+in `esphome` are canonical. `tools/dashboard_card.py` generates the standard
+dashboard card. Run `python tools/sync_addon.py` to generate the card and bundle
+the integration and firmware into the add-on's self-contained build context.
+Its `--check` option verifies parity without modifying files.
+
+Use Python 3.14 for the complete Home Assistant suite:
+
+```sh
+python -m pip install homeassistant==2026.6.0 pytest pytest-asyncio pytest-aiohttp ruff
+python tools/sync_addon.py --check
+python -m pytest -q
+ruff check .
+```
+
+The Home Assistant dependency supplies PyYAML for card generation; it is also
+declared in the project's development test extras. The add-on runtime does not
+need PyYAML. Add-on-only tests can run on Python 3.12 with `pytest addon_tests`
+when their HTTP/test dependencies are installed.
+
+CI checks generated card and bundle consistency, tests the software on Linux,
+and builds amd64/aarch64 containers. Tests cover real remote capture authentication,
+sequence reservations, native HA entities and reconfiguration, state-only
+correction, safe dashboard action targets, installer rollback, ingress/session
+access and native API reconnects. The macOS Python 3.14 interpreter-finalization
+caveat and physical acceptance results are in the [validation notes](VALIDATION.md).
