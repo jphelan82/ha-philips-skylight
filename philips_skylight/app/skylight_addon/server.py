@@ -19,6 +19,7 @@ EFFECTS = ("Refresh", "Energize", "Focus", "Relax", "Rest", "Auto rhythm")
 CARD_ENTITIES = {
     "light.philips_skylight": "factory_mesh_7ffe_light",
     "select.philips_skylight_recorded_scene": "factory_mesh_7ffe_recorded_scene",
+    "switch.philips_skylight_state_correction": "factory_mesh_7ffe_state_correction",
     **{
         f"button.philips_skylight_{slug}": f"factory_mesh_7ffe_{slug}"
         for slug in (

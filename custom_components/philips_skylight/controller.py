@@ -22,6 +22,7 @@ class SkylightController:
         self.service = data[CONF_TRANSMIT_SERVICE]
         self.codec = MeshCodec()
         self.state = AssumedState()
+        self.state_correction = False
         self.remote = RemoteTracker()
         self.sequence = SequenceAllocator(Store(hass, 1, STORAGE_KEY))
         self.lock = asyncio.Lock()

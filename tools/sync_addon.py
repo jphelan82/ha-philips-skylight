@@ -4,6 +4,8 @@ import argparse
 import shutil
 from pathlib import Path
 
+from dashboard_card import OUTPUT, rendered_card
+
 ROOT = Path(__file__).resolve().parents[1]
 PAIRS = (
     (ROOT / "custom_components/philips_skylight", ROOT / "philips_skylight/companion"),
@@ -27,6 +29,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
+    card = rendered_card()
+    if args.check:
+        if OUTPUT.read_text() != card:
+            raise SystemExit("Dashboard card differs from its generator")
+    else:
+        OUTPUT.write_text(card)
     for source, destination in PAIRS:
         files = sources(source)
         if args.check:

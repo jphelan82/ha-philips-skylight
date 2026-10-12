@@ -185,10 +185,28 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         )
     assert hass.states.get(recorded_scene).state == "Unknown"
     assert len(calls) == 32
+    correction_mode = registry.async_get_entity_id(
+        "switch", DOMAIN, "factory_mesh_7ffe_state_correction"
+    )
+    assert correction_mode
+    assert hass.states.get(correction_mode).state == "off"
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": correction_mode}, blocking=True
+    )
+    assert hass.states.get(correction_mode).state == "on"
+    assert hass.states.get(entity_id).state == "off"
+    assert hass.states.get(recorded_scene).state == "Unknown"
+    assert len(calls) == 32
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"
     assert hass.states.get(recorded_scene).state == "unavailable"
+    assert hass.states.get(correction_mode).state == "on"
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": correction_mode}, blocking=True
+    )
+    assert hass.states.get(correction_mode).state == "off"
+    assert len(calls) == 32
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "esphome-web-ece638")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unknown"
@@ -202,6 +220,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert result["reason"] == "reconfigure_successful"
     await hass.async_block_till_done()
     assert entry.title == "Renamed Skylight"
+    assert hass.states.get(correction_mode).state == "off"
     assert registry.async_get(entity_id).config_entry_id == entry.entry_id
     controller = hass.data[DOMAIN][entry.entry_id]
     assert await controller.sequence.async_next() == 256

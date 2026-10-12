@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .controller import SkylightController
 
-PLATFORMS = [Platform.LIGHT, Platform.BUTTON, Platform.SELECT]
+PLATFORMS = [Platform.LIGHT, Platform.BUTTON, Platform.SELECT, Platform.SWITCH]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3
+
+- One power toggle on the dashboard, matching the verified BLE power command.
+- Selected mode icons are blue; other mode icons are gray.
+- Correct recorded state opens a separate panel where power and mode choices
+  record observations without sending commands. Done restores normal controls.
+- Native State correction switch controls the view and resets off after reload.
+
 ## 0.2.2
 
 - Native state correction entities: Record panel on/off buttons and a Recorded

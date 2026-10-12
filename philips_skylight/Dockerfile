@@ -1,5 +1,5 @@
 FROM ghcr.io/home-assistant/base:3.23
-ARG BUILD_VERSION=0.2.2
+ARG BUILD_VERSION=0.2.3
 ARG BUILD_ARCH
 LABEL io.hass.version="${BUILD_VERSION}" \
       io.hass.type="app" \

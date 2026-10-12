@@ -141,6 +141,11 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
             "unique_id": "factory_mesh_7ffe_recorded_scene",
             "entity_id": "select.observed_scene",
         },
+        {
+            "platform": "philips_skylight",
+            "unique_id": "factory_mesh_7ffe_state_correction",
+            "entity_id": "switch.edit_panel",
+        },
     ]
     client = await aiohttp_client(panel.app())
     response = await client.get("/api/dashboard-card")
@@ -151,12 +156,57 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
     assert "button.philips_skylight" not in content
     card = yaml.safe_load(content)
     assert card["type"] == "vertical-stack"
-    # State correction targets the integration's native buttons/select, not
-    # light.turn_on/off, and the export itself does not call any service.
-    correction = card["cards"][-2]["cards"]
-    assert correction[0]["tap_action"]["target"]["entity_id"] == "button.custom_8"
-    assert correction[1]["tap_action"]["target"]["entity_id"] == "button.custom_9"
-    assert card["cards"][-1]["features"] == [{"type": "select-options"}]
+    assert "switch.edit_panel" in content
+
+    def walk(value):
+        if isinstance(value, dict):
+            yield value
+            for child in value.values():
+                yield from walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from walk(child)
+
+    normal, correction = card["cards"][1:]
+    assert normal["conditions"] == [
+        {"condition": "state", "entity": "switch.edit_panel", "state_not": "on"}
+    ]
+    assert correction["conditions"] == [
+        {"condition": "state", "entity": "switch.edit_panel", "state": "on"}
+    ]
+    normal_actions = [item for item in walk(normal) if "perform_action" in item]
+    assert "light.toggle" in {item["perform_action"] for item in normal_actions}
+    assert not {"light.turn_on", "light.turn_off"} & {
+        item["perform_action"] for item in normal_actions
+    }
+    # Correction view has no physical controls; only the two record buttons,
+    # the scene-recording select, and a switch for returning to normal controls.
+    correction_actions = [item for item in walk(correction) if "perform_action" in item]
+    assert {item["perform_action"] for item in correction_actions} == {
+        "button.press",
+        "select.select_option",
+        "switch.turn_off",
+    }
+    assert {
+        item["target"]["entity_id"]
+        for item in correction_actions
+        if item["perform_action"] == "button.press"
+    } == {"button.custom_8", "button.custom_9"}
+    for effect in ("Refresh", "Energize", "Focus", "Relax", "Rest", "Auto rhythm"):
+        choices = [
+            item
+            for item in walk(normal)
+            if item.get("type") == "conditional"
+            and any(
+                condition.get("entity") == "select.observed_scene"
+                and effect in (condition.get("state"), condition.get("state_not"))
+                for condition in item["conditions"]
+            )
+        ]
+        assert len(choices) == 2
+        for choice in choices:
+            selected = "state" in choice["conditions"][0]
+            assert choice["card"]["color"] == ("blue" if selected else "grey")
     assert not panel.ha.calls
     panel.ha.registry[-1]["disabled_by"] = "user"
     response = await client.get("/api/dashboard-card")

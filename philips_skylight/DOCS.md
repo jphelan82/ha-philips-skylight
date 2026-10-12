@@ -58,11 +58,16 @@ Open this add-on, select **Download Home Assistant dashboard card**, then paste
 it into **Edit dashboard → Add card → Manual**. The download fills in your actual
 entity IDs. It uses built-in cards with no custom resource or HACS dependency.
 
-The card includes **Correct recorded state**: **Panel is on/off** buttons and a
-**Scene I can see** selector. These native entities update assumed state without
-sending a command. Choose **Unknown** if you cannot identify the scene. They can
+The card has one power toggle and highlights the recorded mode in blue; other
+modes are gray. **Correct recorded state** at the bottom replaces the normal
+controls with **Panel is on/off** and mode choices. These update assumed state
+without sending a command. Choose **Mode unknown** if you cannot identify the
+scene, then **Done** to return to normal controls. The underlying native entities can
 also be added individually from the dashboard editor; no helper or automation
 is needed. They appear in the Skylight device's Configuration section.
+
+The physical remote's held dim packets are recognized. Dashboard dim buttons
+send one relative step per tap; holding a tile does not continuously dim.
 
 Power and the selected scene are tracked from sent commands and authenticated
 remote presses. A remote power press toggles the synchronized power state;
