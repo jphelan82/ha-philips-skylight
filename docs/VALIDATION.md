@@ -348,6 +348,20 @@ Deployed on 2026-10-13 with integration 0.3.2.
   owner chose the icon and the order of the icon row from it. The dashboard was
   then deleted.
 
+## Add-on 0.4.0
+
+Deployed on 2026-10-13, with `aiohttp` 3.14.4 and integration 0.3.2. No Home
+Assistant restart was needed.
+
+- The add-on tests passed with `aiohttp` 3.14.4 in a separate environment
+  before the merge.
+- The page follows the open theme. In the dark theme, the page frame carried
+  Home Assistant's `#009ac7`, `#111111` and `#1c1c1c`, read from the theme.
+- **Needs attention** warned that the test proxy has no API encryption key.
+- The test proxy has the Skylight parts written into its YAML, from before the
+  package existed. So the page showed no firmware step, as designed. The test
+  proxy still runs firmware that forwards every advert.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store

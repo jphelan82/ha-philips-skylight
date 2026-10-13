@@ -92,6 +92,12 @@ needs you.
 The page shows a step only when its part changed. An update never needs a new
 pairing, and it keeps your settings and the command counter.
 
+Firmware updates cover proxies whose YAML includes
+`skylight: !include skylight-transmitter.yaml`, which is what **Add Skylight
+firmware** sets up. A proxy with the Skylight parts written straight into its
+YAML gets no firmware steps on the page. Replace those parts with the package
+line to get them.
+
 The proxy reports its firmware number as the **Skylight firmware** diagnostic
 sensor. Firmware from before add-on 0.4.0 has no number, so the page asks for
 one install after the update to 0.4.0.
