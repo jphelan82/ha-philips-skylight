@@ -1,17 +1,45 @@
 # Changelog
 
-## 0.2.9
+## 0.3.0
 
-- Native integration 0.2.8: a proxy reconnect within 60 seconds keeps the
-  recorded power and mode. Before, every reconnect reset them to unknown, even
-  one that lasted a fraction of a second. A longer outage still resets them,
-  because nobody hears a remote press during it. This update
-  needs a Core restart.
-- Firmware package: `wifi: post_connect_roaming: false`. ESPHome's roaming
-  scan every five minutes switched the tested proxy between access points all
-  day. Each switch broke the Home Assistant connection for up to about 45
-  seconds without Home Assistant noticing, and commands sent then were lost.
-  Install the updated package on the proxy to get this.
+Setup
+- The add-on page is a setup checklist. Each step gets a ✓ when it is done.
+- **Add Skylight firmware** copies the firmware package into your ESPHome
+  folder and adds its line to the proxy's YAML, with a backup of each file.
+  You then install it in ESPHome Device Builder with one click.
+- With one compatible proxy, the add-on connects it without asking.
+- **Allow** turns on the proxy's remote tracking setting. The page shows
+  whether it is on.
+- Pairing uses a 90-second window. Select **Start pairing**, then switch the
+  panel's power off and on at its light switch or breaker. The panel blinks.
+  **Done** ends the window early. Nobody needs to be at the screen and the
+  switch at the same time. The integration's **Configure** dialog and
+  **Unpair all remotes** use the same window, and the dialog no longer freezes.
+- After pairing, a power toggle tests it, and your answer records the real
+  power. Then you choose a mode, so Home Assistant knows the mode too.
+- After setup, the page shows the recorded state, controls and a short
+  **Settings and fixes** list. The page follows the device's dark mode.
+
+Cards and controls
+- The card follows the remote's layout: the power tile, then Auto rhythm,
+  Refresh, Energize, Focus, Relax and Rest, then dimming. Each control uses the
+  remote's icon, and the recorded mode lights up in the remote's dot color.
+  **Rhythm start** and **Correct state** share one row.
+- Press-and-hold dimming. On the add-on page, holding a dim button sends the
+  remote's hold command every 0.6 seconds until you let go. On a card, a hold
+  dims for about 3 seconds. The new `philips_skylight.dim` action takes a
+  direction and an optional hold time.
+- The integration's buttons use the same icons as the card.
+
+Reliability
+- A proxy reconnect within 60 seconds keeps the recorded power and mode. A
+  longer outage still clears them.
+- Firmware package: `wifi: post_connect_roaming: false`. ESPHome's roaming scan
+  every five minutes switched the tested proxy between access points all day.
+  Each switch broke the Home Assistant connection for up to about 45 seconds,
+  and commands sent then were lost. Install the updated firmware on the proxy.
+
+Native integration 0.3.0 needs a Home Assistant restart.
 
 ## 0.2.8
 

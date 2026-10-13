@@ -28,16 +28,16 @@ This is an experimental project. Please read these limits before you install it.
   When that happens, you look at the panel and tell Home Assistant what you see.
 - **Power is a toggle.** The panel has one on/off command, not separate on and
   off commands. If Home Assistant thinks the light is on when it is off, then
-  "turn on" does nothing, and "turn off" turns it on.
+  "turn on" does nothing, and "turn off" turns it on. A mode button always
+  leaves the panel on, in that mode.
 - **It supports one Skylight.** It was built and tested with one panel.
   Support for several panels is not built yet. A panel obeys only the senders
   it has paired with. So any panel that paired with Home Assistant responds to
   its commands, and a second panel paired the same way responds too. Home
   Assistant also tracks every compatible remote it hears, so a second panel's
   remote changes the recorded state.
-- **Dimming is up or down by one step.** No brightness slider or color
-  temperature control exists. Holding a dashboard dim button does not keep
-  dimming. Only the physical remote does that.
+- **Dimming is relative.** Each tap is one step darker or brighter. No
+  brightness slider or color temperature control exists.
 - **It is tested on one setup.** One owner tested it with the NatureConnect/BioUp
   17.7 × 25.6 inch panel and an ESP32-C3 proxy. Other models are unknown.
 - **The add-on needs Home Assistant OS or Supervised.** For Container or Core
@@ -47,12 +47,24 @@ If you want a dependable on/off status for automations, this project cannot
 give you one. If you want a remote on your phone and in your dashboard, it
 does that well.
 
+## Wall switches
+
+Leave the panel's wall switch on. Control the panel with its remote, its wall
+remote, or Home Assistant. A wall switch cuts the power without telling Home
+Assistant, so the recorded state goes wrong. You need the wall switch or the
+breaker only for pairing.
+
+If the panel's power runs through a **smart** wall switch in Home Assistant, you
+can keep the record in step with an automation. When the switch turns off,
+press **Record panel off**. When the switch turns back on, record what the panel
+does when its power returns.
+
 ## What you need
 
 - Home Assistant OS or Supervised, version 2026.6 or newer.
 - A Philips Skylight panel.
-- An ESPHome Bluetooth proxy near the panel. The add-on gives you the firmware
-  package to add to it. ESPHome 2026.4.5 or newer.
+- An ESPHome Bluetooth proxy near the panel, set up in ESPHome Device Builder.
+  ESPHome 2026.4.5 or newer.
 
 ## Install
 
@@ -61,20 +73,23 @@ does that well.
    `https://github.com/jphelan82/ha-philips-skylight`.
 2. Install **Philips Skylight**. Turn on **Start on boot**, start it, and open
    its web page.
-3. If the add-on asks you to restart Home Assistant, restart it.
-4. Follow the steps on the add-on page:
-   - **Prepare your proxy.** If the add-on finds no compatible proxy, download
-     the ESPHome package and add one `packages` line to your proxy's YAML. Keep
-     your Wi-Fi, API and board settings. The [package guide](esphome/README.md)
-     has the details.
-   - **Choose your proxy** and save. If you have one compatible proxy, the
-     add-on selects it for you.
-   - **Allow remote tracking.** In the proxy's ESPHome integration options,
-     turn on **Allow the device to perform Home Assistant actions**. Without
-     it, Home Assistant cannot hear your remote.
-   - **Pair the transmitter** (first setup only). See [Pairing](#pairing).
-   - **Record the starting state.** Look at the panel and tell Home Assistant
-     whether it is on or off. See [Tell Home Assistant what you see](#tell-home-assistant-what-you-see).
+3. If the page asks you to restart Home Assistant, select **Restart Home
+   Assistant**.
+4. Follow the setup checklist on the page. Each step gets a ✓ when it is done.
+   1. **Prepare your Bluetooth proxy.** Choose your proxy and select **Add
+      Skylight firmware**. The add-on copies the firmware files into your
+      ESPHome folder and adds one line to the proxy's YAML. It keeps a backup.
+      Then install it in ESPHome Device Builder: open the proxy, then **⋮ →
+      Install → Wirelessly**. The page continues by itself when the proxy is
+      back. A proxy that already has the firmware skips this step.
+   2. **Connect Home Assistant to the proxy.** With one compatible proxy, the
+      add-on does this by itself. With several, choose one.
+   3. **Let Home Assistant hear your remote.** Select **Allow**. This turns on
+      the proxy's setting **Allow the device to perform Home Assistant actions**.
+   4. **Pair Home Assistant with the panel.** See [Pairing](#pairing). Then
+      select **Switch the panel on or off**, and say what the panel did.
+      Finally, choose a mode. The panel switches on in that mode, so Home
+      Assistant knows its state.
 5. Optional: create a Skylight dashboard, or add the Skylight card to one of
    your dashboards. You can also use the entities in your own cards.
 
@@ -86,25 +101,28 @@ settings and pairing. You do not need to pair again.
 
 ## Pairing
 
-The panel ignores a new transmitter until you pair it. Pairing is a one-time
-step. Updates do not need it.
+The panel ignores Home Assistant until you pair it. Pairing is a one-time step.
+Updates do not need it. Your other remotes stay paired.
 
-1. Open **Pair the transmitter on first setup** in the add-on.
-2. Switch the panel's mains power off, then on again.
-3. Tick the confirmation box and select **Send pairing request** straight away.
-4. Wait about ten seconds. The panel blinks.
-5. Check that the panel and your original remote both work.
-6. Record the starting state again.
+1. Select **Start pairing**. Home Assistant repeats the pairing request for 90
+   seconds.
+2. Within those 90 seconds, switch the panel's power off at its light switch or
+   breaker, then on again. The remote's power button does not work for this.
+3. The panel blinks when it pairs.
+4. Select **Done — the panel blinked**. If you do not, pairing ends by itself
+   after 90 seconds.
 
-On the tested panel, the original remote kept working after pairing. Other
-models are untested. If your remote stops working, pair it again with its own
-instructions.
+The panel listens for pairing only for a moment after its power returns. Before
+and after that moment, it ignores the request, so repeating it is harmless.
 
-To make the panel forget **every** remote, open **Settings → Devices & services →
-Philips Skylight → Configure** and choose **Unpair all remotes**. It removes the
-original remote, any wall remote and Home Assistant. Afterward, pair each remote
-again with its own steps, and pair Home Assistant again with **Pair this
-transmitter** in the same dialog. No command removes only one remote.
+You can also pair from **Settings → Devices & services → Philips Skylight →
+Configure → Pair this transmitter**, or with the `philips_skylight.pair_transmitter`
+action.
+
+To make the panel forget **every** remote, use **Configure → Unpair all
+remotes**. It removes the original remote, any wall remote and Home Assistant.
+It uses the same 90-second window. Afterward, pair each remote again with its
+own steps, and pair Home Assistant again. No command removes only one remote.
 
 Removing or reinstalling the add-on does not unpair the panel, because the panel
 stores the pairing itself. That leftover pairing does no harm: nothing else
@@ -112,45 +130,41 @@ sends as Home Assistant's address.
 
 ## Everyday use
 
+The Skylight card follows the remote's layout and icons.
+
 | Control | What it does |
 |---|---|
-| Power tile | Toggles the panel, like the remote's power button. |
-| Mode buttons | Refresh, Energize, Focus, Relax, Rest or Auto rhythm. |
-| Dim down / Dim up | One step darker or brighter per tap. |
-| Correct recorded state | Opens a small panel to fix Home Assistant's guess. |
-
-A blue mode icon shows the mode that Home Assistant thinks is active. The other
-mode icons are gray.
+| **Skylight** (⏻) | Toggles the panel, like the remote's power button. It shows the recorded power and mode. |
+| Mode buttons | Auto rhythm, Refresh, Energize, Focus, Relax and Rest. A mode button also switches the panel on. The recorded mode lights up in the remote's color. |
+| **Dim down** / **Dim up** | A tap is one step. On a dashboard, holding a button dims for about 3 seconds. On the add-on page, holding keeps dimming until you let go, like the remote. |
+| **Rhythm start** | Makes the current time the start of the Auto rhythm schedule. The panel blinks. Auto rhythm does nothing until a start is set. |
+| **Correct state** | Opens a view to fix Home Assistant's guess. |
 
 ## Tell Home Assistant what you see
 
-Do this at first setup. Do it again after a restart, a power cut, pairing, or
-any time the dashboard does not match the panel.
+Do this any time the card does not match the panel.
 
-1. Look at the panel.
-2. In the add-on, use **Record initial state**. On the dashboard card, use
-   **Correct recorded state**.
-3. Choose **Panel is on** or **Panel is off**.
-4. For the mode, you have three choices:
-   - Press a mode button on your remote. The mode updates within a few seconds.
-   - Choose the mode yourself.
-   - Leave it as **Unknown**.
-5. Save. On the card, select **Done**.
+1. On the card, select **Correct state**. On the add-on page, open **Settings
+   and fixes → Correct the shown state**.
+2. Select **Panel is on** or **Panel is off**.
+3. Select the mode you can see, or **Mode unknown**.
+4. On the card, select **Done**.
 
-Saving changes only Home Assistant's record. It does not send anything to the
-light. "Unknown" power does not mean off. It means that Home Assistant needs you
-to look.
+This changes only Home Assistant's record. It does not send anything to the
+light. A mode press on your remote also updates the record by itself.
 
 ## Automations: use commands, not the guess
 
 The safest automations send a command and do not depend on the recorded state:
 
 - `light.toggle` toggles the power.
-- `button.press` on a mode button selects that mode.
-- `button.press` on Dim down or Dim up changes the brightness by one step.
+- `button.press` on a mode button selects that mode, and switches the panel on.
+- `philips_skylight.dim` with `direction: down` or `up` dims by one step. Add
+  `hold: 3` to dim like a 3-second hold on the remote.
 
 `light.turn_on` and `light.turn_off` decide whether to toggle from the recorded
-power. If the record is wrong, they do the wrong thing. Do not use the recorded
+power. If the record is wrong, they do the wrong thing. `light.turn_on` with an
+effect is the exception: it always sends that mode. Do not use the recorded
 state as a trigger or a condition. Do not treat it as proof that the panel
 changed.
 
@@ -159,13 +173,23 @@ changed.
 | Problem | What to try |
 |---|---|
 | The add-on is not in the store | Check that you can open the repository, and that an add-on release exists. Otherwise, use the local installation. |
-| No proxy appears | Install the ESPHome package on your proxy and wait for it to reconnect. |
-| Remote presses do not update the dashboard | Turn on the proxy's permission to perform Home Assistant actions. Move the proxy closer to the panel. Then correct the recorded state. |
-| The dashboard shows Unknown, or the wrong power or mode | Use **Correct recorded state** and record what you see. |
+| No proxy appears | The setup checklist lists the Bluetooth proxies in your ESPHome folder. If none is listed, set up a Bluetooth proxy in ESPHome Device Builder first. |
+| Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
+| The dashboard shows Unknown, or the wrong power or mode | Use **Correct state** and record what you see. |
 | The card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
-| Commands do nothing | Check that the proxy is connected. Then pair the transmitter again. |
-| Commands stopped after a Home Assistant rebuild or an older backup restore | In the add-on, use **Setup and recovery → Panel ignores commands after a rebuild or restore**. It fixes the transmitter's counter without pairing again. |
-| An update asks for a restart | Restart Home Assistant from the add-on page. Then correct the recorded state. |
+| Commands do nothing | Check that the proxy is online. Then pair again. |
+| Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
+| An update asks for a restart | Restart Home Assistant from the add-on page. |
+
+## Ideas for later
+
+- During setup, offer to link a smart wall switch to the recorded state with an
+  automation.
+- Notice the power cycle during pairing by itself. The panel sends a Bluetooth
+  beacon all the time, so the proxy can tell when its power goes off and comes
+  back. Then nobody needs to select **Done**.
+- Control several panels separately, with one Home Assistant sender address per
+  panel.
 
 ## More detail
 

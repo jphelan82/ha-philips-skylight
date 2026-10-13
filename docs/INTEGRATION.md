@@ -5,15 +5,17 @@ through an ESPHome Bluetooth advertising proxy. This custom integration creates
 one light entity inside Home Assistant; no separate Supervisor app or MQTT broker
 is needed. The captured mesh protocol is in [docs/PROTOCOL.md](PROTOCOL.md).
 
-Physically verified on the owner's panel after transmitter pairing: power on/off,
-Rest/Energize scene switching, relative dimming, and continued original remote
-control. See [validation notes](VALIDATION.md) for checks and remaining limits.
+Physically verified on the owner's panel: the power toggle, the Rest, Energize
+and Relax modes, a mode turning an off panel on, relative dimming, Set auto rhythm
+start, pairing, unpair all, and three paired senders working together. See the
+[validation notes](VALIDATION.md) for checks and remaining limits.
 
 ## Controls and limits
 
 - Assumed-state power and six effects: Refresh, Energize, Focus, Relax, Rest,
   and Auto rhythm.
-- Buttons for relative dim up/down and direct scene selection.
+- Buttons for relative dim up/down and direct scene selection, with the
+  remote's icons. A `philips_skylight.dim` action can also hold, like the remote.
 - A **Set auto rhythm start** button. It sets the current time as the start of
   the panel's daily schedule. It is not a mode and does not change the recorded
   effect.
@@ -34,8 +36,7 @@ cannot establish actual power.
 
 Absolute brightness and color temperature are not exposed: dim step size is
 unverified. Normal controls send captured commands only, without provisioning
-or speculative power codes. A separate experimental pairing action is described
-below. Commands go to every panel in range, but a panel obeys only the
+or speculative power codes. Pairing is described below. Commands go to every panel in range, but a panel obeys only the
 senders it has paired with. Only one integration entry is allowed, and support
 for several panels is not built yet.
 
@@ -77,38 +78,59 @@ data:
   is_on: true
 ```
 
-This records power without transmitting. Standard on/off actions then use
-that assumed state. Scene buttons and `light.turn_on` with an effect send the
-scene command and record power as on. Synchronize again after an HA restart, proxy outage, panel power
-cycle, or missed remote press. A proxy outage invalidates assumed power/effect.
-A successful HA action means the proxy accepted the transmission request; the
-panel does not acknowledge it.
+This records power without sending anything. Standard on/off actions then use
+that recorded state. Scene buttons and `light.turn_on` with an effect send the
+scene command and record power as on. Synchronize again after a Home Assistant
+restart, a panel power cycle or a missed remote press. A proxy reconnect within
+60 seconds keeps the record. A longer outage clears it. A successful action means
+that the proxy accepted the request. The panel sends no acknowledgment.
+
+## Dimming
+
+Each dim button sends one relative step. For a longer dim, use
+`philips_skylight.dim` with a hold time. It sends the remote's hold command
+about every 0.6 seconds, as the remote does while you hold its button.
+
+```yaml
+action: philips_skylight.dim
+target:
+  entity_id: light.philips_skylight
+data:
+  direction: down
+  hold: 3
+```
 
 ## Transmitter pairing
 
-Initial commands from our separate sender were ignored even though an independent
-proxy received authenticated advertisements. After sending the captured pairing
-request from `0x7FFE`, the owner confirmed physical HA power control and that the
-original remote still works on this panel. The explicit experimental
-`philips_skylight.pair_transmitter` action sends that request. Pairing behavior
-on other panels is unverified and may replace an existing remote's pairing.
-It never runs during setup,
-reconnect, or normal light controls. No factory reset or network provisioning
-is performed.
+The panel ignores every sender that is not paired, Home Assistant's `0x7FFE`
+included. It accepts a pairing request only for a moment after its mains power
+returns. `philips_skylight.pair_transmitter` with `confirm: true` therefore
+repeats the request three times a second for a window, 90 seconds by default.
+Within the window, switch the panel's power off at its light switch or breaker,
+then on again. The panel blinks when it pairs. Requests before and after that
+moment do nothing, and other remotes stay paired.
 
-On first setup, when ready to pair, cycle the panel's mains power and invoke
-the action with `confirm: true`, targeting only `light.philips_skylight`. It
-sends 30 requests at approximately three per second, using a freshly reserved
-sequence for each. Afterward, check the physical light and both controllers.
-Power remains unknown until synchronized; action completion is not a pairing
-acknowledgment. Have the original remote's pairing instructions available.
+```yaml
+action: philips_skylight.pair_transmitter
+target:
+  entity_id: light.philips_skylight
+data:
+  confirm: true
+  duration: 90
+```
+
+The action returns at once, and the window runs in the background. Other
+commands still get through between the requests. `philips_skylight.stop_pairing`
+ends the window early. The light's `pairing_until` attribute shows when it ends.
+Each request uses a newly reserved sequence number. Pairing never runs by itself.
 
 ### Pairing and unpairing from Configure
 
 **Configure** on the integration offers **Pair this transmitter** and **Unpair
 all remotes**. Each step explains the power cycle and needs a tick box. The
 `philips_skylight.pair_transmitter` and `philips_skylight.unpair_all_remotes`
-actions do the same for scripts, with `confirm: true`.
+actions do the same for scripts, with `confirm: true`. Both start the 90-second
+window and return at once.
 
 Unpair all remotes sends the pairing request with sub-command `02` instead of
 `01`, with the same cadence. Right after power-on, the panel blinks and forgets
@@ -138,7 +160,7 @@ The panel then ignores every command from this transmitter, with no error.
 
 If the paired transmitter worked before and now has no effect, call the
 `philips_skylight.skip_sequence` action with `confirm: true`. The add-on has the
-same control under **Setup and recovery**. The action moves the counter forward
+same control under **Settings and fixes**. The action moves the counter forward
 by 1,048,576 and saves it before the next command. It sends no light command and
 does not need pairing again. Each skip uses one sixteenth of the 16,777,216
 available numbers. The action refuses a skip that leaves no numbers to send.

@@ -1,102 +1,86 @@
 # Skylight dashboard card
 
-The Skylight card combines Home Assistant's built-in tiles, grids, headings and
-conditional cards. It needs no HACS card, dashboard resource, helper or automation.
-The companion integration supplies the entities.
+The Skylight card is built from Home Assistant's own tiles, grids, headings and
+conditional cards. It needs no HACS card, dashboard resource, helper or
+automation. The Skylight integration supplies the entities.
 
-## Optional dashboard setup
+## The layout
 
-You do not need a dedicated dashboard to finish setup or use the integration.
-Match the starting state in the add-on, then optionally choose **Compact** or
-**Full** in its **Dashboard controls** section:
+The card follows the remote's layout and icons.
 
-- **Create Skylight dashboard** creates the dedicated dashboard. If it exists,
-  it is opened without changing its configuration.
-- **Add card to an existing dashboard** adds the card to an editable view you
-  select, preserving the rest of that dashboard. Sections views get a new
-  section; masonry/sidebar views get an additional card.
+| Control | Icon | What it does |
+|---|---|---|
+| **Skylight** | ⏻ `mdi:power` | Toggles the power. Shows the recorded power and mode. Amber when on. |
+| Auto rhythm | `mdi:sun-clock-outline` | Follows the daily schedule. Purple when recorded. |
+| Refresh | `mdi:weather-sunset-up` | Blue when recorded. |
+| Energize | `mdi:lightning-bolt` | Light blue when recorded. |
+| Focus | `mdi:crosshairs-gps` | Amber when recorded. |
+| Relax | `mdi:sofa-outline` | Orange when recorded. |
+| Rest | `mdi:power-sleep` | Deep orange when recorded. |
+| **Dim down** / **Dim up** | `mdi:brightness-4` / `mdi:brightness-7` | A tap is one step. A hold dims for about 3 seconds. |
+| **Rhythm start** | `mdi:clock-start` | Sets the current time as the Auto rhythm start. The panel blinks. |
+| **Correct state** | `mdi:pencil-outline` | Opens the correction view. |
 
-Compact fits a shared dashboard with a three-column mode grid and less prose.
-Full keeps headings and everyday instructions. Both retain the selected mode's
-blue icon, gray unselected icons and the separate state-correction view.
+The colors match the dots on the remote. A mode button also switches the panel
+on. The mode that Home Assistant recorded lights up. The others stay grey. When
+the mode is unknown, none lights up.
 
-For manual installation, download the chosen card in the add-on, then use
-**Edit dashboard → Add card → Manual** and paste it. The download fills in
-actual entity IDs, including renamed ones. This is also the route for YAML
-and panel views. Automatically generated dashboards must first be taken over
-through Home Assistant if you want to edit their cards; the add-on never does
-that for you.
+A tile card cannot tell when you let go. So a hold on a dim tile sends the
+remote's hold command for about 3 seconds. On the add-on page, holding a dim
+button keeps dimming until you let go.
 
-An identical card is not added twice, and a dashboard changed since you selected
-its view must be refreshed before adding. Existing controls are preserved.
-Home Assistant's API does not provide an atomic compare-and-save operation;
-avoid editing the same dashboard in another session during an add-card request.
+**Compact** fits a shared dashboard. **Full** adds a title, a "Modes" heading and
+one line of help.
 
-The generated [full card](../philips_skylight/app/static/skylight-card.yaml) and
-[compact card](../philips_skylight/app/static/skylight-card-compact.yaml) are also
-available in this repository. Replace entity IDs if yours differ. These are
-ordinary built-in card configurations, not a registered custom type in the card
-picker. Once added, customize them in Home Assistant or copy them elsewhere.
-After an entity rename, download the card again or update its references.
+## Add the card
 
-**Before first use**, record the panel's observed power and mode in the add-on,
-or use **Correct recorded state** on the card. In the add-on's **Record initial
-state** form, optionally press a mode button on the existing control panel;
-the mode dropdown always follows received presses. Choosing
-a mode manually records it immediately without operating the light. Choose **Mode unknown** if unsure.
-Repeat after pairing. Dashboard creation does not operate the light or set an
-observed baseline for you.
+On the add-on page, choose **Compact** or **Full**, then:
 
-The native entities can also be added individually with the dashboard editor:
+- **Create a Skylight dashboard** makes a dashboard with the card. If one
+  already exists, the add-on opens it and changes nothing.
+- **Add to a dashboard** adds the card to a view you choose and keeps the rest
+  of that dashboard. A sections view gets a new section.
 
-| Control | What it does |
+The add-on does not add the same card twice. If the dashboard changed since you
+chose the view, choose it again first. Do not edit the same dashboard in another
+window while the add-on adds the card.
+
+For YAML dashboards, panel views and generated dashboards, select **Download the
+card instead**. Then use **Edit dashboard → Add card → Manual** and paste it.
+The download fills in your real entity IDs, renamed ones included. The
+generated [full card](../philips_skylight/app/static/skylight-card.yaml) and
+[compact card](../philips_skylight/app/static/skylight-card-compact.yaml) are
+also in this repository.
+
+## Correct the state
+
+The panel never reports its state, so the record can drift: a missed remote
+press, a power cut, a wall switch, or an outage. To fix it:
+
+1. Select **Correct state**. The card switches to the correction view.
+2. Select **Panel is on** or **Panel is off**.
+3. Select the mode you can see, or **Mode unknown**.
+4. Select **Done**.
+
+These change only Home Assistant's record. They do not send anything to the
+panel, and they do not use a command number. Received remote presses then keep
+the record up to date. The correction view closes after a Home Assistant
+restart.
+
+## The entities
+
+You can also add the entities to your own cards:
+
+| Entity | What it does |
 |---|---|
-| Skylight light | The card sends one power toggle. Standard HA on/off actions remain available. |
-| Six scene buttons | Sends the selected scene to the panel. |
-| Dim down / Dim up | Sends a relative dim step. |
-| Record panel on / Record panel off | Records the power you can see; sends nothing. |
-| Recorded scene | Records the scene you can see; sends nothing. Choose Unknown to clear it. |
-| State correction | Switches the card between normal controls and state correction; sends nothing. |
+| Skylight light | One power toggle. `light.turn_on` and `light.turn_off` decide from the recorded power. |
+| Six mode buttons | Sends that mode. The panel switches on in that mode. |
+| Dim down / Dim up | Sends one step. |
+| Set auto rhythm start | Sets the current time as the Auto rhythm start. |
+| Record panel on / Record panel off | Records the power you can see. Sends nothing. |
+| Recorded scene | Records the mode you can see. Sends nothing. |
+| State correction | Switches the card between controls and correction. Sends nothing. |
 
-In normal control, the selected mode icon is blue and the other mode icons are
-gray. Highlighting follows the recorded scene, including received remote scene
-commands; no mode is highlighted when the scene is unknown. Tap the power tile
-to send one toggle, matching the original remote. Dim controls send one relative
-step per tap. The physical remote's held dim packets are recognized, but holding
-a dashboard tile does not continuously dim the panel.
-
-## Correct a missed remote press
-
-Select **Correct recorded state** at the bottom of the card. The entire control
-panel changes to a correction view. Look at the physical panel and select
-**Panel is on** or **Panel is off**, then the mode you can see. Choose **Mode unknown**
-if you cannot identify it. Select **Done** to return to normal controls.
-These controls update the light entity and the
-integration's shared state immediately. They do not change the physical light,
-the last transmitted/received command, or the Mesh sequence counter.
-
-After synchronization, received remote toggles and scene presses keep that
-state updated, including compatible calls from other remote/control panels.
-A toggle received while power is unknown cannot establish which
-state is correct. Restart, proxy outage and missed reception still require an
-observation. Absolute brightness is not tracked or editable because the panel's
-relative dim step and physical level have not been measured.
-
-Tracking can drift because of missed BLE events, power switches, mains cycles,
-Home Assistant/proxy downtime, ignored commands or other compatible controllers
-within range. The power label and blue mode icon are estimates. If this proves
-unreliable, use the normal panel's power toggle, mode buttons and dim steps as
-direct commands and observe the physical result. Avoid state-dependent
-automations or relying on entity states as confirmation. In automations, use
-`light.toggle` and the appropriate `button.press`; standard on/off actions rely
-on the recorded baseline to decide whether to toggle. A mode button always
-leaves the panel on in that mode, even if it was off.
-
-The correction entities appear in the device's Configuration section. Keep them
-enabled to use the complete card; the card download reports a missing or disabled
-entity rather than generating broken controls. Normal commands remain available
-through the standard light and button entities, even without this card.
-
-Correction mode is a native HA switch shared by cards for this integration. It
-returns to normal mode after an integration reload or Core restart. Opening or
-closing this view does not alter the light's recorded power or scene.
+The correction entities appear in the device's **Configuration** section. Keep
+them enabled. Otherwise the card download names the missing entity instead of
+making a broken card.
