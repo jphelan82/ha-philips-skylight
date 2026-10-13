@@ -157,8 +157,11 @@ matters. A toggle cannot guarantee on or off with an unknown baseline. A mode
 button, or `light.turn_on` with an effect, always leaves the panel on in that
 mode, even if it was off.
 
-Scenes: Refresh, Energize, Focus, Relax, Rest and Auto rhythm. Dimming is relative;
-the exact increment has not been measured, so no absolute slider or color
+Scenes: Refresh, Energize, Focus, Relax, Rest and Auto rhythm. Auto rhythm
+follows the panel's daily schedule and does nothing until a schedule start is
+set. **Set auto rhythm start** sets the current time as that start, like holding
+Auto rhythm and Relax together on the remote. The panel blinks. Dimming is relative.
+The exact increment has not been measured, so no absolute slider or color
 temperature control is exposed. All matching factory-key panels in radio range
 may respond. Only one factory-network integration is supported.
 

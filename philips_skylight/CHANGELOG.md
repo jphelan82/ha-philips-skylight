@@ -6,6 +6,15 @@
   true` in their schema. A call without it fails validation before any code
   runs. The REST API then answers HTTP 400 instead of HTTP 500, and Home
   Assistant logs no traceback. This update needs a Core restart.
+- New **Set auto rhythm start** button and card tile. It sends the command
+  that the remote sends when Auto rhythm and Relax are held together. The
+  panel takes the current time as the start of its daily schedule. Received
+  presses of that combination are recognized too. Auto rhythm stays a mode.
+- New experimental `philips_skylight.unpair_transmitter` action. It sends the
+  pairing request with a guessed sub-command byte. Whether the panel forgets
+  the transmitter is untested.
+- `tools/capture.py` records remote commands through the proxy's ESPHome API.
+  It only listens.
 
 ## 0.2.6
 

@@ -22,6 +22,7 @@ EFFECTS = _integration_const().EFFECTS
 LIGHT = "light.philips_skylight"
 SCENE = "select.philips_skylight_recorded_scene"
 EDIT = "switch.philips_skylight_state_correction"
+RHYTHM_START = "button.philips_skylight_set_auto_rhythm_start"
 OUTPUT = ROOT / "philips_skylight/app/static/skylight-card.yaml"
 COMPACT_OUTPUT = OUTPUT.with_name("skylight-card-compact.yaml")
 JSON_OUTPUT = OUTPUT.with_name("skylight-cards.json")
@@ -118,6 +119,12 @@ def build_card(compact=False):
             status,
             heading("Modes"),
             scenes(compact=compact),
+            tile(
+                RHYTHM_START,
+                "Set auto rhythm start",
+                action("button.press", RHYTHM_START),
+                icon="mdi:clock-start",
+            ),
             grid(
                 [
                     tile(

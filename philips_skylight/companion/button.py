@@ -5,7 +5,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import EFFECTS
+from .const import EFFECTS, RHYTHM_START
 from .controller import SkylightConfigEntry, SkylightController
 from .entity import SkylightEntity
 
@@ -22,6 +22,7 @@ async def async_setup_entry(
             ("dim_down", "Dim down"),
             ("dim_up", "Dim up"),
             *((effect, effect) for effect in EFFECTS),
+            (RHYTHM_START, "Set auto rhythm start"),
         )
     )
     async_add_entities(
@@ -41,7 +42,13 @@ class SkylightButton(SkylightEntity, ButtonEntity):
         self.command = command
         self._attr_name = name
         self._attr_unique_id = f"factory_mesh_7ffe_{command.lower().replace(' ', '_')}"
-        self._attr_icon = "mdi:brightness-6" if command.startswith("dim") else "mdi:palette"
+        if command == RHYTHM_START:
+            # Sets the current time as the schedule start. The panel blinks.
+            self._attr_icon = "mdi:clock-start"
+        elif command.startswith("dim"):
+            self._attr_icon = "mdi:brightness-6"
+        else:
+            self._attr_icon = "mdi:palette"
 
     async def async_press(self) -> None:
         await self.controller.async_send(self.command)

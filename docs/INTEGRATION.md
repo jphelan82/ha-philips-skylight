@@ -14,6 +14,9 @@ control. See [validation notes](VALIDATION.md) for checks and remaining limits.
 - Assumed-state power and six effects: Refresh, Energize, Focus, Relax, Rest,
   and Auto rhythm.
 - Buttons for relative dim up/down and direct scene selection.
+- A **Set auto rhythm start** button. It sets the current time as the start of
+  the panel's daily schedule. It is not a mode and does not change the recorded
+  effect.
 - Authenticated remote press tracking across compatible factory-mesh senders,
   with duplicate filtering per sender for panel relays and rapid repeats.
 - Separate sender address `0x7FFE`, with durable sequence reservations.
@@ -98,6 +101,15 @@ sends 30 requests at approximately three per second, using a freshly reserved
 sequence for each. Afterward, check the physical light and both controllers.
 Power remains unknown until synchronized; action completion is not a pairing
 acknowledgment. Have the original remote's pairing instructions available.
+
+### Unpairing (experiment)
+
+No unpair command is known yet. The `philips_skylight.unpair_transmitter` action
+sends the pairing request with a guessed sub-command byte, `0` or `2`, in place
+of pairing's `1`. It uses the same cadence: 30 requests over 10 seconds. Use it
+only right after cycling the panel's mains power, while you watch the panel.
+Then check whether a toggle from Home Assistant and the original remote still
+work. To undo an unpair, pair again.
 
 ## Sequence safety
 

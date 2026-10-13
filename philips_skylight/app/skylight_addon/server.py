@@ -27,6 +27,7 @@ CARD_ENTITIES = {
         f"button.philips_skylight_{slug(name)}": unique_id(name)
         for name in ("dim_down", "dim_up", *EFFECTS, "record_panel_on", "record_panel_off")
     },
+    "button.philips_skylight_set_auto_rhythm_start": unique_id("set_rhythm_start"),
 }
 
 

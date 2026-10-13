@@ -307,6 +307,22 @@ cards:
               target:
                 entity_id: button.philips_skylight_auto_rhythm
             vertical: true
+    - type: tile
+      entity: button.philips_skylight_set_auto_rhythm_start
+      name: Set auto rhythm start
+      hide_state: true
+      color: grey
+      tap_action:
+        action: perform-action
+        perform_action: button.press
+        target:
+          entity_id: button.philips_skylight_set_auto_rhythm_start
+      icon_tap_action:
+        action: perform-action
+        perform_action: button.press
+        target:
+          entity_id: button.philips_skylight_set_auto_rhythm_start
+      icon: mdi:clock-start
     - type: grid
       columns: 2
       square: false

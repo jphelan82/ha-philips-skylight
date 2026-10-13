@@ -8,13 +8,17 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import EFFECTS, VERSION
+from .const import EFFECTS, UNPAIR_CODES, VERSION
 from .controller import SkylightConfigEntry
 from .entity import SkylightEntity
 
 PAIR_CONFIRM = (
     "Pairing may replace the working remote. Set confirm to true only "
     "when ready to test after cycling the panel's mains power."
+)
+UNPAIR_CONFIRM = (
+    "Unpairing is an untested experiment. Set confirm to true only right after "
+    "cycling the panel's mains power, while you watch the panel."
 )
 SKIP_CONFIRM = (
     "Skip the sequence only when the panel ignores this transmitter after "
@@ -37,6 +41,14 @@ async def async_setup_entry(
         "pair_transmitter",
         {vol.Required("confirm"): vol.All(cv.boolean, vol.IsTrue(PAIR_CONFIRM))},
         "async_pair_transmitter",
+    )
+    platform.async_register_entity_service(
+        "unpair_transmitter",
+        {
+            vol.Required("confirm"): vol.All(cv.boolean, vol.IsTrue(UNPAIR_CONFIRM)),
+            vol.Required("code"): vol.All(vol.Coerce(int), vol.In(UNPAIR_CODES)),
+        },
+        "async_unpair_transmitter",
     )
     platform.async_register_entity_service(
         "skip_sequence",
@@ -81,6 +93,11 @@ class SkylightLight(SkylightEntity, LightEntity):
         if not confirm:
             raise ServiceValidationError(PAIR_CONFIRM)
         await self.controller.async_pair()
+
+    async def async_unpair_transmitter(self, confirm: bool, code: int) -> None:
+        if not confirm:
+            raise ServiceValidationError(UNPAIR_CONFIRM)
+        await self.controller.async_unpair(code)
 
     async def async_skip_sequence(self, confirm: bool) -> None:
         if not confirm:

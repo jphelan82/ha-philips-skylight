@@ -50,6 +50,9 @@ This reusable configuration does not register a custom card type in the picker.
 - Tap the power tile to toggle the light once.
 - Choose Refresh, Energize, Focus, Relax, Rest or Auto rhythm. The recorded mode
   is blue; the other icons are gray.
+- Tap **Set auto rhythm start** to make the current time the start of the panel's
+  daily schedule. The panel blinks. Auto rhythm does nothing until a start is
+  set, on the panel's remote or here.
 - Tap **Dim down** or **Dim up** for one relative brightness step. Holding a
   dashboard button does not continuously dim the light.
 

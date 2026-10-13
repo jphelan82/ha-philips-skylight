@@ -11,7 +11,16 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives.cmac import CMAC
 
-from .const import APPLICATION_KEY, DESTINATION, EFFECTS, IV_INDEX, NETWORK_KEY, SOURCE
+from .const import (
+    APPLICATION_KEY,
+    DESTINATION,
+    EFFECTS,
+    IV_INDEX,
+    NETWORK_KEY,
+    RHYTHM_START,
+    SOURCE,
+    UNPAIR_CODES,
+)
 
 
 def cmac(key: bytes, message: bytes) -> bytes:
@@ -136,6 +145,9 @@ def command_payload(command: str, transaction: int) -> bytes:
         return bytes([0xC8, 0x11, 0x02, transaction, 0x01, command == "dim_up", 0x14, 0x41])
     if command in EFFECTS:
         return bytes([0xC9, 0x11, 0x02, transaction, 0x04, 0xFF, EFFECTS.index(command) + 1, 0x41])
+    if command == RHYTHM_START:
+        # The remote sends this while Auto rhythm and Relax are held together.
+        return bytes([0xE0, 0x11, 0x02, transaction, 0x00])
     raise ValueError(f"Unsupported command: {command}")
 
 
@@ -146,10 +158,19 @@ def pairing_payload(transaction: int) -> bytes:
     return bytes([0xCF, 0x11, 0x02, transaction, 0x01]) + b"\x11" * 6
 
 
+def unpair_payload(transaction: int, code: int) -> bytes:
+    """Experimental: the pairing request with a guessed sub-command byte instead of 0x01."""
+    if not 0x80 <= transaction <= 0xFF:
+        raise ValueError("Transaction must be in the remote's 0x80..0xFF range")
+    if code not in UNPAIR_CODES:
+        raise ValueError(f"Unsupported unpair code: {code}")
+    return bytes([0xCF, 0x11, 0x02, transaction, code]) + b"\x11" * 6
+
+
 def identify_command(payload: bytes) -> str | None:
     if len(payload) < 4 or not 0x80 <= payload[3] <= 0xFF:
         return None
-    for command in ("toggle", "dim_down", "dim_up", *EFFECTS):
+    for command in ("toggle", "dim_down", "dim_up", *EFFECTS, RHYTHM_START):
         if payload == command_payload(command, payload[3]):
             return command
     if (

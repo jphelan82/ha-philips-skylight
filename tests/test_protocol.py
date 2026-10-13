@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from custom_components.philips_skylight.const import APPLICATION_KEY, EFFECTS, NETWORK_KEY
+from custom_components.philips_skylight.const import (
+    APPLICATION_KEY,
+    EFFECTS,
+    NETWORK_KEY,
+    RHYTHM_START,
+)
 from custom_components.philips_skylight.protocol import (
     MeshCodec,
     command_payload,
@@ -13,6 +18,7 @@ from custom_components.philips_skylight.protocol import (
     k3,
     k4,
     pairing_payload,
+    unpair_payload,
 )
 
 CAPTURE = Path(__file__).resolve().parents[1] / "tools/capture-2026-10-12.log"
@@ -55,6 +61,24 @@ def test_pairing_payload_matches_capture_and_fits_advertising_bearer():
     assert identify_command(message.payload) is None
 
 
+def test_rhythm_start_matches_the_captured_combo_press():
+    # Captured 2026-10-13 while Auto rhythm and Relax were held together.
+    for captured in ("e01102a400", "e01102a500", "e01102a600"):
+        payload = bytes.fromhex(captured)
+        assert identify_command(payload) == RHYTHM_START
+        assert command_payload(RHYTHM_START, payload[3]) == payload
+
+
+def test_unpair_payload_changes_only_the_sub_command_byte():
+    for code in (0x00, 0x02):
+        payload = unpair_payload(0x80, code)
+        assert payload == pairing_payload(0x80)[:4] + bytes([code]) + b"\x11" * 6
+        assert identify_command(payload) is None
+    for code in (0x01, 0x03):
+        with pytest.raises(ValueError):
+            unpair_payload(0x80, code)
+
+
 def test_all_capture_mesh_pdus_authenticate():
     codec = MeshCodec()
     decoded = []
@@ -71,7 +95,7 @@ def test_all_capture_mesh_pdus_authenticate():
     assert {"toggle", "dim_down", "dim_up", *EFFECTS} <= commands
 
 
-@pytest.mark.parametrize("command", ["toggle", "dim_up", "dim_down", *EFFECTS])
+@pytest.mark.parametrize("command", ["toggle", "dim_up", "dim_down", *EFFECTS, RHYTHM_START])
 def test_transmitted_packets_have_own_sender_and_fit_legacy_advertisements(command):
     codec = MeshCodec()
     packet = codec.encode(command_payload(command, 0x80), 0x123456)

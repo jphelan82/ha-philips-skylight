@@ -141,6 +141,7 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
         "Auto rhythm",
         "record_panel_on",
         "record_panel_off",
+        "set_rhythm_start",
     ]
     panel.ha.registry = [
         panel.ha.registry[0],

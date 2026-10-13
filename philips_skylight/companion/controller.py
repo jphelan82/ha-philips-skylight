@@ -11,7 +11,7 @@ from homeassistant.helpers.storage import Store
 
 from .const import CONF_TRANSMIT_SERVICE, DOMAIN, RECEIVE_EVENT, STORAGE_KEY
 from .model import AssumedState, RemoteTracker
-from .protocol import MeshCodec, command_payload, pairing_payload
+from .protocol import MeshCodec, command_payload, pairing_payload, unpair_payload
 from .sequence import SequenceAllocator
 
 _LOGGER = logging.getLogger(__name__)
@@ -100,6 +100,17 @@ class SkylightController:
                 self.state.is_on = None
                 self.state.effect = None
                 self.notify()
+
+    async def async_unpair(self, code: int) -> None:
+        """Experimental unpair attempt: the pairing cadence with a guessed sub-command byte."""
+        async with self.lock:
+            self.state.last_command = f"unpair attempt {code:#04x}"
+            self.notify()
+            for _ in range(30):
+                await self._async_transmit_locked(
+                    lambda transaction: unpair_payload(transaction, code), repeat=1
+                )
+                await asyncio.sleep(1 / 3)
 
     async def async_skip_sequence(self) -> int:
         """Recover from a lost sequence Store without changing the sender address."""

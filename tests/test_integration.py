@@ -19,8 +19,13 @@ from custom_components.philips_skylight.const import (
     DOMAIN,
     EFFECTS,
     RECEIVE_EVENT,
+    RHYTHM_START,
 )
-from custom_components.philips_skylight.protocol import MeshCodec, command_payload
+from custom_components.philips_skylight.protocol import (
+    MeshCodec,
+    command_payload,
+    identify_command,
+)
 
 # The add-on names integration entities by unique ID; keep both sides in step.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "philips_skylight/app"))
@@ -250,6 +255,39 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     )
     assert await controller.sequence.async_next() == 512 + 0x100000
     assert len(calls) == 31
+
+    # Set auto rhythm start sends the captured E0 command and is not a mode.
+    rhythm = "button.philips_skylight_set_auto_rhythm_start"
+    assert registry.async_get(rhythm).unique_id == "factory_mesh_7ffe_set_rhythm_start"
+    effect = hass.states.get(entity_id).attributes["effect"]
+    await hass.services.async_call("button", "press", {"entity_id": rhythm}, blocking=True)
+    assert len(calls) == 32
+    (message,) = MeshCodec().decode(bytes.fromhex(calls[-1].data["raw"]))
+    assert message.payload == command_payload(RHYTHM_START, message.payload[3])
+    assert identify_command(message.payload) == RHYTHM_START
+    assert hass.states.get(entity_id).attributes["effect"] == effect
+    assert hass.states.get(entity_id).attributes["last_command"] == RHYTHM_START
+
+    # The unpair experiment needs confirmation and one of the guessed codes.
+    for bad in ({"confirm": False, "code": 0}, {"confirm": True, "code": 1}):
+        with pytest.raises(vol.Invalid):
+            await hass.services.async_call(
+                DOMAIN, "unpair_transmitter", {"entity_id": entity_id, **bad}, blocking=True
+            )
+    assert len(calls) == 32
+    with monkeypatch.context() as timing:
+        timing.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
+        await hass.services.async_call(
+            DOMAIN,
+            "unpair_transmitter",
+            {"entity_id": entity_id, "confirm": True, "code": 2},
+            blocking=True,
+        )
+    assert len(calls) == 62
+    for call in calls[32:]:
+        (message,) = MeshCodec().decode(bytes.fromhex(call.data["raw"]))
+        assert message.payload[:3] == bytes.fromhex("cf1102")
+        assert message.payload[4:] == b"\x02" + b"\x11" * 6
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"

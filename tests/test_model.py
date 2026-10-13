@@ -2,7 +2,7 @@ from dataclasses import replace
 
 import pytest
 
-from custom_components.philips_skylight.const import EFFECTS
+from custom_components.philips_skylight.const import EFFECTS, RHYTHM_START
 from custom_components.philips_skylight.model import AssumedState, RemoteTracker
 from custom_components.philips_skylight.protocol import MeshMessage, command_payload
 
@@ -46,7 +46,7 @@ def test_holds_at_remote_cadence_and_filter_own_packets():
     assert tracker.accept(replace(remote, destination=1), now=2) is None
 
 
-@pytest.mark.parametrize("command", ["toggle", "dim_down", "dim_up", *EFFECTS])
+@pytest.mark.parametrize("command", ["toggle", "dim_down", "dim_up", *EFFECTS, RHYTHM_START])
 def test_other_remote_sources_update_all_stored_state(command):
     tracker = RemoteTracker()
     state = AssumedState(is_on=True, effect="Focus")

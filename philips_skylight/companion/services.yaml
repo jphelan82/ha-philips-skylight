@@ -40,3 +40,26 @@ pair_transmitter:
       required: true
       selector:
         boolean:
+unpair_transmitter:
+  name: Unpair transmitter (experiment)
+  description: Untested. Sends the pairing request with a guessed sub-command byte for 10 seconds, to find out whether the panel forgets this transmitter. Use it only right after cycling the panel's mains power, while watching the panel. Afterward, check whether a toggle from Home Assistant and the original remote still work.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
+  fields:
+    confirm:
+      name: Accept the experiment
+      description: Confirm that you just cycled the panel's mains power and are watching it.
+      required: true
+      selector:
+        boolean:
+    code:
+      name: Sub-command byte
+      description: The guessed byte that replaces pairing's 0x01. 0 or 2.
+      required: true
+      selector:
+        select:
+          options:
+            - "0"
+            - "2"

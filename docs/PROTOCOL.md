@@ -42,9 +42,14 @@ Each command is a vendor message with company ID `0x0211` (Telink Semiconductor)
 | Relax | `C9 11 02 TT 04 FF 04 41` | |
 | Rest | `C9 11 02 TT 04 FF 05 41` | |
 | Auto rhythm | `C9 11 02 TT 04 FF 06 41` | |
+| Set auto rhythm start (hold Auto rhythm and Relax together) | `E0 11 02 TT 00` | Opcode `E0` with one parameter byte. The remote sent it three times in about a second, each with a new `TT`. The panel blinks. The manual says this sets the current time as the start of the Auto rhythm schedule. Captured 2026-10-13. |
 | Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11` | Sent about three times a second for the whole hold. Six `11` parameter bytes follow `01`; the complete access payload is 11 bytes. |
 
-Every command ends in `0x41`. Its meaning is unknown.
+Every `C8` and `C9` command ends in `0x41`. Its meaning is unknown.
+
+Auto rhythm (`C9 … 06`) is a mode: it makes the panel follow its daily
+schedule. It does nothing until a schedule start is set. Any other mode button
+takes the panel off the schedule until Auto rhythm is pressed again.
 
 ## Rules for sending from Home Assistant
 
@@ -76,7 +81,7 @@ only the original remote has been physically tested.
 
 - Does the panel accept an unpaired sender other than `0x7FFF`? Turn-on attempts from `0x7FFE` did not illuminate the panel, even after correcting the advertising bearer. The owner reports that the original remote also required pairing before it worked.
 - The captured `CF` pairing command authorized `0x7FFE` on this panel: the owner observed blinking during the request, then confirmed HA off/on commands physically worked. The original remote continued working. Other panels' pairing behavior remains unverified. Do not replace the factory network or impersonate `0x7FFF`.
-- How can a user unpair `0x7FFE`? Only the pairing request was captured. No unpair or "remove remote" command is known, and no factory reset procedure for the panel is documented. Removing the add-on leaves the pairing in the panel. Finding one needs a capture of the vendor remote or app removing a remote, or a reset procedure from the vendor.
+- How can a user unpair `0x7FFE`? In the pairing request `CF 11 02 TT 01 …`, the byte after `TT` looks like a sub-command, as in `C8` (`03` power, `01` brightness). If `01` means "add", "remove" is likely `00` or `02`. Integration 0.2.6 has an experimental `philips_skylight.unpair_transmitter` action that sends either guess with the pairing cadence. Only the pairing request was captured. No unpair or "remove remote" command is known, and no factory reset procedure for the panel is documented. Removing the add-on leaves the pairing in the panel. Finding one needs a capture of the vendor remote or app removing a remote, or a reset procedure from the vendor.
 - How long does the panel accept pairing after its mains power returns? The tested panel accepted a request sent straight away. The window was not measured.
 - Do separate on and off codes exist? Candidates to try: `03 00 41` and `03 02 41`.
 - Relative dim down/up with `0x14` physically worked after transmitter pairing. The exact increment and behavior of other step values remain unmeasured.
