@@ -895,6 +895,17 @@
                       "hold": 3
                     }
                   },
+                  "icon_hold_action": {
+                    "action": "perform-action",
+                    "perform_action": "philips_skylight.dim",
+                    "target": {
+                      "entity_id": "light.philips_skylight"
+                    },
+                    "data": {
+                      "direction": "down",
+                      "hold": 3
+                    }
+                  },
                   "vertical": true
                 },
                 {
@@ -919,6 +930,17 @@
                   },
                   "icon": "mdi:brightness-7",
                   "hold_action": {
+                    "action": "perform-action",
+                    "perform_action": "philips_skylight.dim",
+                    "target": {
+                      "entity_id": "light.philips_skylight"
+                    },
+                    "data": {
+                      "direction": "up",
+                      "hold": 3
+                    }
+                  },
+                  "icon_hold_action": {
                     "action": "perform-action",
                     "perform_action": "philips_skylight.dim",
                     "target": {

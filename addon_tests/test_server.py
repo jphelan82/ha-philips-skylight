@@ -233,6 +233,12 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
         assert lit["card"]["color"] != "grey"
         assert unlit["conditions"] == [{"condition": "or", "conditions": [not_mode, unlit_when]}]
         assert unlit["card"]["color"] == "grey"
+    # A hold on a dim tile works from its icon too, where a thumb lands on a phone.
+    held = [item for item in walk(normal) if item.get("hold_action")]
+    assert len(held) == 2
+    for item in held:
+        assert item["hold_action"]["perform_action"] == "philips_skylight.dim"
+        assert item["icon_hold_action"] == item["hold_action"]
     # The light's tile has one variant per mode in that mode's color, plus amber.
     hero = [
         item

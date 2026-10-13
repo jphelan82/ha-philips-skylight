@@ -54,7 +54,9 @@ def tile(entity, name, tap, *, color="grey", icon=None, hold=None):
     if icon:
         result["icon"] = icon
     if hold:
+        # The icon has its own actions. On a phone the thumb lands on the icon.
         result["hold_action"] = hold
+        result["icon_hold_action"] = hold
     return result
 
 

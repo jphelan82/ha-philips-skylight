@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.3
+
+- Holding **Dim −** or **Dim +** on the dashboard card works from the tile's
+  icon too. A tile card gives its icon separate actions, and the card set the
+  hold only for the rest of the tile. On a phone the thumb lands on the icon,
+  so a hold did nothing there.
+- After this update, the add-on page offers **Update the card** for cards
+  added before 0.4.3.
+
 ## 0.4.2
 
 - Holding **Dim −** or **Dim +** on the add-on page works on a phone. Before,
