@@ -15,7 +15,9 @@ This allows Home Assistant to treat the device as a light entity, enabling you t
 Home Assistant talks to the panel through an ESPHome Bluetooth proxy. 
 
 
-I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your bluetooth-proxy and will guide you through all the requisite steps necessary to get the add-on set up. 
+I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your bluetooth-proxy and will guide you through all the requisite steps necessary to get the add-on set up.
+
+>AI Disclosure: This repository was created primarily with the assistance of agentic coding. The Bluetooth protocol for the Philips Skylight remote was captured using Claude Opus 5.5, using the Bluetooth proxy via Home Assistant to inspect BLE messages during the pairing and signaling process. Further development was done in Codex, and then additional refactoring and final implementation were done in Opus. I am a software developer by trade and created specifications for this code and reviewed and vetted it, however, probably not with the level of scrutiny I would apply to a high-value production-level project (aka, you decide and use at your own risk).
 
 ## What it does
 
@@ -25,7 +27,7 @@ I have tried to make the setup of this as easy as possible, although it required
   an automation.
 - **All six modes.** Auto rhythm, Refresh, Energize, Focus, Relax and Rest each
   get a button. A mode button also switches the panel on.
-- **Dimming.** Dim down and Dim up, one step per tap, or longer with a hold.
+- **Dimming.** Dim down and Dim up, one step per tap, or longer with a hold. Setting absolute brightness percentage levels is not supported due to limitations of the device, but I'm considering a hacky way to support this in the future. 
 - **The Auto rhythm schedule.** Set the current time as the start of the daily
   schedule, like holding Auto rhythm and Relax on the remote.
 - **Your remote keeps working.** Home Assistant hears its presses and updates
@@ -57,11 +59,16 @@ This is an experimental project. Please read these limits before you install it.
   is often right, but it is still a guess.
 - **The guess goes wrong sometimes.** A missed remote press, a wall switch, a
   power cut, or a restart of Home Assistant or the proxy all put it out of step.
-  When that happens, you look at the panel and tell Home Assistant what you see.
-- **Power is a toggle.** The panel has one on/off command, not separate on and
-  off commands. If Home Assistant thinks the light is on when it is off, then
-  "turn on" does nothing, and "turn off" turns it on. A mode button always
-  leaves the panel on, in that mode.
+  When that happens, you look at the panel and tell Home Assistant what you see. **You can always use the power toggle and modes without relying on accurate state information.**
+- **Power is a toggle.** The panel has one power command. It switches the panel
+  off if it is on, and on if it is off. The remote's power button, the card's
+  **Skylight** tile and `light.toggle` send it, and they always work. Home
+  Assistant's separate **turn on** and **turn off** actions are different:
+  they decide from the shown state. **Turn on** sends the command only if
+  the shown state is off. So if Home Assistant shows on while the panel is off,
+  **turn on** sends nothing, and **turn off** sends the command, which switches
+  the panel on. Voice assistants, scenes and many automations use these
+  actions. A mode button always leaves the panel on, in that mode.
 - **It supports one Skylight.** It was built and tested with one panel.
   Support for several panels is not built yet. A panel obeys only the senders
   it has paired with. So any panel that paired with Home Assistant responds to
@@ -262,7 +269,7 @@ changed.
 | Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
 | The dashboard shows Unknown, or the wrong power or mode | Use **Correct** and record what you see. |
 | The card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
-| Commands do nothing | Check that the proxy is online. Then pair again. |
+| The panel ignores every command | Check that the proxy is online. If the panel still ignores Home Assistant, use **Settings and fixes → Start over** on the add-on page. Do not pair Home Assistant a second time: the panel can drop your remote. |
 | Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
 | An update asks for a restart | Restart Home Assistant from the add-on page. |
 

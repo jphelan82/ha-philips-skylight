@@ -29,7 +29,8 @@ this for Relax on 2026-10-13. After any scene command, sent from HA or received
 from a remote, the integration records power as on.
 
 Power starts unknown. Before you use `light.turn_off`, or `light.turn_on`
-without an effect, synchronize power. Same-state requests do nothing.
+without an effect, synchronize power. A request for the power that Home Assistant
+already shows sends nothing.
 `light.turn_on` with an effect sends only that scene command, whatever the
 recorded power. `light.toggle` can send while power is unknown, but a toggle
 cannot establish actual power.
