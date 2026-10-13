@@ -1,5 +1,10 @@
 # Philips Skylight for Home Assistant
 
+> [!WARNING]
+> **Work in progress.** If you found this project by chance: I am still
+> developing and testing it. You are welcome to try it. Expect parts that do not
+> work fully yet, and expect bugs and errors.
+
 The Philips LED Skylight panel comes with a remote and nothing else. It has no
 app, no Wi-Fi and no Hue support. This project lets Home Assistant act as a
 second remote. You get a power toggle, the six modes and dim buttons on your
