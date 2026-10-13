@@ -5,7 +5,6 @@ let busy = false;
 let state = null;
 let pairStage = "pair";
 let lastRemaining = 0;
-let stopped = false;
 let preparedNode = null;
 let dashboardRevision = null;
 let dashboardRead = 0;
@@ -84,15 +83,12 @@ function render(data) {
   step("step-tracking", data.tracking === true, data.tracking === true ? "✓" : data.tracking === false ? "" : proxyReady ? "Checking…" : "");
   show("tracking-off", data.tracking === false);
 
-  // The integration repeats the request; the user reaches the switch meanwhile.
-  // After Stop, ignore the old window until the integration reports it has ended.
-  if (!data.pairing_remaining) stopped = false;
-  const remaining = stopped ? 0 : data.pairing_remaining || 0;
-  // Move on to the test only when the window ran out by itself, not after Stop.
-  if (lastRemaining && lastRemaining <= 4 && !remaining && !setupDone && pairStage === "pair") pairStage = "test";
+  // The integration sends the pairing request for 10 seconds, then the test follows.
+  const remaining = data.pairing_remaining || 0;
+  if (lastRemaining && !remaining && !setupDone && pairStage === "pair") pairStage = "test";
   lastRemaining = remaining;
   show("pair-wait", remaining > 0);
-  el("pair-countdown").textContent = "Pairing… " + Math.floor(remaining / 60) + ":" + String(remaining % 60).padStart(2, "0") + " left";
+  el("pair-countdown").textContent = "Pairing… " + remaining + " s";
   step("step-pair", setupDone, setupDone ? "✓" : remaining ? "Pairing…" : "");
   const pairing = data.configured && !setupDone && !remaining;
   show("pair-steps", pairing && pairStage === "pair");
@@ -138,7 +134,7 @@ const results = {
   allow_tracking: () => "",
   pair: () => "",
   test: () => "",
-  confirm_test: (body) => body.result === "none" ? "The panel did not respond. Start pairing again." : "",
+  confirm_test: (body) => body.result === "none" ? "The panel did not respond. Pair again: switch the power off and on, then select Pair." : "",
   finish_setup: () => "Setup is complete.",
   setup: () => "",
   create_dashboard: (body, result) => result.created ? "Dashboard created." : "You already have a Skylight dashboard.",
@@ -166,9 +162,6 @@ async function action(body) {
     if (body.action === "prepare_firmware") {
       preparedNode = (state?.esphome_nodes || []).find((node) => node.file === body.file)?.node || body.file;
     }
-    if (body.action === "stop_pairing") pairStage = body.done ? "test" : "pair";
-    if (body.action === "stop_pairing") { lastRemaining = 0; stopped = true; }
-    if (body.action === "pair") stopped = false;
     if (body.action === "test") pairStage = "ask";
     if (body.action === "confirm_test") pairStage = body.result === "none" ? "pair" : "mode";
     if (body.action === "finish_setup") pairStage = "pair";
@@ -268,7 +261,6 @@ document.addEventListener("click", (event) => {
   if (kind === "finish_setup") return action(button.dataset.effect ? {action: kind, effect: button.dataset.effect} : {action: kind});
   if (kind === "confirm_test") return action({action: kind, result: button.dataset.result});
   if (kind === "sync_power") return action({action: kind, is_on: button.dataset.on === "yes"});
-  if (kind === "stop_pairing") return action({action: kind, done: button.dataset.done === "yes"});
   action({action: kind, confirm: ["pair", "restart", "skip_sequence"].includes(kind), style: el("card-style").value});
 });
 el("observed-mode").addEventListener("change", () => {

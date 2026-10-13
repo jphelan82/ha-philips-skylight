@@ -470,24 +470,24 @@ async def test_firmware_is_added_to_the_chosen_proxy(setup_panel, tmp_path):
     assert setup_panel.snapshot()["esphome_nodes"][0]["has_skylight"] is True
 
 
-async def test_pairing_window_reports_seconds_left_and_can_stop(setup_panel):
+async def test_pairing_burst_reports_seconds_left(setup_panel):
     from datetime import UTC, datetime, timedelta
 
     ha = setup_panel.ha
     await setup_panel.perform({"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name"})
-    until = datetime.now(UTC) + timedelta(seconds=61)
+    until = datetime.now(UTC) + timedelta(seconds=9)
     ha.states["light.renamed"] = {
         "state": "unknown",
         "attributes": {"integration_version": "0.2.0", "pairing_until": until.isoformat()},
     }
-    assert 59 <= setup_panel.snapshot()["pairing_remaining"] <= 61
+    assert 7 <= setup_panel.snapshot()["pairing_remaining"] <= 9
     ha.calls.clear()
     await setup_panel.perform({"action": "pair", "confirm": True})
-    await setup_panel.perform({"action": "stop_pairing"})
     assert ha.calls == [
         (("philips_skylight", "pair_transmitter", "light.renamed"), {"confirm": True}),
-        (("philips_skylight", "stop_pairing", "light.renamed"), {}),
     ]
+    with pytest.raises(ValueError, match="Unknown action"):
+        await setup_panel.perform({"action": "stop_pairing"})
     ha.states["light.renamed"]["attributes"]["pairing_until"] = "not a time"
     assert setup_panel.snapshot()["pairing_remaining"] == 0
 

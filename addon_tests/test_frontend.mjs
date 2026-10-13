@@ -108,14 +108,12 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   await press({action: "pair"});
   assert.equal(posts.at(-1).action, "pair");
   assert.equal(posts.at(-1).confirm, true);
-  source.pairing_remaining = 85;
+  source.pairing_remaining = 8;
   await poll();
   assert.equal(element("pair-wait").hidden, false);
   assert.equal(element("pair-steps").hidden, true);
-  assert.equal(element("pair-countdown").textContent, "Pairing… 1:25 left");
-  await press({action: "stop_pairing", done: "yes"});
-  assert.deepEqual(posts.at(-1), {action: "stop_pairing", done: true});
-  source.pairing_remaining = 0;
+  assert.equal(element("pair-countdown").textContent, "Pairing… 8 s");
+  source.pairing_remaining = 0; // The 10-second burst ends; the test follows.
   await poll();
   assert.equal(element("pair-wait").hidden, true);
   assert.equal(element("pair-test").hidden, false);
@@ -127,7 +125,6 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   assert.deepEqual(posts.at(-1), {action: "confirm_test", result: "none"});
   assert.equal(element("pair-steps").hidden, false); // Back to pairing.
 
-  // This time the window runs out by itself, which also leads to the test.
   await press({action: "pair"});
   source.pairing_remaining = 3;
   await poll();
@@ -185,23 +182,6 @@ test("corrections change only the record, and controls send commands", async () 
   await press({action: "skip_sequence"});
   assert.equal(posts.at(-1).action, "scene"); // Needs the tick box first.
   assert.equal(element("notice").textContent, "Tick the box first.");
-});
-
-test("Stop ends pairing and goes back to the first pairing step", async () => {
-  const source = {...base(), configured: true, first_setup: true, entity_id: "light.skylight",
-    tracking: true, pairing_remaining: 60,
-    proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
-  const {element, posts, press, poll} = await page(source);
-  assert.equal(element("pair-wait").hidden, false);
-  assert.equal(element("step-pair-status").textContent, "Pairing…");
-  await press({action: "stop_pairing", done: "no"});
-  assert.deepEqual(posts.at(-1), {action: "stop_pairing", done: false});
-  source.pairing_remaining = 2; // A late status poll still shows the old window.
-  await poll();
-  source.pairing_remaining = 0;
-  await poll();
-  assert.equal(element("pair-steps").hidden, false);
-  assert.equal(element("pair-test").hidden, true);
 });
 
 test("holding a dim button repeats the hold command until release", async () => {

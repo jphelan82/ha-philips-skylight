@@ -11,6 +11,17 @@
 You do not need an MQTT broker, a cloud account or a long-lived access token.
 Supervisor gives the add-on its Home Assistant access.
 
+## Before you start
+
+- The panel accepts at most two remotes, and Home Assistant counts as one. If
+  two remotes already control your Skylight, this does not work unless you give
+  one up.
+- If you set this up before on another Home Assistant, use **Unpair all
+  remotes** first, then pair your remote again. The old setup still holds one of
+  the two places.
+- One step needs the panel's power switched off and on at its light switch or
+  breaker. Use a phone or a portable computer for setup.
+
 ## Setup
 
 Open the add-on's web page and follow the checklist. Each step gets a ✓ when it
@@ -54,22 +65,23 @@ entities, settings and pairing.
 
 ## Pairing and unpairing
 
-The panel accepts a pairing request only for a moment after its power returns.
-So Home Assistant repeats the request for 90 seconds, and you switch the power
-off and on during that time.
+The panel accepts a pairing request only for a short time after it comes back on.
 
-1. Select **Start pairing**.
-2. Within 90 seconds, switch the panel's power off at its light switch or
-   breaker, then on again. The remote's power button does not work for this.
-3. The panel blinks when it pairs. Select **Done — the panel blinked**.
+1. Switch the panel's power off at its light switch or breaker, then on again.
+   The remote's power button does not work for this.
+2. Wait until the panel is back on. That can take up to 30 seconds.
+3. Select **Pair** straight away. Home Assistant sends the request for 10
+   seconds, and the panel blinks.
 
-Repeated requests before and after the power cycle do nothing. Your other
-remotes stay paired. Pairing never happens by itself.
+Home Assistant sends a short burst, like the remote's own 10-second hold. A long
+stream of requests makes the panel drop your remote. Your remote stays paired.
+Pairing never happens by itself.
 
 **Configure** on the Skylight integration also offers **Pair this transmitter**
-and **Unpair all remotes**. **Unpair all remotes** makes the panel forget every
-remote, the original one and Home Assistant included. It uses the same
-90-second window. Afterward, pair each remote again.
+and **Unpair all remotes**, with the same steps. **Unpair all remotes** makes the
+panel forget every remote, Home Assistant included. If its request reaches the
+panel too late, the panel only switches off. Then try again. Afterward, pair your
+remote again.
 
 Removing the add-on does not unpair the panel. The leftover pairing does no
 harm, because nothing else sends as Home Assistant's address.

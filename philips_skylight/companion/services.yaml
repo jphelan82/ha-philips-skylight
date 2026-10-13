@@ -28,7 +28,7 @@ skip_sequence:
         boolean:
 pair_transmitter:
   name: Pair transmitter
-  description: Repeats the pairing request for the chosen window, 90 seconds by default. Within that time, switch the panel's power off and on at its light switch or breaker. The panel blinks when it pairs. The panel sends no confirmation, so test a command afterward.
+  description: Sends the pairing request for 10 seconds. First switch the panel's power off and on at its light switch or breaker, then run this as soon as the panel is back on. The panel blinks when it pairs. Your other remote stays paired. The panel sends no confirmation, so test a command afterward.
   target:
     entity:
       integration: philips_skylight
@@ -36,22 +36,13 @@ pair_transmitter:
   fields:
     confirm:
       name: Start pairing
-      description: Confirm that you will switch the panel's power off and on within the window.
+      description: Confirm that the panel just came back on after a power cycle.
       required: true
       selector:
         boolean:
-    duration:
-      name: Window
-      description: How many seconds to keep repeating the request. Switch the panel's power off and on within this time.
-      default: 90
-      selector:
-        number:
-          min: 5
-          max: 300
-          unit_of_measurement: s
 unpair_all_remotes:
   name: Unpair all remotes
-  description: Makes the panel forget every paired sender, the original remote and this transmitter included. Repeats the request for the chosen window. Within that time, switch the panel's power off and on at its light switch or breaker. Afterward, pair every remote again, and pair this transmitter again with Pair transmitter.
+  description: Makes the panel forget every paired sender, the original remote and this transmitter included. Run it as soon as the panel is back on after a power cycle at its light switch or breaker. Afterward, pair every remote again, and pair this transmitter again with Pair transmitter.
   target:
     entity:
       integration: philips_skylight
@@ -63,22 +54,6 @@ unpair_all_remotes:
       required: true
       selector:
         boolean:
-    duration:
-      name: Window
-      description: How many seconds to keep repeating the request. Switch the panel's power off and on within this time.
-      default: 90
-      selector:
-        number:
-          min: 5
-          max: 300
-          unit_of_measurement: s
-stop_pairing:
-  name: Stop pairing
-  description: Stops a running pairing or unpair-all window early.
-  target:
-    entity:
-      integration: philips_skylight
-      domain: light
 dim:
   name: Dim
   description: Dims the panel up or down. Without a hold time, it sends one step, like a tap on the remote. With a hold time, it sends the remote's hold command about every 0.6 seconds for that long.

@@ -8,6 +8,16 @@ Bluetooth proxy near the panel. You do not need an MQTT broker, a cloud account
 or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
 25.6 inch panel and an ESP32-C3 proxy.
 
+## Before you start
+
+- The panel accepts at most two remotes, and Home Assistant counts as one. If
+  two remotes already control your Skylight, this does not work unless you give
+  one up.
+- If you set this up before on another Home Assistant, use **Unpair all
+  remotes** first, then pair your remote again.
+- One step needs the panel's power switched off and on at its light switch or
+  breaker. Use a phone or a portable computer for setup.
+
 ## Get started
 
 1. Install and start the add-on, turn on **Start on boot**, and open its web page.
@@ -19,9 +29,10 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
    2. **Connect Home Assistant to the proxy.** With one proxy, this happens by
       itself.
    3. **Let Home Assistant hear your remote.** Select **Allow**.
-   4. **Pair Home Assistant with the panel.** Select **Start pairing**. Within
-      90 seconds, switch the panel's power off at its light switch or breaker,
-      then on again. The panel blinks. Then test it and choose a mode.
+   4. **Pair Home Assistant with the panel.** Switch the panel's power off at
+      its light switch or breaker, then on again. When the panel is back on,
+      select **Pair** straight away. The panel blinks. Then test it and choose a
+      mode.
 4. Optional: add the Skylight card to a dashboard.
 
 ## Use the card
@@ -48,7 +59,7 @@ Assistant. Use the wall switch or breaker only for pairing.
 
 ## Pairing and unpairing
 
-Pairing is a one-time step. Updates do not need it, and your other remotes stay
+Pairing is a one-time step. Updates do not need it, and your remote stays
 paired. To pair again, use **Settings and fixes → Pair again** on the add-on
 page.
 

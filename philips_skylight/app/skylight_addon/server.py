@@ -102,7 +102,6 @@ class Panel:
             "dim_down": self._dim,
             "dim_hold": self._dim_hold,
             "pair": self._pair,
-            "stop_pairing": self._stop_pairing,
             "skip_sequence": self._skip_sequence,
             "test": self._test,
             "confirm_test": self._confirm_test,
@@ -433,12 +432,9 @@ class Panel:
 
     async def _pair(self, entity, body):
         if body.get("confirm") is not True:
-            raise ValueError("Confirm that you will switch the panel's power off and on")
-        # Returns at once; the integration repeats the request for 90 seconds.
+            raise ValueError("Confirm that the panel just came back on")
+        # Returns at once; the integration sends the request for 10 seconds.
         await self.ha.call(DOMAIN, "pair_transmitter", entity, confirm=True)
-
-    async def _stop_pairing(self, entity, body):
-        await self.ha.call(DOMAIN, "stop_pairing", entity)
 
     async def _prepare_firmware(self, body):
         if not self.esphome_dir:

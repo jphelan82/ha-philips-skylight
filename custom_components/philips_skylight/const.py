@@ -1,7 +1,7 @@
 """Configuration and protocol constants."""
 
 DOMAIN = "philips_skylight"
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 CONF_TRANSMIT_SERVICE = "transmit_service"
 CONF_PROXY_ENTITY = "proxy_entity"
 RECEIVE_EVENT = "esphome.ble_adv.raw_adv"
@@ -31,7 +31,8 @@ STORAGE_KEY = f"{DOMAIN}.sequence_7ffe"
 SEQUENCE_BLOCK = 256
 # Recovery jump after a lost or restored Store: about 1 million commands, 1/16 of the space.
 SEQUENCE_SKIP = 0x100000
-# How long a pairing or unpair-all request repeats, so the user can reach the switch.
-PAIRING_WINDOW = 90
+# A pairing or unpair-all request repeats for this long, like the remote's 10-second
+# hold. A much longer stream of requests makes the panel drop the other remote.
+PAIRING_BURST = 10
 # Keep the recorded power and mode if the proxy comes back within this many seconds.
 OUTAGE_GRACE = 60

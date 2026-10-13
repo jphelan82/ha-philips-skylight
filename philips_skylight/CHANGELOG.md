@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.1
+
+- Pairing and **Unpair all remotes** send one 10-second burst again, like the
+  remote's own hold. The 90-second stream of 0.3.0 made the panel drop the
+  other remote. Switch the panel's power off and on, wait until it is back on,
+  then select **Pair** straight away.
+- The **Done** and **Stop** buttons and the `philips_skylight.stop_pairing`
+  action are gone. The `duration` option of the pairing actions is gone too.
+- The setup page and the docs say up front that the panel accepts at most two
+  remotes, Home Assistant included. If you set this up before on another Home
+  Assistant, use **Unpair all remotes** first.
+- The setup page says at the start that one step needs the panel's power
+  switched off and on, so you can use a phone or a portable computer.
+- Native integration 0.3.1 needs a Home Assistant restart.
+
 ## 0.3.0
 
 Setup
@@ -10,11 +25,10 @@ Setup
 - With one compatible proxy, the add-on connects it without asking.
 - **Allow** turns on the proxy's remote tracking setting. The page shows
   whether it is on.
-- Pairing uses a 90-second window. Select **Start pairing**, then switch the
-  panel's power off and on at its light switch or breaker. The panel blinks.
-  **Done** ends the window early. Nobody needs to be at the screen and the
-  switch at the same time. The integration's **Configure** dialog and
-  **Unpair all remotes** use the same window, and the dialog no longer freezes.
+- Pairing uses a 90-second window, with **Done** to end it early. The
+  integration's **Configure** dialog and **Unpair all remotes** use the same
+  window, and the dialog no longer freezes. Version 0.3.1 replaces the window,
+  because it made the panel drop the other remote.
 - After pairing, a power toggle tests it, and your answer records the real
   power. Then you choose a mode, so Home Assistant knows the mode too.
 - After setup, the page shows the recorded state, controls and a short

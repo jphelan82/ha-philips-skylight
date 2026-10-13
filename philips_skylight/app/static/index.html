@@ -16,8 +16,7 @@
 
   <section id="pair-wait" hidden>
     <h2 id="pair-countdown">Pairing…</h2>
-    <p>Switch the panel's power off at its light switch or breaker, then on again. The panel blinks when it pairs.</p>
-    <div class="row"><button data-action="stop_pairing" data-done="yes" class="primary">Done — the panel blinked</button><button data-action="stop_pairing" data-done="no">Stop</button></div>
+    <p>The panel blinks when it pairs.</p>
   </section>
 
   <section id="installation" hidden>
@@ -29,6 +28,7 @@
 
   <section id="setup" hidden>
     <h2>Set up</h2>
+    <p class="hint">One step needs you to switch the Skylight's power off and on at its light switch or breaker. Use a phone or a portable computer for setup, so you can take it with you.</p>
     <ol class="steps">
       <li id="step-proxy">
         <h3>Prepare your Bluetooth proxy <span class="status" id="step-proxy-status"></span></h3>
@@ -60,8 +60,12 @@
       <li id="step-pair">
         <h3>Pair Home Assistant with the panel <span class="status" id="step-pair-status"></span></h3>
         <div id="pair-steps" hidden>
-          <p>Select <strong>Start pairing</strong>. Then, within 90 seconds, switch the panel's power off at its light switch or breaker, and on again. The remote's power button does not work for this.</p>
-          <button data-action="pair" class="primary">Start pairing</button>
+          <ol>
+            <li>Switch the panel's power off at its light switch or breaker, then on again. The remote's power button does not work for this.</li>
+            <li>Wait until the panel is back on. That can take up to 30 seconds.</li>
+            <li>Select <strong>Pair</strong> straight away. The panel blinks.</li>
+          </ol>
+          <button data-action="pair" class="primary">Pair</button>
         </div>
         <div id="pair-test" hidden>
           <p>Now test it.</p>
@@ -113,8 +117,12 @@
       <label>Mode<select id="observed-mode"></select></label>
     </details>
     <details class="plain" id="fix-pair"><summary>Pair again</summary>
-      <p>Select <strong>Start pairing</strong>. Then, within 90 seconds, switch the panel's power off at its light switch or breaker, and on again.</p>
-      <button data-action="pair">Start pairing</button>
+      <ol>
+        <li>Switch the panel's power off at its light switch or breaker, then on again.</li>
+        <li>Wait until the panel is back on. That can take up to 30 seconds.</li>
+        <li>Select <strong>Pair</strong> straight away. The panel blinks.</li>
+      </ol>
+      <button data-action="pair">Pair</button>
     </details>
     <details class="plain" id="fix-proxy"><summary>Change the Bluetooth proxy</summary>
       <label>Proxy<select id="proxy-change"></select></label>

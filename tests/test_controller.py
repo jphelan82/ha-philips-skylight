@@ -176,7 +176,7 @@ async def test_pairing_requires_confirmation_and_uses_durable_sequences(hass, mo
         pauses.append(seconds)
 
     monkeypatch.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
-    await light.async_pair_transmitter(True, duration=10)
+    await light.async_pair_transmitter(True)
     assert light.extra_state_attributes["pairing_until"] is not None
     await controller.pairing_task
     assert light.extra_state_attributes["pairing_until"] is None
@@ -195,8 +195,15 @@ async def test_pairing_requires_confirmation_and_uses_durable_sequences(hass, mo
     assert await restarted.sequence.async_next() == 256
 
 
-async def test_pairing_keeps_trying_through_failures_without_reporting_success(hass):
+async def test_pairing_keeps_trying_through_failures_without_reporting_success(
+    hass, monkeypatch
+):
     calls = []
+
+    async def no_wait(seconds):
+        pass
+
+    monkeypatch.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
 
     async def fail(call):
         calls.append(call)
@@ -205,15 +212,15 @@ async def test_pairing_keeps_trying_through_failures_without_reporting_success(h
     hass.services.async_register("esphome", DATA[CONF_TRANSMIT_SERVICE], fail)
     controller = await make_controller(hass)
     controller.state.is_on = True
-    await controller.async_pair(duration=1)
+    await controller.async_pair()
     await controller.pairing_task
-    assert len(calls) == 3  # A short proxy drop does not end the window.
+    assert len(calls) == 30  # A short proxy drop does not end the burst.
     assert controller.state.is_on is None
     assert controller.state.effect is None
-    assert await controller.sequence.async_next() == 3
+    assert await controller.sequence.async_next() == 30
 
 
-async def test_stop_ends_the_pairing_window_early(hass):
+async def test_unload_stops_a_running_burst(hass):
     calls = []
     hass.services.async_register(
         "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)

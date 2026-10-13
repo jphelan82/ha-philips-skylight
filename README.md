@@ -36,6 +36,13 @@ This is an experimental project. Please read these limits before you install it.
   its commands, and a second panel paired the same way responds too. Home
   Assistant also tracks every compatible remote it hears, so a second panel's
   remote changes the recorded state.
+- **The panel accepts at most two remotes, and Home Assistant counts as one.**
+  If two remotes already control your Skylight, this does not work unless you
+  give one of them up. If you set this up before on another Home Assistant, use
+  **Unpair all remotes** first, then pair your remote again.
+- **Setup needs the panel's power switched off and on once**, at its light switch
+  or breaker. Use a phone or a portable computer for setup, so you can take it
+  with you.
 - **Dimming is relative.** Each tap is one step darker or brighter. No
   brightness slider or color temperature control exists.
 - **It is tested on one setup.** One owner tested it with the NatureConnect/BioUp
@@ -86,8 +93,9 @@ does when its power returns.
       add-on does this by itself. With several, choose one.
    3. **Let Home Assistant hear your remote.** Select **Allow**. This turns on
       the proxy's setting **Allow the device to perform Home Assistant actions**.
-   4. **Pair Home Assistant with the panel.** See [Pairing](#pairing). Then
-      select **Switch the panel on or off**, and say what the panel did.
+   4. **Pair Home Assistant with the panel.** See [Pairing](#pairing). The page
+      shows "Pairing…" for 10 seconds. Then select **Switch the panel on or
+      off**, and say what the panel did.
       Finally, choose a mode. The panel switches on in that mode, so Home
       Assistant knows its state.
 5. Optional: create a Skylight dashboard, or add the Skylight card to one of
@@ -102,27 +110,28 @@ settings and pairing. You do not need to pair again.
 ## Pairing
 
 The panel ignores Home Assistant until you pair it. Pairing is a one-time step.
-Updates do not need it. Your other remotes stay paired.
+Updates do not need it. Your remote stays paired.
 
-1. Select **Start pairing**. Home Assistant repeats the pairing request for 90
-   seconds.
-2. Within those 90 seconds, switch the panel's power off at its light switch or
-   breaker, then on again. The remote's power button does not work for this.
-3. The panel blinks when it pairs.
-4. Select **Done — the panel blinked**. If you do not, pairing ends by itself
-   after 90 seconds.
+1. Switch the panel's power off at its light switch or breaker, then on again.
+   The remote's power button does not work for this.
+2. Wait until the panel is back on. That can take up to 30 seconds.
+3. Select **Pair** straight away. Home Assistant sends the pairing request for
+   10 seconds, and the panel blinks.
 
-The panel listens for pairing only for a moment after its power returns. Before
-and after that moment, it ignores the request, so repeating it is harmless.
+The panel listens for pairing only for a short time after it comes back on, so
+do not wait long before you select **Pair**. Home Assistant sends a short burst,
+like the remote's own 10-second hold. A long stream of requests makes the panel
+drop your remote.
 
 You can also pair from **Settings → Devices & services → Philips Skylight →
 Configure → Pair this transmitter**, or with the `philips_skylight.pair_transmitter`
 action.
 
 To make the panel forget **every** remote, use **Configure → Unpair all
-remotes**. It removes the original remote, any wall remote and Home Assistant.
-It uses the same 90-second window. Afterward, pair each remote again with its
-own steps, and pair Home Assistant again. No command removes only one remote.
+remotes**, with the same steps. It removes your remote and Home Assistant.
+Afterward, pair your remote again with its own steps, and pair Home Assistant
+again. No command removes only one remote. If the request reaches the panel too
+late, the panel only switches off. Then try again.
 
 Removing or reinstalling the add-on does not unpair the panel, because the panel
 stores the pairing itself. That leftover pairing does no harm: nothing else
@@ -185,27 +194,27 @@ changed.
 
 - During setup, offer to link a smart wall switch to the recorded state with an
   automation.
-- Notice the power cycle during pairing by itself. The panel sends a Bluetooth
-  beacon all the time, so the proxy can tell when its power goes off and comes
-  back. Then nobody needs to select **Done**.
+- Start the pairing burst by itself when the panel comes back on. The panel
+  sends a Bluetooth beacon all the time, so the proxy can tell when its power
+  goes off and comes back. Then nobody needs to select **Pair** at the right
+  moment.
 - **Several Skylights.** Not built yet. Two parts are needed:
   - **Control.** Give each panel its own Home Assistant sender address (`0x7FFE`,
     `0x7FFD`, and so on), and pair each address only with its own panel. This
     needs the panels on separate circuits, because one power cycle opens the
-    pairing window of every panel on that circuit.
+    pairing window of every panel on that circuit. Each panel accepts at most
+    two senders, so each panel can have one remote besides Home Assistant.
   - **State tracking per panel.** Home Assistant hears and decrypts every remote
     press, paired or not. The preferred design is a table that maps each
     remote's mesh address to its panel. The user fills it in during setup by
     pressing each remote once. The remotes stay paired to their panels, so they
-    keep working without Home Assistant. A panel's relay of a press, sent from
-    its own Bluetooth address with TTL 4, can show which panel accepted it. But
-    relays are not always heard, so they can only help.
-  - **This needs each remote to have its own mesh address.** The handheld remote
-    sends as `0x7FFF`. The wall remote's address is unknown. Both remotes work
-    together, which suggests different addresses, because a mesh node drops
-    packets with a lower sequence number from the same address. A capture of
-    one wall-remote press confirms it. A remote paired to two panels controls
-    both, so its presses update both records.
+    keep working without Home Assistant. A panel's relay of a press does not
+    help: on 2026-10-13 the panel relayed presses from a remote it had dropped.
+  - **This needs each remote to have its own mesh address.** The tested remote
+    sends as `0x7FFF`. Whether every remote of this model uses `0x7FFF` is
+    unknown. If two remotes share an address, Home Assistant cannot tell their
+    presses apart. A capture of a second remote's press answers this. A remote
+    paired to two panels controls both, so its presses update both records.
   - **Fallback if remotes share an address:** unpair the remotes from the
     panels, and let Home Assistant forward each press to the right panel from
     that panel's sender address. Then the state is exact. The cost is that the

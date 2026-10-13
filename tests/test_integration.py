@@ -168,7 +168,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         await hass.services.async_call(
             DOMAIN,
             "pair_transmitter",
-            {"entity_id": entity_id, "confirm": True, "duration": 10},
+            {"entity_id": entity_id, "confirm": True},
             blocking=True,
         )
         await hass.config_entries.async_entries(DOMAIN)[0].runtime_data.pairing_task
@@ -284,7 +284,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         await hass.services.async_call(
             DOMAIN,
             "unpair_all_remotes",
-            {"entity_id": entity_id, "confirm": True, "duration": 10},
+            {"entity_id": entity_id, "confirm": True},
             blocking=True,
         )
         await controller.pairing_task
@@ -317,7 +317,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             assert result["type"] == "abort"  # The dialog closes at once.
             assert result["reason"] == f"{step}_sent"
             await controller.pairing_task
-        assert len(calls) == before + 270  # Three requests a second for 90 seconds.
+        assert len(calls) == before + 30  # Three requests a second for 10 seconds.
         (message,) = MeshCodec().decode(bytes.fromhex(calls[-1].data["raw"]))
         assert message.payload[4] == sub_command
     assert await hass.config_entries.async_unload(entry.entry_id)

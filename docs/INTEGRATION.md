@@ -103,12 +103,12 @@ data:
 ## Transmitter pairing
 
 The panel ignores every sender that is not paired, Home Assistant's `0x7FFE`
-included. It accepts a pairing request only for a moment after its mains power
-returns. `philips_skylight.pair_transmitter` with `confirm: true` therefore
-repeats the request three times a second for a window, 90 seconds by default.
-Within the window, switch the panel's power off at its light switch or breaker,
-then on again. The panel blinks when it pairs. Requests before and after that
-moment do nothing, and other remotes stay paired.
+included. It accepts at most two paired senders, and Home Assistant is one. It
+accepts a pairing request only for a short time after it comes back on.
+
+1. Switch the panel's power off at its light switch or breaker, then on again.
+2. Wait until the panel is back on. That can take up to 30 seconds.
+3. Run `philips_skylight.pair_transmitter` with `confirm: true` straight away.
 
 ```yaml
 action: philips_skylight.pair_transmitter
@@ -116,27 +116,29 @@ target:
   entity_id: light.philips_skylight
 data:
   confirm: true
-  duration: 90
 ```
 
-The action returns at once, and the window runs in the background. Other
-commands still get through between the requests. `philips_skylight.stop_pairing`
-ends the window early. The light's `pairing_until` attribute shows when it ends.
-Each request uses a newly reserved sequence number. Pairing never runs by itself.
+The action sends the request three times a second for 10 seconds, like the
+remote's own hold, and the panel blinks. A long stream of requests makes the
+panel drop the other remote, so the burst stays short. The action returns at
+once, and the burst runs in the background. Other commands still get through
+between the requests. The light's `pairing_until` attribute shows when the burst
+ends. Each request uses a newly reserved sequence number. Pairing never runs by
+itself.
 
 ### Pairing and unpairing from Configure
 
 **Configure** on the integration offers **Pair this transmitter** and **Unpair
 all remotes**. Each step explains the power cycle and needs a tick box. The
 `philips_skylight.pair_transmitter` and `philips_skylight.unpair_all_remotes`
-actions do the same for scripts, with `confirm: true`. Both start the 90-second
-window and return at once.
+actions do the same for scripts, with `confirm: true`. Both send a 10-second
+burst and return at once.
 
 Unpair all remotes sends the pairing request with sub-command `02` instead of
 `01`, with the same cadence. Right after power-on, the panel blinks and forgets
-every paired sender: the original remote, wall remotes and Home Assistant.
-Whether the panel ignores it at other times is untested. No known command
-removes only one sender.
+every paired sender: the remote and Home Assistant. Outside the pairing window,
+it switches the panel off and changes no pairing. No known command removes only
+one sender.
 
 ## Sequence safety
 

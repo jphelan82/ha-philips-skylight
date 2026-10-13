@@ -260,18 +260,19 @@ Deployed on 2026-10-13 with integration 0.2.6.
 - Candidate `00`, sent right after power-on: no visible change. The first toggle
   afterward was lost to a proxy drop. A second toggle worked.
 - Candidate `02`, sent right after power-on: the panel blinked. Two toggles from
-  Home Assistant and the handheld remote's toggles were then all ignored. The
-  panel did not relay the remote's toggles. `02` removes every paired sender.
-- The owner paired the handheld remote again, and it worked. Home Assistant then
-  sent its pairing request after a power cycle, and the panel blinked. A
-  Home Assistant toggle and the handheld remote then failed. Three capture
-  copies were connected to the proxy at that time, and the capture went silent,
-  so the overloaded proxy probably lost the toggle.
-- After the captures were stopped, the owner paired the wall remote. Then a
-  Home Assistant toggle worked, and the handheld remote worked. The panel keeps
-  several paired senders, and a new pairing does not replace earlier ones.
-- Home Assistant recorded the wall remote's presses and synchronized power from
-  them.
+  Home Assistant and the remote's toggles were then all ignored. `02` removes
+  every paired sender.
+- The owner paired the remote again, and it worked. Home Assistant then sent its
+  pairing request after a power cycle, and the panel blinked. A Home Assistant
+  toggle and the remote then failed.
+- The owner paired the remote again. Then a Home Assistant toggle worked, and
+  the remote worked.
+
+*Corrected later the same day.* An earlier version of this section said that a
+second "wall remote" was paired and that three senders worked together. The
+owner has only one remote, mounted on the wall and usable in the hand. Only two
+senders were ever paired: the remote and Home Assistant. See
+[Add-on 0.3.1](#add-on-031) for what drops the remote.
 
 ## Add-on 0.3.0
 
@@ -305,6 +306,31 @@ Deployed on 2026-10-13 as an add-on update, followed by a Core restart.
   the window, the owner switched the panel's power off and on. The panel
   blinked. **Stop** ended the window, and a toggle from Home Assistant then
   switched the panel off.
+
+## Add-on 0.3.1
+
+Tested on 2026-10-13 with add-on 0.3.0, before the change to 0.3.1.
+
+### Physical observations
+
+- After Home Assistant paired with the 90-second stream, the owner's remote
+  stopped working. A clean repeat showed the same: unpair all, pair the remote,
+  then pair Home Assistant with the stream. The remote stopped, and Home
+  Assistant worked.
+- The capture showed the remote still sending, and the panel relaying its
+  presses with TTL 4, but the panel did not act on them.
+- From another clean unpair all, the owner paired the remote. Then Home
+  Assistant paired with one 10-second burst, sent after the owner reported the
+  panel back on. The panel blinked. The remote worked, and a Home Assistant
+  toggle switched the panel off. Both senders work together.
+- After a power cycle, the panel took between a few seconds and about 30 seconds
+  to light up again.
+- An unpair-all burst that reached the panel after its pairing window had closed
+  switched the panel off. Inside the window, the same request made the panel
+  blink and forget every sender.
+
+Add-on 0.3.1 removes the 90-second stream. Pairing and unpair all send one
+10-second burst, started as soon as the panel is back on.
 
 ## Rollback
 

@@ -58,9 +58,7 @@ async def action(request):
     if kind == "allow_tracking":
         state["tracking"] = True
     elif kind == "pair":
-        asyncio.create_task(countdown(90))
-    elif kind == "stop_pairing":
-        state["pairing_remaining"] = 0
+        asyncio.create_task(countdown(10))
     elif kind == "scene":
         state.update(state="on", effect=body["effect"])
     elif kind == "confirm_test" and body.get("result") in ("on", "off"):

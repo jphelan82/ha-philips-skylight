@@ -15,7 +15,7 @@ from .const import (
     CONF_TRANSMIT_SERVICE,
     DOMAIN,
     HOLD_INTERVAL,
-    PAIRING_WINDOW,
+    PAIRING_BURST,
     RECEIVE_EVENT,
     STORAGE_KEY,
 )
@@ -117,21 +117,20 @@ class SkylightController:
                 self.notify()
             await asyncio.sleep(HOLD_INTERVAL)
 
-    async def async_pair(self, duration: float = PAIRING_WINDOW) -> None:
-        """Start repeating the pairing request in the background. Returns at once."""
-        self._start_pairing(pairing_payload, "pairing", duration)
+    async def async_pair(self) -> None:
+        """Send the pairing request for 10 seconds in the background. Returns at once."""
+        self._start_pairing(pairing_payload, "pairing", PAIRING_BURST)
 
-    async def async_unpair_all(self, duration: float = PAIRING_WINDOW) -> None:
-        """Start asking the panel to forget every paired sender, this one included."""
-        self._start_pairing(unpair_all_payload, "unpair all", duration)
+    async def async_unpair_all(self) -> None:
+        """Ask the panel to forget every paired sender, this one included."""
+        self._start_pairing(unpair_all_payload, "unpair all", PAIRING_BURST)
 
     @callback
     def _start_pairing(
         self, payload_builder: Callable[[int], bytes], label: str, duration: float
     ) -> None:
-        # The panel listens only right after its power returns. Repeating the
-        # request lets the user reach the switch first; requests before and
-        # after that moment are ignored.
+        # The panel listens only for a short time after its power returns, so the
+        # user selects Pair as soon as the panel is back on.
         self.stop_pairing()
         self.pairing_until = dt_util.utcnow() + timedelta(seconds=duration)
         self.state.is_on = None
