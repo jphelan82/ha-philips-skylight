@@ -4,6 +4,9 @@
 > **Work in progress.** If you found this project by chance: I am still
 > developing and testing it. You are welcome to try it. Expect parts that do not
 > work fully yet, and expect bugs and errors.
+>
+> **One Skylight only.** I have tested this with one Skylight panel. Support for
+> several Skylights is not built and not tested.
 
 The Philips LED Skylight panel comes with a remote and nothing else. It has no
 app, no Wi-Fi and no Hue support. This project lets Home Assistant act as a
@@ -26,8 +29,10 @@ This is an experimental project. Please read these limits before you install it.
 - **Power is a toggle.** The panel has one on/off command, not separate on and
   off commands. If Home Assistant thinks the light is on when it is off, then
   "turn on" does nothing, and "turn off" turns it on.
-- **Every Skylight in range responds.** All panels of this model use the same
-  factory keys. You cannot control two nearby panels separately.
+- **It supports one Skylight.** It was built and tested with one panel.
+  Support for several panels is not built and not tested. All panels of this
+  model use the same factory keys, so every Skylight in range responds to every
+  command. You cannot control two nearby panels separately.
 - **Dimming is up or down by one step.** No brightness slider or color
   temperature control exists. Holding a dashboard dim button does not keep
   dimming. Only the physical remote does that.
