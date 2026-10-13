@@ -88,6 +88,10 @@ On the tested panel, the original remote kept working after pairing. Other
 models are untested. If your remote stops working, pair it again with its own
 instructions.
 
+No unpair command is known. To pair the transmitter again, repeat the steps
+above. Removing or reinstalling the add-on does not unpair the panel, because
+the panel stores the pairing itself.
+
 ## Everyday use
 
 | Control | What it does |

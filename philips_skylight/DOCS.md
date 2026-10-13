@@ -71,11 +71,20 @@ introduce a second transmitter or sequence counter.
 
 ## Pairing
 
-A new HA transmitter needs pairing before the panel accepts its commands. Open
-**Pair the transmitter on first setup**. Skip it if the existing transmitter
-already works; normal add-on updates do not require re-pairing. Switch the panel's mains power off and back on, then
-confirm and send the request promptly. It lasts approximately ten seconds; the
-panel should blink. Check power, scenes and the original remote afterward.
+A new HA transmitter needs pairing before the panel accepts its commands. Skip
+this section if the existing transmitter already works. Normal add-on updates do
+not need pairing again.
+
+1. Open **Pair the transmitter on first setup** and tick the confirmation box.
+2. Switch the panel's mains power off at the wall switch or breaker.
+3. Switch the mains power on again.
+4. Select **Send pairing request** straight away. The request lasts about ten
+   seconds, and the panel blinks.
+5. Check power, scenes and the original remote.
+
+No unpair command is known. To pair the transmitter again, repeat these steps.
+Removing or reinstalling the add-on does not unpair the panel, because the
+panel stores the pairing itself.
 
 The original remote continued working on the tested panel, but another unit's
 pairing behavior may differ. Have the remote's pairing instructions available.

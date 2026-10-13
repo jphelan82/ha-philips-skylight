@@ -76,6 +76,8 @@ only the original remote has been physically tested.
 
 - Does the panel accept an unpaired sender other than `0x7FFF`? Turn-on attempts from `0x7FFE` did not illuminate the panel, even after correcting the advertising bearer. The owner reports that the original remote also required pairing before it worked.
 - The captured `CF` pairing command authorized `0x7FFE` on this panel: the owner observed blinking during the request, then confirmed HA off/on commands physically worked. The original remote continued working. Other panels' pairing behavior remains unverified. Do not replace the factory network or impersonate `0x7FFF`.
+- How can a user unpair `0x7FFE`? Only the pairing request was captured. No unpair or "remove remote" command is known, and no factory reset procedure for the panel is documented. Removing the add-on leaves the pairing in the panel. Finding one needs a capture of the vendor remote or app removing a remote, or a reset procedure from the vendor.
+- How long does the panel accept pairing after its mains power returns? The tested panel accepted a request sent straight away. The window was not measured.
 - Do separate on and off codes exist? Candidates to try: `03 00 41` and `03 02 41`.
 - Relative dim down/up with `0x14` physically worked after transmitter pairing. The exact increment and behavior of other step values remain unmeasured.
 

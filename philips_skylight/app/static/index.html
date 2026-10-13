@@ -48,7 +48,13 @@
     <p class="hint">Check this permission yourself; finding a transmitter does not verify it. After recording the starting state, press a remote button and check the native light entity. A received press is not confirmation that the panel acted on it.</p>
   </details>
   <details id="pairing" hidden><summary>Pair the transmitter on first setup</summary>
-    <p>A new HA transmitter needs to be paired before the panel accepts commands. If this transmitter already controls your panel, skip this step; updates do not require re-pairing. Cycle the panel's mains power, then send the request promptly. It lasts about ten seconds and the panel should blink. Pairing may replace the original remote's pairing on some panels.</p>
+    <p>The panel ignores a new HA transmitter until you pair it. If this transmitter already controls your panel, skip this step. Updates do not need pairing again. On some panels, pairing can replace the original remote's pairing.</p>
+    <ol>
+      <li>Tick the box below.</li>
+      <li>Switch the panel's mains power off at the wall switch or breaker.</li>
+      <li>Switch the mains power on again.</li>
+      <li>Select <strong>Send pairing request</strong> straight away. The request lasts about ten seconds, and the panel blinks.</li>
+    </ol>
     <label class="check"><input id="pair-confirm" type="checkbox">I am ready to pair and may need to pair the original remote again.</label>
     <button data-action="pair">Send pairing request</button>
     <p class="hint">Check the physical panel and original remote afterward. Pairing completion is not an acknowledgment; record the starting state again.</p>

@@ -20,10 +20,14 @@ panel has been tested with an ESP32-C3 proxy.
    settings. Choose your **Bluetooth proxy** and save; a sole proxy is preselected.
 4. Enable **Allow the device to perform Home Assistant actions** in the proxy's
    ESPHome options so remote presses can be received.
-5. **Pair the transmitter on first setup.** Cycle the panel's mains power, then
-   confirm and send the pairing request promptly. Check the panel and original
-   remote. Skip this step if the HA transmitter already works; updates do not
-   require re-pairing.
+5. **Pair the transmitter on first setup.** Skip this step if the HA transmitter
+   already works. Updates do not need pairing again.
+   1. Tick the confirmation box.
+   2. Switch the panel's mains power off at the wall switch or breaker.
+   3. Switch the mains power on again.
+   4. Select **Send pairing request** straight away. The panel blinks for
+      about ten seconds.
+   5. Check the panel and the original remote.
 6. **Before first use, match the recorded state to the physical panel.** In
    **Record initial state**, observe and select the power. Optionally press a
    mode button on the existing control panel: the mode dropdown always follows
@@ -78,11 +82,15 @@ observe the physical result.
 
 ## Pairing and recovery
 
-Open **Pair the transmitter on first setup**, cycle the panel's mains power, then confirm and
-send the pairing request promptly. The request lasts about ten seconds; the
-panel should blink. Check the original remote afterward and correct the
-recorded state. Other models may require pairing the original remote again.
-Pairing never happens automatically.
+Open **Pair the transmitter on first setup** and tick the confirmation box.
+Switch the panel's mains power off, then on again. Select **Send pairing
+request** straight away. The request lasts about ten seconds, and the panel
+blinks. Afterward, check the original remote and correct the recorded state.
+Other models can need the original remote paired again. Pairing never happens
+automatically.
+
+No unpair command is known. To pair the transmitter again, repeat the same
+steps. Removing or reinstalling the add-on does not unpair the panel.
 
 See the **Documentation** tab for complete proxy setup, options, troubleshooting
 and recovery. Protocol and developer notes are maintained separately in the

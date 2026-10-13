@@ -7,6 +7,9 @@
   from an older backup. It needs confirmation, sends no light command and does
   not need pairing again. The integration adds the matching
   `philips_skylight.skip_sequence` action.
+- The pairing step lists the mains power cycle as separate numbered steps.
+  The documentation states that no unpair command is known and that removing
+  the add-on does not unpair the panel.
 - The add-on follows only the Skylight entities and ESPHome sensors, instead of
   every state change in Home Assistant. The status page no longer repeats the
   proxy search for every sensor on each two-second refresh.
