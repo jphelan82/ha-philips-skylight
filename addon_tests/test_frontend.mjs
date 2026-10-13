@@ -197,7 +197,14 @@ test("holding a dim button repeats the hold command until release", async () => 
   const {element, posts, press, tick} = await page(source);
   const dimUp = element("dim-up");
   dimUp.dataset.hold = "up";
-  dimUp.listeners.pointerdown();
+  const captured = [];
+  dimUp.setPointerCapture = (id) => captured.push(id);
+  dimUp.listeners.pointerdown({pointerId: 7});
+  assert.deepEqual(captured, [7]); // The finger stays on the button if it slides.
+  // A long touch on a phone opens the phone's menu unless the page stops it.
+  let stopped = false;
+  dimUp.listeners.contextmenu({preventDefault: () => { stopped = true; }});
+  assert.equal(stopped, true);
   await tick(); // Held long enough: the first hold command.
   await tick(); // 0.6 seconds later: another one.
   dimUp.listeners.pointerup();
@@ -205,9 +212,10 @@ test("holding a dim button repeats the hold command until release", async () => 
     {action: "dim_hold", direction: "up"},
     {action: "dim_hold", direction: "up"},
   ]);
-  // A quick press is one ordinary step.
-  dimUp.listeners.pointerdown();
+  // A quick press is one ordinary step. Releasing also ends the capture.
+  dimUp.listeners.pointerdown({pointerId: 8});
   dimUp.listeners.pointerup();
+  dimUp.listeners.lostpointercapture();
   await setImmediate();
   assert.deepEqual(posts.at(-1), {action: "dim_up"});
   // A pointer click on a dim button sends nothing more; the keyboard sends one step.

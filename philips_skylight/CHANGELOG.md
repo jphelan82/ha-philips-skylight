@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2
+
+- Holding **Dim −** or **Dim +** on the add-on page works on a phone. Before,
+  the phone opened its own menu after about half a second and cancelled the
+  touch, so the hold stopped. The button now keeps the touch until the finger
+  lifts, even if it slides a little.
+
 ## 0.4.1
 
 - The API key note on the add-on page is marked optional. If it is the only

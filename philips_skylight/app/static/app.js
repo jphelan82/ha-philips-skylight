@@ -285,8 +285,16 @@ function holdEnd() {
   if (!sent) action({action: "dim_" + direction});
 }
 for (const id of ["dim-down", "dim-up"]) {
-  el(id).addEventListener("pointerdown", () => holdStart(el(id).dataset.hold));
-  for (const type of ["pointerup", "pointerleave", "pointercancel"]) el(id).addEventListener(type, holdEnd);
+  const button = el(id);
+  button.addEventListener("pointerdown", (event) => {
+    // Keep the finger's events on this button, even if it slides a little.
+    if (event && button.setPointerCapture) button.setPointerCapture(event.pointerId);
+    holdStart(button.dataset.hold);
+  });
+  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) button.addEventListener(type, holdEnd);
+  // On a phone, a long touch opens the phone's own menu and cancels the touch.
+  // Stop that, so the hold keeps going until the finger lifts.
+  button.addEventListener("contextmenu", (event) => event.preventDefault());
 }
 document.addEventListener("click", (event) => {
   const button = event.target.closest("button");
