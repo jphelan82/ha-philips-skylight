@@ -1,16 +1,25 @@
 # Changelog
 
+## 0.2.7
+
+- Native integration 0.2.6: the pairing and skip actions require `confirm:
+  true` in their schema. A call without it fails validation before any code
+  runs. The REST API then answers HTTP 400 instead of HTTP 500, and Home
+  Assistant logs no traceback. This update needs a Core restart.
+
 ## 0.2.6
 
 - The pairing step lists the mains power cycle as separate numbered steps.
   The documentation states that no unpair command is known and that removing
   the add-on does not unpair the panel.
 - After a lost connection, the add-on tries to reconnect at least every five
-  seconds, instead of every 30. After a Core restart it is back sooner.
+  seconds, instead of every 30. After a Core restart, Supervisor accepts the
+  connection only when Core reaches its running state. The add-on now connects
+  within five seconds of that.
 - Native integration 0.2.5: a pairing or skip request without confirmation,
   an unknown effect and an unknown scene are reported as input errors. The
-  REST API now answers HTTP 400 for these, not HTTP 500, and Home Assistant no
-  longer logs a traceback. This update needs a Core restart.
+  Home Assistant frontend shows them as user errors. This update needs a Core
+  restart.
 - Native integration 0.2.5: a mode command turns an off panel on, in that
   mode. After any mode command, sent from Home Assistant or received from a
   remote, the integration records power as on. `light.turn_on` with an effect

@@ -12,6 +12,15 @@ from .const import EFFECTS, VERSION
 from .controller import SkylightConfigEntry
 from .entity import SkylightEntity
 
+PAIR_CONFIRM = (
+    "Pairing may replace the working remote. Set confirm to true only "
+    "when ready to test after cycling the panel's mains power."
+)
+SKIP_CONFIRM = (
+    "Skip the sequence only when the panel ignores this transmitter after "
+    "Home Assistant was rebuilt or restored from an older backup."
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -23,11 +32,16 @@ async def async_setup_entry(
     platform.async_register_entity_service(
         "set_assumed_power", {vol.Required("is_on"): cv.boolean}, "async_set_assumed_power"
     )
+    # Reject a missing confirmation in the schema, so the REST API answers 400.
     platform.async_register_entity_service(
-        "pair_transmitter", {vol.Required("confirm"): cv.boolean}, "async_pair_transmitter"
+        "pair_transmitter",
+        {vol.Required("confirm"): vol.All(cv.boolean, vol.IsTrue(PAIR_CONFIRM))},
+        "async_pair_transmitter",
     )
     platform.async_register_entity_service(
-        "skip_sequence", {vol.Required("confirm"): cv.boolean}, "async_skip_sequence"
+        "skip_sequence",
+        {vol.Required("confirm"): vol.All(cv.boolean, vol.IsTrue(SKIP_CONFIRM))},
+        "async_skip_sequence",
     )
 
 
@@ -65,18 +79,12 @@ class SkylightLight(SkylightEntity, LightEntity):
 
     async def async_pair_transmitter(self, confirm: bool) -> None:
         if not confirm:
-            raise ServiceValidationError(
-                "Pairing may replace the working remote. Set confirm to true only "
-                "when ready to test after cycling the panel's mains power."
-            )
+            raise ServiceValidationError(PAIR_CONFIRM)
         await self.controller.async_pair()
 
     async def async_skip_sequence(self, confirm: bool) -> None:
         if not confirm:
-            raise ServiceValidationError(
-                "Skip the sequence only when the panel ignores this transmitter after "
-                "Home Assistant was rebuilt or restored from an older backup."
-            )
+            raise ServiceValidationError(SKIP_CONFIRM)
         await self.controller.async_skip_sequence()
 
     async def async_turn_on(self, **kwargs) -> None:

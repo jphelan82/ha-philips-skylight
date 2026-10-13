@@ -214,6 +214,23 @@ Supervisor uninstalled `local_philips_skylight`. The integration stayed at
 - Physical check: the panel was on in Energize. One `light.toggle` from Home
   Assistant turned it off, as the owner confirmed. The new firmware transmits.
 
+## Add-on 0.2.6
+
+Deployed on 2026-10-13 as an add-on update, followed by a Core restart.
+
+- Supervisor updated the add-on from the branch repository. The add-on
+  installed integration 0.2.5. After the Core restart, `light.philips_skylight`
+  reported `integration_version` 0.2.5. The watermark stayed at `1280`.
+- Core answered HTTP requests 40 seconds after the restart. Supervisor
+  reported Core as running at 194 seconds. The add-on retried every five
+  seconds and connected one second before that report. Supervisor's WebSocket
+  proxy rejects add-ons until Core is running, so the shorter backoff alone
+  does not shorten this wait.
+- A REST call to `skip_sequence` with `confirm: false` still returned HTTP 500,
+  with a logged traceback. The REST API turns only schema errors and unknown
+  services into HTTP 400. A `ServiceValidationError` from the handler is not
+  enough. Integration 0.2.6 moves the check into the service schema.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store
