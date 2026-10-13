@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.5
+
+- The add-on comes as a prebuilt image for amd64 and aarch64. Home Assistant
+  downloads it instead of building the add-on on your machine, so installs and
+  updates take seconds, and they no longer depend on a package download during
+  the build.
+- Each version has a GitHub release with its changelog.
+
 ## 0.4.4
 
 - Holding a dim button on the add-on page sends a hold command every 0.6

@@ -24,6 +24,10 @@ def test_repository_metadata_versions_and_no_broker_dependency():
     # Supervisor passes BUILD_VERSION; a stale default in the Dockerfile only misleads.
     assert "ARG BUILD_VERSION\n" in (ROOT / "philips_skylight/Dockerfile").read_text()
     assert yaml.safe_load((ROOT / "repository.yaml").read_text())["name"]
+    # Home Assistant downloads this image, so it must match what the workflow publishes.
+    publish = (ROOT / ".github/workflows/addon-publish.yml").read_text()
+    assert config["image"] == "ghcr.io/jphelan82/{arch}-philips-skylight"
+    assert "ghcr.io/jphelan82/${{ matrix.arch }}-philips-skylight:" in publish
     assert config["homeassistant_api"] and config["ingress"]
     assert not config.get("services")
     assert not config.get("host_network")

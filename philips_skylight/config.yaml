@@ -1,8 +1,10 @@
 name: Philips Skylight
-version: "0.4.4"
+version: "0.4.5"
 slug: philips_skylight
 description: Local Skylight control, pairing and setup through your ESPHome Bluetooth proxy
 url: https://github.com/jphelan82/ha-philips-skylight
+# Prebuilt by .github/workflows/addon-publish.yml. See docs/RELEASING.md.
+image: "ghcr.io/jphelan82/{arch}-philips-skylight"
 arch:
   - amd64
   - aarch64

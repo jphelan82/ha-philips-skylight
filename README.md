@@ -310,3 +310,4 @@ changed.
 - [Protocol notes](docs/PROTOCOL.md): how the panel's Bluetooth Mesh commands
   work, and developer instructions.
 - [Validation record](docs/VALIDATION.md): what was tested on real hardware.
+- [Releasing](docs/RELEASING.md): how to publish a new version.
