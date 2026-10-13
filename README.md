@@ -8,13 +8,45 @@
 > **One Skylight only.** I have tested this with one Skylight panel. Support for
 > several Skylights is not built and not tested.
 
-The Philips LED Skylight panel comes with a remote and nothing else. It has no
-app, no Wi-Fi and no Hue support. This project lets Home Assistant act as a
+The Philips LED Skylight panel comes with a remote and no smart functionality. It has no app, no Wi-Fi and no Hue support. This project lets Home Assistant act as a
 second remote. You get a power toggle, the six modes and dim buttons on your
 dashboard and in automations. Your original remote keeps working.
+This allows Home Assistant to treat the device as a light entity, enabling you to include your Skylight in your automations, scenes, and more. The add-on also does its best to mirror the current state of your light, including whether it's powered on and its current scene (see limitations below). 
+Home Assistant talks to the panel through an ESPHome Bluetooth proxy. 
 
-Home Assistant talks to the panel through an ESPHome Bluetooth proxy. You do not
-need a cloud account, an MQTT broker or a custom dashboard card.
+
+I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your bluetooth-proxy and will guide you through all the requisite steps necessary to get the add-on set up. 
+
+## What it does
+
+- **A light entity.** The Skylight appears in Home Assistant as a light, with
+  the six modes as its effects.
+- **Power.** Switch the panel on and off from a dashboard, a voice assistant or
+  an automation.
+- **All six modes.** Auto rhythm, Refresh, Energize, Focus, Relax and Rest each
+  get a button. A mode button also switches the panel on.
+- **Dimming.** Dim down and Dim up, one step per tap, or longer with a hold.
+- **The Auto rhythm schedule.** Set the current time as the start of the daily
+  schedule, like holding Auto rhythm and Relax on the remote.
+- **Your remote keeps working.** Home Assistant hears its presses and updates
+  the shown power and mode.
+- **State correction.** If the shown state is wrong, tell Home Assistant what
+  you see. This changes only the record and sends nothing to the panel.
+- **Automations, scripts and scenes.** Use the light, the mode buttons and the
+  `philips_skylight.dim` action like any other device.
+- **Pairing and unpairing.** Pair Home Assistant with the panel, unpair every
+  remote, or start over, from the add-on page or the integration's settings.
+- **A ready-made dashboard card.** It uses the remote's icons and colors, and
+  the top tile glows in the current mode's color. It is built from Home
+  Assistant's own cards, so it needs no custom card or HACS (the Home Assistant
+  Community Store). The add-on creates a Skylight dashboard or adds the card to
+  one of yours.
+- **Guided setup.** A setup checklist adds the Skylight firmware to your ESPHome
+  Bluetooth proxy, with backups, connects it, pairs the panel and tests it.
+- **Guided updates.** After an update, the add-on page lists any step left: a
+  Home Assistant restart, new proxy firmware, or a newer card.
+- **Local only.** No cloud, no account, no app and no MQTT broker. Everything
+  stays on your home network.
 
 ## Read this first: what it cannot do
 
@@ -57,14 +89,18 @@ If you want a dependable on/off status for automations, this project cannot
 give you one. If you want a remote on your phone and in your dashboard, it
 does that well.
 
-## Wall switches
+## Light switches
 
-Leave the panel's wall switch on. Control the panel with its remote, its wall
+
+
+
+
+I do not advise using the Skylight with a light switch. If you use the Skylight with an ordinary light switch, this automation will not be able to preserve the state, such as the on/off state or the currently selected scene. If you do have such a switch leave the panel's wall switch on. Control the panel with its remote, its wall
 remote, or Home Assistant. A wall switch cuts the power without telling Home
 Assistant, so the recorded state goes wrong. You need the wall switch or the
 breaker only for pairing.
 
-If the panel's power runs through a **smart** wall switch in Home Assistant, you
+If the panel's power runs through a **smart** light switch in Home Assistant, you
 can keep the record in step with an automation. When the switch turns off,
 press **Record panel off**. When the switch turns back on, record what the panel
 does when its power returns.
