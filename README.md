@@ -101,10 +101,6 @@ This is an experimental project. Please read these limits before you install it.
 - **The add-on needs Home Assistant OS or Supervised.** For Container or Core
   installs, use the [integration-only guide](docs/INTEGRATION.md).
 
-If you want a dependable on/off status for automations, this project cannot
-give you one. If you want a remote on your phone and in your dashboard, it
-does that well.
-
 ## Light switches
 
 
