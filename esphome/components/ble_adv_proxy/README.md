@@ -5,7 +5,12 @@ Vendored from NicoIIT/esphome-ble_adv_proxy at
 
 Local changes: use non-connectable advertisements for the Bluetooth Mesh bearer,
 wait for GAP configuration/start/stop completion callbacks, and advertise each
-burst at a 20ms interval. The raw API actions and receive event format are unchanged.
+burst at a 20ms interval. Duplicate-packet expiry compares times by difference,
+so it keeps working after `millis()` rolls over at about 49 days. The runtime
+patch of ESPHome's `api` schema and the support code for ESPHome releases older
+than 2026.4 are removed. `skylight-transmitter.yaml` sets the two `api` options
+that the patch used to force on. The raw API actions and receive event format
+are unchanged.
 The local component targets ESPHome 2026.4.5.
 
 Copy this directory to `/config/esphome/components/ble_adv_proxy` on the HA server

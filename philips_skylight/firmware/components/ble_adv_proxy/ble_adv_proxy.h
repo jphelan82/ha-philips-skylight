@@ -1,7 +1,6 @@
 #pragma once
 
 #include "esphome/core/component.h"
-#include "esphome/core/version.h"
 #include "esphome/components/esp32_ble/ble.h"
 #include "esphome/components/api/custom_api_device.h"
 #include "esphome/components/text_sensor/text_sensor.h"
@@ -24,6 +23,8 @@ class BleAdvParam {
   BleAdvParam(BleAdvParam &&) = default;
   BleAdvParam &operator=(BleAdvParam &&) = default;
 
+  // Advertising length in ms for sent packets, or an expiry time from deadline() for
+  // duplicates. Zero marks a duplicate that never expires.
   uint32_t duration_{100};
   uint8_t buf_[MAX_PACKET_LEN]{0};
   size_t len_{0};
@@ -33,14 +34,7 @@ class BleAdvParam {
 /**
   BleAdvProxy:
  */
-#if ESPHOME_VERSION_CODE >= VERSION_CODE(2026, 4, 0)
 class BleAdvProxy : public Component, public Parented<esp32_ble::ESP32BLE>, public api::CustomAPIDevice {
-#else
-class BleAdvProxy : public Component,
-                    public esp32_ble::GAPScanEventHandler,
-                    public Parented<esp32_ble::ESP32BLE>,
-                    public api::CustomAPIDevice {
-#endif
  public:
   // component handling
   void setup() override;
@@ -48,11 +42,7 @@ class BleAdvProxy : public Component,
   void dump_config() override;
 
   // Scanner registration
-#if ESPHOME_VERSION_CODE >= VERSION_CODE(2026, 4, 0)
   void gap_scan_event_handler(const esp32_ble::BLEScanResult &scan_result);
-#else
-  void gap_scan_event_handler(const esp32_ble::BLEScanResult &scan_result) override;
-#endif
 
   void set_use_max_tx_power(bool use_max_tx_power) { this->use_max_tx_power_ = use_max_tx_power; }
   void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
@@ -76,6 +66,7 @@ class BleAdvProxy : public Component,
   enum class AdvState { IDLE, CONFIGURING, STARTING, RUNNING, STOPPING };
   AdvState adv_state_ = AdvState::IDLE;
   void drop_packet_();
+  static uint32_t deadline_(uint32_t delay);
 
   esp_ble_adv_params_t adv_params_ = {
       .adv_int_min = 0x20,

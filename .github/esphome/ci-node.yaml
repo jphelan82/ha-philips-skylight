@@ -1,0 +1,19 @@
+# CI compile check only. Never upload: the Wi-Fi settings are placeholders.
+esphome:
+  name: skylight-ci
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+wifi:
+  ssid: ci-placeholder
+  password: ci-placeholder
+
+logger:
+
+api:
+
+packages:
+  skylight: !include skylight-transmitter.yaml

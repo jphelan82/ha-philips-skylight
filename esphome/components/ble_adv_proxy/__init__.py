@@ -1,10 +1,9 @@
-import logging
-
 import esphome.codegen as cg
 from esphome.components.esp32_ble import (
     CONF_BLE_ID,
     ESP32BLE,
     register_gap_event_handler,
+    register_gap_scan_event_handler,
 )
 from esphome.components.text_sensor import new_text_sensor, text_sensor_schema
 import esphome.config_validation as cv
@@ -14,41 +13,6 @@ from esphome.const import (
     CONF_NAME,
     ENTITY_CATEGORY_DIAGNOSTIC,
 )
-
-# Support function esp32_ble.register_gap_scan_event_handler introduced in ESPHome 2025.11
-# as well as in previous version with fallback to previous implementation
-try:
-    from esphome.components.esp32_ble import register_gap_scan_event_handler
-except ImportError:
-
-    def register_gap_scan_event_handler(parent_var, handler_var) -> None:
-        cg.add(parent_var.register_gap_scan_event_handler(handler_var))
-
-
-# A wonderful HACK to avoid the need for users to define the 'api' option 'custom_services' to True:
-# we patch the CONFIG_SCHEMA of the 'api' component to setup the default value of 'custom_services' to True
-# This can break anytime, but anyway ESPHome changes regularly break all our users, so not less risky...
-try:
-    from esphome.components.api import (
-        CONF_CUSTOM_SERVICES as API_CONF_CUSTOM_SERVICES,
-        CONF_HOMEASSISTANT_SERVICES as API_CONF_HOMEASSISTANT_SERVICES,
-        CONFIG_SCHEMA as API_CONFIG_SCHEMA,
-    )
-
-    vals = list(API_CONFIG_SCHEMA.validators)
-    vals[0] = vals[0].extend(
-        {
-            cv.Optional(API_CONF_CUSTOM_SERVICES, default=True): cv.boolean,
-            cv.Optional(API_CONF_HOMEASSISTANT_SERVICES, default=True): cv.boolean,
-        }
-    )
-    API_CONFIG_SCHEMA.validators = tuple(vals)
-except BaseException:
-    logging.warning(
-        "Unable to define api custom_services to True, please refer to the doc to do it manually."
-    )
-# End of workaround
-
 
 AUTO_LOAD = ["esp32_ble", "esp32_ble_tracker", "bluetooth_proxy", "api", "text_sensor"]
 DEPENDENCIES = ["esp32", "api"]
@@ -81,8 +45,7 @@ CONFIG_SCHEMA = cv.All(
             ): text_sensor_schema(),
         }
     ),
-    # Creation of esp32_ble::GAPScanEventHandler: 2025.6.2
-    # API_CONF_HOMEASSISTANT_SERVICES: 2025.8.0
+    # skylight-transmitter.yaml enables api custom_services and homeassistant_services.
     cv.require_esphome_version(2026, 4, 5),
 )
 

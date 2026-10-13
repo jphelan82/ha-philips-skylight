@@ -98,7 +98,7 @@ void BleAdvProxy::on_advertise_v1(std::string raw, float duration, float repeat,
   // Prevent ignored packets from being re sent to HA host in case received
   for (auto &ignored_adv : ignored_advs) {
     // ESP_LOGD(TAG, "Ignoring ADV for %lds: %s", int_ign_duration / 1000, ignored_adv.c_str());
-    this->check_add_dupe_packet(BleAdvParam(ignored_adv, millis() + int_ign_duration));
+    this->check_add_dupe_packet(BleAdvParam(ignored_adv, deadline_(int_ign_duration)));
   }
 }
 
@@ -162,8 +162,10 @@ void BleAdvProxy::loop() {
     this->setup_done_ = false;
   }
 
-  // Cleanup expired packets
-  this->dupe_packets_.remove_if([&](BleAdvParam &p) { return p.duration_ > 0 && p.duration_ < millis(); });
+  // Cleanup expired packets. Compare by difference so millis() rollover after 49 days is safe.
+  const uint32_t now = millis();
+  this->dupe_packets_.remove_if(
+      [now](BleAdvParam &p) { return p.duration_ > 0 && int32_t(now - p.duration_) >= 0; });
 
   // swap packet list to further process it outside of the lock
   std::list<esp32_ble::BLEScanResult> new_packets;
@@ -185,7 +187,7 @@ void BleAdvProxy::loop() {
     if (std::find(this->ign_cids_.begin(), this->ign_cids_.end(), cid) == this->ign_cids_.end() &&
         std::find(this->ign_macs_.begin(), this->ign_macs_.end(), str_mac) == this->ign_macs_.end() &&
         this->check_add_dupe_packet(
-            BleAdvParam(sr.ble_adv, sr.adv_data_len, sr.bda, millis() + this->dupe_ignore_duration_))) {
+            BleAdvParam(sr.ble_adv, sr.adv_data_len, sr.bda, deadline_(this->dupe_ignore_duration_)))) {
       this->on_raw_recv(this->dupe_packets_.back(), str_mac);
     }
   }
@@ -217,6 +219,12 @@ void BleAdvProxy::loop() {
       }
     }
   }
+}
+
+uint32_t BleAdvProxy::deadline_(uint32_t delay) {
+  // Zero means "never expires", so step over it if the sum rolls over to exactly zero.
+  const uint32_t deadline = millis() + delay;
+  return deadline == 0 ? 1 : deadline;
 }
 
 void BleAdvProxy::drop_packet_() {
