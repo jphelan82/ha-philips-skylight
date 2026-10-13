@@ -273,6 +273,39 @@ Deployed on 2026-10-13 with integration 0.2.6.
 - Home Assistant recorded the wall remote's presses and synchronized power from
   them.
 
+## Add-on 0.3.0
+
+Deployed on 2026-10-13 as an add-on update, followed by a Core restart.
+
+### Software checks
+
+- 99 Python tests, 5 page tests, ruff and the bundle check pass locally.
+- After the restart, `integration_version` was 0.3.0 and the watermark was
+  `1792`. The watermark rose from today's commands and never fell.
+- The add-on page opened straight to the status card, because setup was already
+  done. It found the proxy's firmware, read the ESPHome remote tracking setting
+  through the settings dialog as on, and found Device Builder at
+  `/5c53de3b_esphome`.
+- The integration's buttons showed the remote's icons, for example
+  `mdi:sofa-outline` for Relax and `mdi:brightness-4` for Dim down.
+- The old **Skylight** dashboard was deleted. The add-on's **Create a Skylight
+  dashboard**, with the full card, built it again at `/skylight-control/panel`
+  with the new layout.
+- The proxy firmware with `post_connect_roaming: false` ran for 16 minutes with
+  no roam and no dropped connection. Before, the connection dropped about every
+  five minutes.
+
+### Physical observations
+
+- A 3-second **Dim down** hold from Home Assistant sent the hold command five
+  times. The panel dimmed smoothly, by about half. A 3-second **Dim up** hold on
+  the remote changed it back by about the same amount. Home Assistant recorded
+  the remote's hold as `dim_up`.
+- The pairing window ran for Home Assistant, which was already paired. During
+  the window, the owner switched the panel's power off and on. The panel
+  blinked. **Stop** ended the window, and a toggle from Home Assistant then
+  switched the panel off.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store
