@@ -18,9 +18,9 @@ The card uses the remote's icons and colors. It has three parts: a large
 | Focus | `mdi:crosshairs-gps` | Amber when recorded. |
 | Relax | `mdi:sofa-outline` | Orange when recorded. |
 | Rest | `mdi:power-sleep` | Deep orange when recorded. |
-| **Dim −** / **Dim +** | `mdi:brightness-4` / `mdi:brightness-7` | A tap is one step. A hold dims for about 3 seconds. |
-| **Rhythm set** | `mdi:clock-start` | Sets the current time as the Auto rhythm start. The panel blinks. |
 | **Correct** | `mdi:pencil-outline` | Opens the correction view. |
+| **Rhythm set** | `mdi:clock-start` | Sets the current time as the Auto rhythm start. The panel blinks. |
+| **Dim −** / **Dim +** | `mdi:brightness-4` / `mdi:brightness-7` | A tap is one step. A hold dims for about 3 seconds. |
 
 The colors match the dots on the remote. A mode button also switches the panel
 on. The mode that Home Assistant recorded lights up. The others stay grey. When

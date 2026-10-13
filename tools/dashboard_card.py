@@ -159,6 +159,11 @@ def small(entity, name, tap, icon, hold=None):
 def build_card():
     tools = grid(
         [
+            # Dim sits on the right, under a right thumb.
+            small(EDIT, "Correct", action("switch.turn_on", EDIT), "mdi:pencil-outline"),
+            small(
+                RHYTHM_START, "Rhythm set", action("button.press", RHYTHM_START), "mdi:clock-start"
+            ),
             *(
                 small(
                     "button.philips_skylight_" + dim,
@@ -170,10 +175,6 @@ def build_card():
                 )
                 for dim, name in (("dim_down", "Dim −"), ("dim_up", "Dim +"))
             ),
-            small(
-                RHYTHM_START, "Rhythm set", action("button.press", RHYTHM_START), "mdi:clock-start"
-            ),
-            small(EDIT, "Correct", action("switch.turn_on", EDIT), "mdi:pencil-outline"),
         ],
         columns=4,
     )

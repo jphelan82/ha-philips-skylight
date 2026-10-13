@@ -540,6 +540,40 @@ cards:
       square: false
       cards:
       - type: tile
+        entity: switch.philips_skylight_state_correction
+        name: Correct
+        hide_state: true
+        color: grey
+        tap_action:
+          action: perform-action
+          perform_action: switch.turn_on
+          target:
+            entity_id: switch.philips_skylight_state_correction
+        icon_tap_action:
+          action: perform-action
+          perform_action: switch.turn_on
+          target:
+            entity_id: switch.philips_skylight_state_correction
+        icon: mdi:pencil-outline
+        vertical: true
+      - type: tile
+        entity: button.philips_skylight_set_auto_rhythm_start
+        name: Rhythm set
+        hide_state: true
+        color: grey
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.philips_skylight_set_auto_rhythm_start
+        icon_tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.philips_skylight_set_auto_rhythm_start
+        icon: mdi:clock-start
+        vertical: true
+      - type: tile
         entity: button.philips_skylight_dim_down
         name: Dim −
         hide_state: true
@@ -588,40 +622,6 @@ cards:
           data:
             direction: up
             hold: 3
-        vertical: true
-      - type: tile
-        entity: button.philips_skylight_set_auto_rhythm_start
-        name: Rhythm set
-        hide_state: true
-        color: grey
-        tap_action:
-          action: perform-action
-          perform_action: button.press
-          target:
-            entity_id: button.philips_skylight_set_auto_rhythm_start
-        icon_tap_action:
-          action: perform-action
-          perform_action: button.press
-          target:
-            entity_id: button.philips_skylight_set_auto_rhythm_start
-        icon: mdi:clock-start
-        vertical: true
-      - type: tile
-        entity: switch.philips_skylight_state_correction
-        name: Correct
-        hide_state: true
-        color: grey
-        tap_action:
-          action: perform-action
-          perform_action: switch.turn_on
-          target:
-            entity_id: switch.philips_skylight_state_correction
-        icon_tap_action:
-          action: perform-action
-          perform_action: switch.turn_on
-          target:
-            entity_id: switch.philips_skylight_state_correction
-        icon: mdi:pencil-outline
         vertical: true
 - type: conditional
   conditions:
