@@ -142,6 +142,10 @@ def command_payload(command: str, transaction: int) -> bytes:
         return bytes([0xC8, 0x11, 0x02, transaction, 0x03, 0x01, 0x41])
     if command in ("dim_down", "dim_up"):
         return bytes([0xC8, 0x11, 0x02, transaction, 0x01, command == "dim_up", 0x14, 0x41])
+    if command in ("dim_down_hold", "dim_up_hold"):
+        # What the remote sends while a dim button is held.
+        step = 3 if command == "dim_up_hold" else 2
+        return bytes([0xC8, 0x11, 0x02, transaction, 0x01, step, 0x14, 0x41])
     if command in EFFECTS:
         return bytes([0xC9, 0x11, 0x02, transaction, 0x04, 0xFF, EFFECTS.index(command) + 1, 0x41])
     if command == RHYTHM_START:

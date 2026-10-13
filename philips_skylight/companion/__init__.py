@@ -13,6 +13,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SkylightConfigEntry) -> 
     await controller.sequence.async_load()
     entry.runtime_data = controller
     entry.async_on_unload(controller.async_subscribe())
+    entry.async_on_unload(controller.stop_pairing)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await controller.async_setup_receiver()
     return True

@@ -17,6 +17,7 @@ cards:
     - type: tile
       entity: light.philips_skylight
       name: Skylight
+      color: amber
       state_content:
       - state
       - assumed_effect
@@ -35,9 +36,57 @@ cards:
       heading: Modes
       heading_style: subtitle
     - type: grid
-      columns: 2
+      columns: 3
       square: false
       cards:
+      - type: vertical-stack
+        cards:
+        - type: conditional
+          conditions:
+          - condition: state
+            entity: select.philips_skylight_recorded_scene
+            state: Auto rhythm
+          card:
+            type: tile
+            entity: button.philips_skylight_auto_rhythm
+            name: Auto rhythm
+            hide_state: true
+            color: purple
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.philips_skylight_auto_rhythm
+            icon_tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.philips_skylight_auto_rhythm
+            icon: mdi:sun-clock-outline
+            vertical: true
+        - type: conditional
+          conditions:
+          - condition: state
+            entity: select.philips_skylight_recorded_scene
+            state_not: Auto rhythm
+          card:
+            type: tile
+            entity: button.philips_skylight_auto_rhythm
+            name: Auto rhythm
+            hide_state: true
+            color: grey
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.philips_skylight_auto_rhythm
+            icon_tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.philips_skylight_auto_rhythm
+            icon: mdi:sun-clock-outline
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -61,6 +110,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_refresh
+            icon: mdi:weather-sunset-up
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -82,6 +133,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_refresh
+            icon: mdi:weather-sunset-up
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -94,7 +147,7 @@ cards:
             entity: button.philips_skylight_energize
             name: Energize
             hide_state: true
-            color: blue
+            color: light-blue
             tap_action:
               action: perform-action
               perform_action: button.press
@@ -105,6 +158,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_energize
+            icon: mdi:lightning-bolt
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -126,6 +181,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_energize
+            icon: mdi:lightning-bolt
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -138,7 +195,7 @@ cards:
             entity: button.philips_skylight_focus
             name: Focus
             hide_state: true
-            color: blue
+            color: amber
             tap_action:
               action: perform-action
               perform_action: button.press
@@ -149,6 +206,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_focus
+            icon: mdi:crosshairs-gps
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -170,6 +229,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_focus
+            icon: mdi:crosshairs-gps
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -182,7 +243,7 @@ cards:
             entity: button.philips_skylight_relax
             name: Relax
             hide_state: true
-            color: blue
+            color: orange
             tap_action:
               action: perform-action
               perform_action: button.press
@@ -193,6 +254,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_relax
+            icon: mdi:sofa-outline
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -214,6 +277,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_relax
+            icon: mdi:sofa-outline
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -226,7 +291,7 @@ cards:
             entity: button.philips_skylight_rest
             name: Rest
             hide_state: true
-            color: blue
+            color: deep-orange
             tap_action:
               action: perform-action
               perform_action: button.press
@@ -237,6 +302,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_rest
+            icon: mdi:power-sleep
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -258,66 +325,8 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_rest
-      - type: vertical-stack
-        cards:
-        - type: conditional
-          conditions:
-          - condition: state
-            entity: select.philips_skylight_recorded_scene
-            state: Auto rhythm
-          card:
-            type: tile
-            entity: button.philips_skylight_auto_rhythm
-            name: Auto rhythm
-            hide_state: true
-            color: blue
-            tap_action:
-              action: perform-action
-              perform_action: button.press
-              target:
-                entity_id: button.philips_skylight_auto_rhythm
-            icon_tap_action:
-              action: perform-action
-              perform_action: button.press
-              target:
-                entity_id: button.philips_skylight_auto_rhythm
-        - type: conditional
-          conditions:
-          - condition: state
-            entity: select.philips_skylight_recorded_scene
-            state_not: Auto rhythm
-          card:
-            type: tile
-            entity: button.philips_skylight_auto_rhythm
-            name: Auto rhythm
-            hide_state: true
-            color: grey
-            tap_action:
-              action: perform-action
-              perform_action: button.press
-              target:
-                entity_id: button.philips_skylight_auto_rhythm
-            icon_tap_action:
-              action: perform-action
-              perform_action: button.press
-              target:
-                entity_id: button.philips_skylight_auto_rhythm
-    - type: tile
-      entity: button.philips_skylight_set_auto_rhythm_start
-      name: Set auto rhythm start
-      hide_state: true
-      color: grey
-      tap_action:
-        action: perform-action
-        perform_action: button.press
-        target:
-          entity_id: button.philips_skylight_set_auto_rhythm_start
-      icon_tap_action:
-        action: perform-action
-        perform_action: button.press
-        target:
-          entity_id: button.philips_skylight_set_auto_rhythm_start
-      icon: mdi:clock-start
+            icon: mdi:power-sleep
+            vertical: true
     - type: grid
       columns: 2
       square: false
@@ -338,6 +347,14 @@ cards:
           target:
             entity_id: button.philips_skylight_dim_down
         icon: mdi:brightness-4
+        hold_action:
+          action: perform-action
+          perform_action: philips_skylight.dim
+          target:
+            entity_id: light.philips_skylight
+          data:
+            direction: down
+            hold: 3
       - type: tile
         entity: button.philips_skylight_dim_up
         name: Dim up
@@ -354,25 +371,53 @@ cards:
           target:
             entity_id: button.philips_skylight_dim_up
         icon: mdi:brightness-7
-    - type: tile
-      entity: switch.philips_skylight_state_correction
-      name: Correct recorded state
-      hide_state: true
-      color: grey
-      tap_action:
-        action: perform-action
-        perform_action: switch.turn_on
-        target:
-          entity_id: switch.philips_skylight_state_correction
-      icon_tap_action:
-        action: perform-action
-        perform_action: switch.turn_on
-        target:
-          entity_id: switch.philips_skylight_state_correction
-      icon: mdi:pencil-outline
+        hold_action:
+          action: perform-action
+          perform_action: philips_skylight.dim
+          target:
+            entity_id: light.philips_skylight
+          data:
+            direction: up
+            hold: 3
+    - type: grid
+      columns: 2
+      square: false
+      cards:
+      - type: tile
+        entity: button.philips_skylight_set_auto_rhythm_start
+        name: Rhythm start
+        hide_state: true
+        color: grey
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.philips_skylight_set_auto_rhythm_start
+        icon_tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.philips_skylight_set_auto_rhythm_start
+        icon: mdi:clock-start
+      - type: tile
+        entity: switch.philips_skylight_state_correction
+        name: Correct state
+        hide_state: true
+        color: grey
+        tap_action:
+          action: perform-action
+          perform_action: switch.turn_on
+          target:
+            entity_id: switch.philips_skylight_state_correction
+        icon_tap_action:
+          action: perform-action
+          perform_action: switch.turn_on
+          target:
+            entity_id: switch.philips_skylight_state_correction
+        icon: mdi:pencil-outline
     - type: markdown
-      content: Tap the power icon to toggle the light. If the recorded state is wrong
-        or unknown, use **Correct recorded state**.
+      content: Tap **Skylight** to switch the panel on or off. The shown state is
+        a best guess. If it is wrong, use **Correct state**.
 - type: conditional
   conditions:
   - condition: state
@@ -401,7 +446,7 @@ cards:
             entity: button.philips_skylight_record_panel_on
             name: Panel is on
             hide_state: true
-            color: blue
+            color: amber
             tap_action:
               action: perform-action
               perform_action: button.press
@@ -412,6 +457,7 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_record_panel_on
+            icon: mdi:lightbulb-on-outline
         - type: conditional
           conditions:
           - condition: state
@@ -433,6 +479,7 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_record_panel_on
+            icon: mdi:lightbulb-on-outline
       - type: vertical-stack
         cards:
         - type: conditional
@@ -445,7 +492,7 @@ cards:
             entity: button.philips_skylight_record_panel_off
             name: Panel is off
             hide_state: true
-            color: blue
+            color: amber
             tap_action:
               action: perform-action
               perform_action: button.press
@@ -456,6 +503,7 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_record_panel_off
+            icon: mdi:lightbulb-off-outline
         - type: conditional
           conditions:
           - condition: state
@@ -477,13 +525,70 @@ cards:
               perform_action: button.press
               target:
                 entity_id: button.philips_skylight_record_panel_off
+            icon: mdi:lightbulb-off-outline
     - type: heading
-      heading: Mode I can see
+      heading: Mode
       heading_style: subtitle
     - type: grid
-      columns: 2
+      columns: 3
       square: false
       cards:
+      - type: vertical-stack
+        cards:
+        - type: conditional
+          conditions:
+          - condition: state
+            entity: select.philips_skylight_recorded_scene
+            state: Auto rhythm
+          card:
+            type: tile
+            entity: button.philips_skylight_auto_rhythm
+            name: Auto rhythm
+            hide_state: true
+            color: purple
+            tap_action:
+              action: perform-action
+              perform_action: select.select_option
+              target:
+                entity_id: select.philips_skylight_recorded_scene
+              data:
+                option: Auto rhythm
+            icon_tap_action:
+              action: perform-action
+              perform_action: select.select_option
+              target:
+                entity_id: select.philips_skylight_recorded_scene
+              data:
+                option: Auto rhythm
+            icon: mdi:sun-clock-outline
+            vertical: true
+        - type: conditional
+          conditions:
+          - condition: state
+            entity: select.philips_skylight_recorded_scene
+            state_not: Auto rhythm
+          card:
+            type: tile
+            entity: button.philips_skylight_auto_rhythm
+            name: Auto rhythm
+            hide_state: true
+            color: grey
+            tap_action:
+              action: perform-action
+              perform_action: select.select_option
+              target:
+                entity_id: select.philips_skylight_recorded_scene
+              data:
+                option: Auto rhythm
+            icon_tap_action:
+              action: perform-action
+              perform_action: select.select_option
+              target:
+                entity_id: select.philips_skylight_recorded_scene
+              data:
+                option: Auto rhythm
+            icon: mdi:sun-clock-outline
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -511,6 +616,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Refresh
+            icon: mdi:weather-sunset-up
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -536,6 +643,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Refresh
+            icon: mdi:weather-sunset-up
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -548,7 +657,7 @@ cards:
             entity: button.philips_skylight_energize
             name: Energize
             hide_state: true
-            color: blue
+            color: light-blue
             tap_action:
               action: perform-action
               perform_action: select.select_option
@@ -563,6 +672,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Energize
+            icon: mdi:lightning-bolt
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -588,6 +699,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Energize
+            icon: mdi:lightning-bolt
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -600,7 +713,7 @@ cards:
             entity: button.philips_skylight_focus
             name: Focus
             hide_state: true
-            color: blue
+            color: amber
             tap_action:
               action: perform-action
               perform_action: select.select_option
@@ -615,6 +728,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Focus
+            icon: mdi:crosshairs-gps
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -640,6 +755,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Focus
+            icon: mdi:crosshairs-gps
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -652,7 +769,7 @@ cards:
             entity: button.philips_skylight_relax
             name: Relax
             hide_state: true
-            color: blue
+            color: orange
             tap_action:
               action: perform-action
               perform_action: select.select_option
@@ -667,6 +784,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Relax
+            icon: mdi:sofa-outline
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -692,6 +811,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Relax
+            icon: mdi:sofa-outline
+            vertical: true
       - type: vertical-stack
         cards:
         - type: conditional
@@ -704,7 +825,7 @@ cards:
             entity: button.philips_skylight_rest
             name: Rest
             hide_state: true
-            color: blue
+            color: deep-orange
             tap_action:
               action: perform-action
               perform_action: select.select_option
@@ -719,6 +840,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Rest
+            icon: mdi:power-sleep
+            vertical: true
         - type: conditional
           conditions:
           - condition: state
@@ -744,58 +867,8 @@ cards:
                 entity_id: select.philips_skylight_recorded_scene
               data:
                 option: Rest
-      - type: vertical-stack
-        cards:
-        - type: conditional
-          conditions:
-          - condition: state
-            entity: select.philips_skylight_recorded_scene
-            state: Auto rhythm
-          card:
-            type: tile
-            entity: button.philips_skylight_auto_rhythm
-            name: Auto rhythm
-            hide_state: true
-            color: blue
-            tap_action:
-              action: perform-action
-              perform_action: select.select_option
-              target:
-                entity_id: select.philips_skylight_recorded_scene
-              data:
-                option: Auto rhythm
-            icon_tap_action:
-              action: perform-action
-              perform_action: select.select_option
-              target:
-                entity_id: select.philips_skylight_recorded_scene
-              data:
-                option: Auto rhythm
-        - type: conditional
-          conditions:
-          - condition: state
-            entity: select.philips_skylight_recorded_scene
-            state_not: Auto rhythm
-          card:
-            type: tile
-            entity: button.philips_skylight_auto_rhythm
-            name: Auto rhythm
-            hide_state: true
-            color: grey
-            tap_action:
-              action: perform-action
-              perform_action: select.select_option
-              target:
-                entity_id: select.philips_skylight_recorded_scene
-              data:
-                option: Auto rhythm
-            icon_tap_action:
-              action: perform-action
-              perform_action: select.select_option
-              target:
-                entity_id: select.philips_skylight_recorded_scene
-              data:
-                option: Auto rhythm
+            icon: mdi:power-sleep
+            vertical: true
     - type: tile
       entity: select.philips_skylight_recorded_scene
       name: Mode unknown
@@ -833,7 +906,5 @@ cards:
           entity_id: switch.philips_skylight_state_correction
       icon: mdi:check
     - type: markdown
-      content: Look at the physical panel. Select whether it is **on or off**, then
-        select the mode you can see (or **Mode unknown**). These choices only correct
-        Home Assistant's record; they **do not change the light**. Select **Done**
-        to return to normal controls.
+      content: Look at the panel, then tap what you see. This changes only what Home
+        Assistant shows. It does not change the light.

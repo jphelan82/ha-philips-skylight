@@ -5,7 +5,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import EFFECTS, RHYTHM_START
+from .const import DIM_ICONS, EFFECT_STYLE, EFFECTS, RHYTHM_START
 from .controller import SkylightConfigEntry, SkylightController
 from .entity import SkylightEntity
 
@@ -45,10 +45,10 @@ class SkylightButton(SkylightEntity, ButtonEntity):
         if command == RHYTHM_START:
             # Sets the current time as the schedule start. The panel blinks.
             self._attr_icon = "mdi:clock-start"
-        elif command.startswith("dim"):
-            self._attr_icon = "mdi:brightness-6"
+        elif command in DIM_ICONS:
+            self._attr_icon = DIM_ICONS[command]
         else:
-            self._attr_icon = "mdi:palette"
+            self._attr_icon = EFFECT_STYLE[command][0]
 
     async def async_press(self) -> None:
         await self.controller.async_send(self.command)

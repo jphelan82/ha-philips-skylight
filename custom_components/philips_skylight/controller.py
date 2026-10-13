@@ -3,13 +3,22 @@
 import asyncio
 import logging
 from collections.abc import Callable
+from datetime import datetime, timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
-from .const import CONF_TRANSMIT_SERVICE, DOMAIN, RECEIVE_EVENT, STORAGE_KEY
+from .const import (
+    CONF_TRANSMIT_SERVICE,
+    DOMAIN,
+    HOLD_INTERVAL,
+    PAIRING_WINDOW,
+    RECEIVE_EVENT,
+    STORAGE_KEY,
+)
 from .model import AssumedState, RemoteTracker
 from .protocol import MeshCodec, command_payload, pairing_payload, unpair_all_payload
 from .sequence import SequenceAllocator
@@ -29,6 +38,8 @@ class SkylightController:
         self.lock = asyncio.Lock()
         self.listeners: set[Callable[[], None]] = set()
         self.outage_started: float | None = None
+        self.pairing_task: asyncio.Task | None = None
+        self.pairing_until: datetime | None = None
 
     @callback
     def forget_state(self) -> None:
@@ -91,31 +102,67 @@ class SkylightController:
         async with self.lock:
             await self.async_send_locked(command)
 
-    async def async_pair(self) -> None:
-        """Explicit, unverified pairing attempt: 30 fresh requests over 10 seconds."""
-        await self._async_pairing_request(pairing_payload, "pairing attempt")
+    async def async_dim(self, direction: str, hold: float = 0) -> None:
+        """One step for a tap, or the remote's hold command repeated for `hold` seconds."""
+        command = f"dim_{direction}"
+        if not hold:
+            await self.async_send(command)
+            return
+        for _ in range(max(1, round(hold / HOLD_INTERVAL))):
+            async with self.lock:
+                await self._async_transmit_locked(
+                    lambda transaction: command_payload(command + "_hold", transaction)
+                )
+                self.state.apply(command)
+                self.notify()
+            await asyncio.sleep(HOLD_INTERVAL)
 
-    async def async_unpair_all(self) -> None:
-        """Ask the panel to forget every paired sender, this one included."""
-        await self._async_pairing_request(unpair_all_payload, "unpair all attempt")
+    async def async_pair(self, duration: float = PAIRING_WINDOW) -> None:
+        """Start repeating the pairing request in the background. Returns at once."""
+        self._start_pairing(pairing_payload, "pairing", duration)
 
-    async def _async_pairing_request(
-        self, payload_builder: Callable[[int], bytes], label: str
+    async def async_unpair_all(self, duration: float = PAIRING_WINDOW) -> None:
+        """Start asking the panel to forget every paired sender, this one included."""
+        self._start_pairing(unpair_all_payload, "unpair all", duration)
+
+    @callback
+    def _start_pairing(
+        self, payload_builder: Callable[[int], bytes], label: str, duration: float
     ) -> None:
-        async with self.lock:
+        # The panel listens only right after its power returns. Repeating the
+        # request lets the user reach the switch first; requests before and
+        # after that moment are ignored.
+        self.stop_pairing()
+        self.pairing_until = dt_util.utcnow() + timedelta(seconds=duration)
+        self.state.is_on = None
+        self.state.effect = None
+        self.state.last_command = label
+        self.notify()
+        self.pairing_task = self.hass.async_create_background_task(
+            self._async_repeat(payload_builder, round(duration * 3)), f"Skylight {label}"
+        )
+
+    async def _async_repeat(self, payload_builder: Callable[[int], bytes], count: int) -> None:
+        try:
+            for _ in range(count):
+                try:
+                    # Take the lock per request, so other commands still get through.
+                    async with self.lock:
+                        await self._async_transmit_locked(payload_builder, repeat=1)
+                except HomeAssistantError:
+                    _LOGGER.debug("Skylight pairing request not sent", exc_info=True)
+                await asyncio.sleep(1 / 3)
+        finally:
+            # Neither the requests nor their end confirm pairing or power.
+            self.pairing_until = None
             self.state.is_on = None
             self.state.effect = None
-            self.state.last_command = label
             self.notify()
-            try:
-                for _ in range(30):
-                    await self._async_transmit_locked(payload_builder, repeat=1)
-                    await asyncio.sleep(1 / 3)
-            finally:
-                # Neither API acceptance nor completion confirms pairing or power.
-                self.state.is_on = None
-                self.state.effect = None
-                self.notify()
+
+    @callback
+    def stop_pairing(self) -> None:
+        if self.pairing_task and not self.pairing_task.done():
+            self.pairing_task.cancel()
 
     async def async_skip_sequence(self) -> int:
         """Recover from a lost sequence Store without changing the sender address."""

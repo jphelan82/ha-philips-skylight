@@ -126,3 +126,11 @@ def test_encoder_rejects_sequence_wrap_segmentation_and_unsupported_commands():
     for command in ("on", "off", "pair", "brightness"):
         with pytest.raises(ValueError):
             command_payload(command, 0x80)
+
+
+def test_hold_commands_match_the_documented_remote_bytes():
+    assert command_payload("dim_down_hold", 0x80).hex() == "c811028001021441"
+    assert command_payload("dim_up_hold", 0x80).hex() == "c811028001031441"
+    # Received holds from a remote are tracked as ordinary dim commands.
+    assert identify_command(command_payload("dim_down_hold", 0x81)) == "dim_down"
+    assert identify_command(command_payload("dim_up_hold", 0x81)) == "dim_up"

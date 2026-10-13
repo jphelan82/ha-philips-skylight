@@ -18,7 +18,10 @@ def _integration_const():
     return module
 
 
-EFFECTS = _integration_const().EFFECTS
+CONST = _integration_const()
+EFFECTS = CONST.EFFECTS
+# The remote's layout: Auto rhythm, Refresh, Energize, then Focus, Relax, Rest.
+MODES = list(CONST.EFFECT_STYLE)
 LIGHT = "light.philips_skylight"
 SCENE = "select.philips_skylight_recorded_scene"
 EDIT = "switch.philips_skylight_state_correction"
@@ -39,7 +42,7 @@ def action(service, entity, **data):
     return result
 
 
-def tile(entity, name, tap, *, color="grey", icon=None):
+def tile(entity, name, tap, *, color="grey", icon=None, hold=None):
     result = {
         "type": "tile",
         "entity": entity,
@@ -51,6 +54,8 @@ def tile(entity, name, tap, *, color="grey", icon=None):
     }
     if icon:
         result["icon"] = icon
+    if hold:
+        result["hold_action"] = hold
     return result
 
 
@@ -64,12 +69,12 @@ def conditional(entity, state, card, *, inverse=False):
     }
 
 
-def highlighted(entity, state, button, name, tap, icon=None):
+def highlighted(entity, state, button, name, tap, icon=None, color="blue"):
     # A stable grid slot contains exactly one of the two standard tiles.
     return {
         "type": "vertical-stack",
         "cards": [
-            conditional(entity, state, tile(button, name, tap, color="blue", icon=icon)),
+            conditional(entity, state, tile(button, name, tap, color=color, icon=icon)),
             conditional(entity, state, tile(button, name, tap, icon=icon), inverse=True),
         ],
     }
@@ -86,21 +91,21 @@ def heading(text, icon=None):
     return result
 
 
-def scenes(correction=False, compact=False):
+def scenes(correction=False):
     cards = []
-    for effect in EFFECTS:
+    for effect in MODES:
+        icon, color = CONST.EFFECT_STYLE[effect]
         button = "button.philips_skylight_" + effect.lower().replace(" ", "_")
         tap = (
             action("select.select_option", SCENE, option=effect)
             if correction
             else action("button.press", button)
         )
-        slot = highlighted(SCENE, effect, button, effect, tap)
-        if compact:
-            for variant in slot["cards"]:
-                variant["card"]["vertical"] = True
+        slot = highlighted(SCENE, effect, button, effect, tap, icon=icon, color=color)
+        for variant in slot["cards"]:
+            variant["card"]["vertical"] = True
         cards.append(slot)
-    return grid(cards, columns=3 if compact else 2)
+    return grid(cards, columns=3)
 
 
 def build_card(compact=False):
@@ -108,48 +113,59 @@ def build_card(compact=False):
         "type": "tile",
         "entity": LIGHT,
         "name": "Skylight",
+        "color": "amber",
         "state_content": ["state", "assumed_effect"],
         "icon": "mdi:power",
         "tap_action": action("light.toggle", LIGHT),
         "icon_tap_action": action("light.toggle", LIGHT),
     }
+    dims = grid(
+        [
+            tile(
+                "button.philips_skylight_" + dim,
+                name,
+                action("button.press", "button.philips_skylight_" + dim),
+                icon=CONST.DIM_ICONS[dim],
+                # A card cannot see the finger lift, so a hold acts like 3 seconds on the remote.
+                hold=action(f"{CONST.DOMAIN}.dim", LIGHT, direction=dim[4:], hold=3),
+            )
+            for dim, name in (("dim_down", "Dim down"), ("dim_up", "Dim up"))
+        ]
+    )
     normal = {
         "type": "vertical-stack",
         "cards": [
             status,
-            heading("Modes"),
-            scenes(compact=compact),
-            tile(
-                RHYTHM_START,
-                "Set auto rhythm start",
-                action("button.press", RHYTHM_START),
-                icon="mdi:clock-start",
-            ),
+            *([] if compact else [heading("Modes")]),
+            scenes(),
+            dims,
             grid(
                 [
                     tile(
-                        "button.philips_skylight_" + dim,
-                        name,
-                        action("button.press", "button.philips_skylight_" + dim),
-                        icon=icon,
-                    )
-                    for dim, name, icon in [
-                        ("dim_down", "Dim down", "mdi:brightness-4"),
-                        ("dim_up", "Dim up", "mdi:brightness-7"),
-                    ]
+                        RHYTHM_START,
+                        "Rhythm start",
+                        action("button.press", RHYTHM_START),
+                        icon="mdi:clock-start",
+                    ),
+                    tile(
+                        EDIT,
+                        "Correct state",
+                        action("switch.turn_on", EDIT),
+                        icon="mdi:pencil-outline",
+                    ),
                 ]
             ),
-            tile(
-                EDIT,
-                "Correct recorded state",
-                action("switch.turn_on", EDIT),
-                icon="mdi:pencil-outline",
+            *(
+                []
+                if compact
+                else [
+                    {
+                        "type": "markdown",
+                        "content": "Tap **Skylight** to switch the panel on or off. The shown "
+                        "state is a best guess. If it is wrong, use **Correct state**.",
+                    }
+                ]
             ),
-            {
-                "type": "markdown",
-                "content": "Tap the power icon to toggle the light. "
-                "If the recorded state is wrong or unknown, use **Correct recorded state**.",
-            },
         ],
     }
     correction = {
@@ -164,12 +180,17 @@ def build_card(compact=False):
                         "button.philips_skylight_record_panel_" + power,
                         "Panel is " + power,
                         action("button.press", "button.philips_skylight_record_panel_" + power),
+                        icon=icon,
+                        color="amber",
                     )
-                    for power in ("on", "off")
+                    for power, icon in (
+                        ("on", "mdi:lightbulb-on-outline"),
+                        ("off", "mdi:lightbulb-off-outline"),
+                    )
                 ]
             ),
-            heading("Mode I can see"),
-            scenes(correction=True, compact=compact),
+            heading("Mode"),
+            scenes(correction=True),
             tile(
                 SCENE,
                 "Mode unknown",
@@ -179,18 +200,11 @@ def build_card(compact=False):
             tile(EDIT, "Done", action("switch.turn_off", EDIT), icon="mdi:check"),
             {
                 "type": "markdown",
-                "content": "Look at the physical panel. Select whether it "
-                "is **on or off**, then select the mode you can see (or **Mode unknown**). "
-                "These choices only correct Home Assistant's record; they **do not change the "
-                "light**. Select **Done** to return to normal controls.",
+                "content": "Look at the panel, then tap what you see. This changes only "
+                "what Home Assistant shows. It does not change the light.",
             },
         ],
     }
-    if compact:
-        # Keep the observation instructions in correction mode; the everyday
-        # card fits in one dashboard section without extra headings or prose.
-        normal["cards"].pop(1)
-        normal["cards"].pop()
     return {
         "type": "vertical-stack",
         "cards": [

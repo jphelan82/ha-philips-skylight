@@ -121,7 +121,54 @@ class HAClient:
         ) as response:
             if response.status >= 400:
                 raise HAError(f"Home Assistant returned HTTP {response.status}")
-            return await response.json()
+            try:
+                return await response.json(content_type=None)
+            except ValueError:
+                return None  # Some deletions answer without a body.
+
+    async def _options_form(self, entry_id: str):
+        flow = await self.http("POST", "config/config_entries/options/flow", {"handler": entry_id})
+        if not isinstance(flow, dict) or flow.get("type") != "form":
+            if isinstance(flow, dict) and flow.get("flow_id"):
+                await self._close_options_flow(flow["flow_id"])
+            raise HAError("This integration's settings cannot be read automatically")
+        values = {}
+        for field in flow.get("data_schema", []):
+            suggested = (field.get("description") or {}).get("suggested_value")
+            values[field["name"]] = suggested if suggested is not None else field.get("default")
+        return flow["flow_id"], values
+
+    async def _close_options_flow(self, flow_id: str):
+        with suppress(HAError, aiohttp.ClientError, TimeoutError):
+            await self.http("DELETE", f"config/config_entries/options/flow/{flow_id}")
+
+    async def read_options(self, entry_id: str) -> dict:
+        """Read an entry's current options from its settings dialog, then close it."""
+        flow_id, values = await self._options_form(entry_id)
+        await self._close_options_flow(flow_id)
+        return values
+
+    async def set_options(self, entry_id: str, changes: dict):
+        """Submit the entry's settings dialog with its current values plus the changes."""
+        flow_id, values = await self._options_form(entry_id)
+        try:
+            result = await self.http(
+                "POST", f"config/config_entries/options/flow/{flow_id}", {**values, **changes}
+            )
+        except BaseException:
+            await self._close_options_flow(flow_id)
+            raise
+        if not isinstance(result, dict) or result.get("type") != "create_entry":
+            await self._close_options_flow(flow_id)
+            raise HAError("Home Assistant did not accept the setting")
+
+    async def panel_url(self, match: Callable[[dict], bool]) -> str | None:
+        """Return the sidebar URL of the first panel that matches, if any."""
+        panels = await self.request("get_panels")
+        for path, panel in sorted((panels or {}).items()):
+            if match(panel):
+                return "/" + path
+        return None
 
     async def refresh(self):
         async with self._refresh_lock:

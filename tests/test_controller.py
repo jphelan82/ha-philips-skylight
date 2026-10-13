@@ -165,7 +165,7 @@ async def test_pairing_requires_confirmation_and_uses_durable_sequences(hass, mo
     controller.state.effect = "Focus"
     light = SkylightLight(controller, SimpleNamespace(data=DATA, title="Skylight"))
     light.hass = hass
-    with pytest.raises(HomeAssistantError, match="may replace"):
+    with pytest.raises(HomeAssistantError, match="start pairing"):
         await light.async_pair_transmitter(False)
     assert calls == []
     assert controller.state.is_on is True
@@ -176,7 +176,10 @@ async def test_pairing_requires_confirmation_and_uses_durable_sequences(hass, mo
         pauses.append(seconds)
 
     monkeypatch.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
-    await light.async_pair_transmitter(True)
+    await light.async_pair_transmitter(True, duration=10)
+    assert light.extra_state_attributes["pairing_until"] is not None
+    await controller.pairing_task
+    assert light.extra_state_attributes["pairing_until"] is None
     assert len(calls) == 30
     assert pauses == [1 / 3] * 30
     for sequence, call in enumerate(calls):
@@ -192,7 +195,7 @@ async def test_pairing_requires_confirmation_and_uses_durable_sequences(hass, mo
     assert await restarted.sequence.async_next() == 256
 
 
-async def test_pairing_stops_on_transport_failure_without_reporting_success(hass):
+async def test_pairing_keeps_trying_through_failures_without_reporting_success(hass):
     calls = []
 
     async def fail(call):
@@ -202,9 +205,50 @@ async def test_pairing_stops_on_transport_failure_without_reporting_success(hass
     hass.services.async_register("esphome", DATA[CONF_TRANSMIT_SERVICE], fail)
     controller = await make_controller(hass)
     controller.state.is_on = True
-    with pytest.raises(HomeAssistantError, match="proxy offline"):
-        await controller.async_pair()
-    assert len(calls) == 1
+    await controller.async_pair(duration=1)
+    await controller.pairing_task
+    assert len(calls) == 3  # A short proxy drop does not end the window.
     assert controller.state.is_on is None
     assert controller.state.effect is None
-    assert await controller.sequence.async_next() == 1
+    assert await controller.sequence.async_next() == 3
+
+
+async def test_stop_ends_the_pairing_window_early(hass):
+    calls = []
+    hass.services.async_register(
+        "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
+    )
+    controller = await make_controller(hass)
+    await controller.async_unpair_all()
+    while not calls:
+        await asyncio.sleep(0)
+    controller.stop_pairing()
+    with pytest.raises(asyncio.CancelledError):
+        await controller.pairing_task
+    assert controller.pairing_until is None
+    assert len(calls) < 5
+
+
+async def test_dim_hold_repeats_the_hold_command_at_the_remote_cadence(hass, monkeypatch):
+    calls = []
+    hass.services.async_register(
+        "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
+    )
+    controller = await make_controller(hass)
+    pauses = []
+
+    async def no_wait(seconds):
+        pauses.append(seconds)
+
+    monkeypatch.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
+    await controller.async_dim("up", hold=3)
+    assert len(calls) == 5
+    assert pauses == [0.6] * 5
+    for call in calls:
+        (message,) = controller.codec.decode(bytes.fromhex(call.data["raw"]))
+        assert message.payload[4:] == bytes.fromhex("01031441")
+    assert controller.state.last_command == "dim_up"
+    calls.clear()
+    await controller.async_dim("down")
+    (message,) = controller.codec.decode(bytes.fromhex(calls[0].data["raw"]))
+    assert message.payload[4:] == bytes.fromhex("01001441")  # A tap is one step.

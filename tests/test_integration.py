@@ -154,7 +154,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             await hass.async_block_till_done()
             assert hass.states.get(entity_id) == state
     assert len(calls) == 1
-    with pytest.raises(vol.Invalid, match="may replace"):
+    with pytest.raises(vol.Invalid, match="start pairing"):
         await hass.services.async_call(
             DOMAIN, "pair_transmitter", {"entity_id": entity_id, "confirm": False}, blocking=True
         )
@@ -166,8 +166,12 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     with monkeypatch.context() as timing:
         timing.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
         await hass.services.async_call(
-            DOMAIN, "pair_transmitter", {"entity_id": entity_id, "confirm": True}, blocking=True
+            DOMAIN,
+            "pair_transmitter",
+            {"entity_id": entity_id, "confirm": True, "duration": 10},
+            blocking=True,
         )
+        await hass.config_entries.async_entries(DOMAIN)[0].runtime_data.pairing_task
     assert len(calls) == 31
     assert hass.states.get(entity_id).state == "unknown"
     assert hass.states.get(recorded_scene).state == "Unknown"
@@ -278,8 +282,12 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     with monkeypatch.context() as timing:
         timing.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
         await hass.services.async_call(
-            DOMAIN, "unpair_all_remotes", {"entity_id": entity_id, "confirm": True}, blocking=True
+            DOMAIN,
+            "unpair_all_remotes",
+            {"entity_id": entity_id, "confirm": True, "duration": 10},
+            blocking=True,
         )
+        await controller.pairing_task
     assert len(calls) == 62
     for call in calls[32:]:
         (message,) = MeshCodec().decode(bytes.fromhex(call.data["raw"]))
@@ -306,9 +314,10 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             result = await hass.config_entries.options.async_configure(
                 result["flow_id"], {"confirm": True}
             )
-        assert result["type"] == "abort"
-        assert result["reason"] == f"{step}_sent"
-        assert len(calls) == before + 30
+            assert result["type"] == "abort"  # The dialog closes at once.
+            assert result["reason"] == f"{step}_sent"
+            await controller.pairing_task
+        assert len(calls) == before + 270  # Three requests a second for 90 seconds.
         (message,) = MeshCodec().decode(bytes.fromhex(calls[-1].data["raw"]))
         assert message.payload[4] == sub_command
     assert await hass.config_entries.async_unload(entry.entry_id)

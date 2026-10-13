@@ -7,15 +7,22 @@ import io
 import json
 import re
 import secrets
+import time
 import zipfile
+from datetime import UTC, datetime
 from pathlib import Path
 
 import aiohttp
 from aiohttp import web
 
-from . import DOMAIN, EFFECTS, VERSION, dashboards, slug, unique_id
+from . import DOMAIN, EFFECTS, VERSION, dashboards, esphome_files, slug, unique_id
 from .ha import HAError
 from .proxies import discover_proxies
+
+TRACKING_OPTION = "allow_service_calls"
+# The remote's button order. EFFECTS keeps the protocol's order.
+REMOTE_ORDER = ("Auto rhythm", "Refresh", "Energize", "Focus", "Relax", "Rest")
+CHECK_INTERVAL = 30
 
 LIGHT_ID = unique_id("light")
 SCENE_ID = unique_id("recorded_scene")
@@ -31,15 +38,32 @@ CARD_ENTITIES = {
 }
 
 
+def _remaining(until):
+    """Whole seconds left in a pairing window, or 0."""
+    try:
+        end = datetime.fromisoformat(until)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, round((end - datetime.now(UTC)).total_seconds()))
+
+
 def _version(text):
     return tuple(int(part) for part in text.split("."))
 
 
 class Panel:
-    def __init__(self, ha, installer, root: Path, allowed_ips=None):
+    def __init__(self, ha, installer, root: Path, allowed_ips=None, esphome_dir=None):
         self.ha = ha
         self.installer = installer
         self.root = root
+        config = getattr(installer, "ha_config", None)
+        self.esphome_dir = esphome_dir or (config / "esphome" if config else None)
+        # Read-only checks run in the background and are cached between status polls.
+        self.tracking = None
+        self.device_builder = None
+        self._checked = 0.0
+        self._check_task = None
+        self._auto_setup_tried = False
         self.allowed_ips = {"172.30.32.2"} if allowed_ips is None else set(allowed_ips)
         self.csrf = secrets.token_urlsafe(32)
         self.lock = asyncio.Lock()
@@ -60,6 +84,8 @@ class Panel:
             "install": self._install,
             "restart": self._restart,
             "setup": self._setup,
+            "prepare_firmware": self._prepare_firmware,
+            "allow_tracking": self._allow_tracking,
         }
         # Actions that need a loaded, current integration. Each takes (entity, body).
         self.light_actions = {
@@ -74,8 +100,14 @@ class Panel:
             "scene": self._scene,
             "dim_up": self._dim,
             "dim_down": self._dim,
+            "dim_hold": self._dim_hold,
             "pair": self._pair,
+            "stop_pairing": self._stop_pairing,
             "skip_sequence": self._skip_sequence,
+            "test": self._test,
+            "confirm_test": self._confirm_test,
+            "finish_setup": self._finish_setup,
+            "rhythm_start": self._rhythm_start,
         }
 
     async def set_first_setup(self, in_progress):
@@ -147,6 +179,62 @@ class Panel:
             if name.startswith("sensor.") and ("ble_adv_proxy_name" in name or name in matched)
         ]
 
+    def esphome_nodes(self):
+        if not self.esphome_dir:
+            return []
+        return esphome_files.list_nodes(self.esphome_dir)
+
+    def proxy_entries(self, proxies):
+        """ESPHome config entries of the compatible proxies."""
+        sensors = {item["entity_id"]: item for item in self.ha.registry}
+        return sorted(
+            {
+                sensors[item["entity_id"]]["config_entry_id"]
+                for item in proxies
+                if sensors.get(item["entity_id"], {}).get("config_entry_id")
+            }
+        )
+
+    async def check(self):
+        """Refresh the cached remote-tracking setting and the Device Builder link."""
+        try:
+            entries = self.proxy_entries(self.proxies())
+            values = [await self.ha.read_options(entry) for entry in entries]
+            self.tracking = (
+                all(value.get(TRACKING_OPTION) is True for value in values) if values else None
+            )
+            self.device_builder = await self.ha.panel_url(
+                lambda panel: "esphome" in str((panel.get("config") or {}).get("ingress", ""))
+                or "esphome" in str(panel.get("title", "")).lower()
+            )
+        except (HAError, aiohttp.ClientError, TimeoutError, KeyError, TypeError):
+            pass  # Read-only; the next poll tries again.
+
+    def schedule_checks(self):
+        if not self.ha.ready or (self._check_task and not self._check_task.done()):
+            return
+        if time.monotonic() - self._checked >= CHECK_INTERVAL:
+            self._checked = time.monotonic()
+            self._check_task = asyncio.create_task(self.check())
+        elif (
+            not self._auto_setup_tried
+            and self.installer.installed()
+            and not self.restart_required()
+            and not self.light()
+            and not self.ha.entries
+            and len(self.proxies()) == 1
+        ):
+            # One compatible proxy and no setup yet: save it without asking.
+            self._auto_setup_tried = True
+            self._check_task = asyncio.create_task(self._auto_setup())
+
+    async def _auto_setup(self):
+        try:
+            async with self.lock:
+                await self._setup({"proxy": self.proxies()[0]["entity_id"]})
+        except (ValueError, HAError, aiohttp.ClientError, TimeoutError, IndexError):
+            pass  # The page still offers the manual choice.
+
     def snapshot(self):
         entity = self.light()
         state = self.ha.states.get(entity, {})
@@ -166,10 +254,19 @@ class Panel:
             "effect": attributes.get("assumed_effect", attributes.get("effect")),
             "last_command": attributes.get("last_command"),
             "power_synchronized": attributes.get("power_synchronized", False),
-            "effects": list(EFFECTS),
+            "effects": [effect for effect in REMOTE_ORDER if effect in EFFECTS]
+            + [effect for effect in EFFECTS if effect not in REMOTE_ORDER],
             "proxies": proxies,
             "transmit_services": self.transmit_services(),
             "proxy_sensors": self.proxy_sensors(proxies),
+            "proxy_online": any(
+                self.ha.states.get(item["entity_id"], {}).get("state") not in (None, "unavailable")
+                for item in proxies
+            ),
+            "tracking": self.tracking,
+            "esphome_nodes": self.esphome_nodes(),
+            "device_builder": self.device_builder,
+            "pairing_remaining": _remaining(attributes.get("pairing_until")),
         }
 
     @web.middleware
@@ -202,6 +299,7 @@ class Panel:
         return web.Response(text=content, content_type="text/html")
 
     async def status(self, request):
+        self.schedule_checks()
         return web.json_response(self.snapshot())
 
     async def health(self, request):
@@ -326,10 +424,63 @@ class Panel:
     async def _dim(self, entity, body):
         await self.ha.call("button", "press", self.button(body["action"]))
 
+    async def _dim_hold(self, entity, body):
+        direction = body.get("direction")
+        if direction not in ("down", "up"):
+            raise ValueError("Choose a dim direction")
+        # One hold command; the page repeats it every 0.6 seconds while pressed.
+        await self.ha.call(DOMAIN, "dim", entity, direction=direction, hold=0.6)
+
     async def _pair(self, entity, body):
         if body.get("confirm") is not True:
-            raise ValueError("Confirm the possible change to the original remote's pairing")
+            raise ValueError("Confirm that you will switch the panel's power off and on")
+        # Returns at once; the integration repeats the request for 90 seconds.
         await self.ha.call(DOMAIN, "pair_transmitter", entity, confirm=True)
+
+    async def _stop_pairing(self, entity, body):
+        await self.ha.call(DOMAIN, "stop_pairing", entity)
+
+    async def _prepare_firmware(self, body):
+        if not self.esphome_dir:
+            raise ValueError("The ESPHome folder is not available to this add-on")
+        firmware = self.root / "firmware"
+        result = await asyncio.to_thread(
+            esphome_files.install_package, self.esphome_dir, firmware, body.get("file")
+        )
+        self._checked = 0  # Look for the Device Builder link again.
+        return result
+
+    async def _allow_tracking(self, body):
+        entries = self.proxy_entries(self.proxies())
+        if not entries:
+            raise ValueError("No compatible Bluetooth proxy is online")
+        for entry in entries:
+            await self.ha.set_options(entry, {TRACKING_OPTION: True})
+        self.tracking = True
+
+    async def _test(self, entity, body):
+        # A power change is easy to see; a mode change often is not.
+        await self.ha.call("light", "toggle", entity)
+
+    async def _confirm_test(self, entity, body):
+        result = body.get("result")
+        if result not in ("on", "off", "none"):
+            raise ValueError("Say what the panel did")
+        if result != "none":
+            # The answer also tells Home Assistant the real power state.
+            await self.ha.call(DOMAIN, "set_assumed_power", entity, is_on=result == "on")
+
+    async def _finish_setup(self, entity, body):
+        effect = body.get("effect")
+        if effect is not None:
+            if effect not in EFFECTS:
+                raise ValueError("Unknown mode")
+            # A mode command leaves the panel on in that mode, so both become known.
+            await self.ha.call("button", "press", self.button(effect))
+        await self.set_first_setup(False)
+
+    async def _rhythm_start(self, entity, body):
+        await self.ha.call("button", "press", self.button("set_rhythm_start"))
 
     async def _skip_sequence(self, entity, body):
         if body.get("confirm") is not True:

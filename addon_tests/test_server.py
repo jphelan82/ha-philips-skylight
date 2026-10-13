@@ -223,7 +223,8 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
         assert len(choices) == 2
         for choice in choices:
             selected = "state" in choice["conditions"][0]
-            assert choice["card"]["color"] == ("blue" if selected else "grey")
+            # The selected choice lights up in its own color; the rest stay grey.
+            assert (choice["card"]["color"] != "grey") is selected
     assert not panel.ha.calls
     panel.ha.registry[-1]["disabled_by"] = "user"
     response = await client.get("/api/dashboard-card")
@@ -344,3 +345,160 @@ async def test_manual_mode_records_without_operating_light_or_establishing_power
     with pytest.raises(ValueError, match="Choose a mode"):
         await panel.perform({"action": "sync_mode", "effect": "invalid"})
     assert len(panel.ha.calls) == 2
+
+
+class SetupHA(FakeHA):
+    """A Home Assistant with one compatible proxy and no Skylight entry yet."""
+
+    def __init__(self, tracking=False):
+        super().__init__()
+        self.registry = [
+            {
+                "platform": "esphome",
+                "entity_id": "sensor.proxy_ble_adv_proxy_name",
+                "unique_id": "aa-ble_adv_proxy_name",
+                "config_entry_id": "esphome-entry",
+            }
+        ]
+        self.options = {"allow_service_calls": tracking, "subscribe_logs": False}
+        self.set = []
+
+    async def read_options(self, entry_id):
+        assert entry_id == "esphome-entry"
+        return dict(self.options)
+
+    async def set_options(self, entry_id, changes):
+        self.set.append((entry_id, changes))
+        self.options.update(changes)
+
+    async def panel_url(self, match):
+        panel = {"title": "ESPHome Builder", "config": {"ingress": "5c53de3b_esphome"}}
+        return "/5c53de3b_esphome" if match(panel) else None
+
+    async def configure(self, *args):
+        await super().configure(*args)
+        self.registry = [
+            *self.registry,
+            {
+                "platform": "philips_skylight",
+                "unique_id": "factory_mesh_7ffe_light",
+                "entity_id": "light.renamed",
+            },
+            *(
+                {
+                    "platform": "philips_skylight",
+                    "unique_id": f"factory_mesh_7ffe_{name}",
+                    "entity_id": f"button.skylight_{name}",
+                }
+                for name in ("set_rhythm_start", "rest")
+            ),
+        ]
+
+
+@pytest.fixture
+def setup_panel(tmp_path):
+    installer = SimpleNamespace(
+        version="0.2.0", pending_restart=False, installed=lambda: True, data=tmp_path / "data"
+    )
+    return Panel(SetupHA(), installer, ROOT, allowed_ips={"127.0.0.1"}, esphome_dir=tmp_path)
+
+
+async def test_one_proxy_is_connected_without_asking_and_checks_are_cached(setup_panel):
+    ha = setup_panel.ha
+    setup_panel.schedule_checks()  # The first poll reads the settings.
+    await setup_panel._check_task
+    assert setup_panel.tracking is False
+    assert setup_panel.device_builder == "/5c53de3b_esphome"
+    setup_panel.schedule_checks()  # The next poll sets up the only proxy.
+    await setup_panel._check_task
+    expected = ("Philips Skylight", "proxy_adv_svc_v1", "sensor.proxy_ble_adv_proxy_name")
+    assert ha.calls == [(expected, {})]
+    assert setup_panel.first_setup is True
+    setup_panel.schedule_checks()  # It never tries twice.
+    assert setup_panel._check_task.done()
+    assert len(ha.calls) == 1
+
+
+async def test_tracking_is_turned_on_through_the_esphome_settings(setup_panel):
+    await setup_panel.perform({"action": "allow_tracking"})
+    assert setup_panel.ha.set == [("esphome-entry", {"allow_service_calls": True})]
+    assert setup_panel.tracking is True
+
+
+async def test_pairing_test_and_rhythm_start_press_the_right_buttons(setup_panel):
+    ha = setup_panel.ha
+    await setup_panel.perform({"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name"})
+    ha.calls.clear()
+    await setup_panel.perform({"action": "test"})
+    await setup_panel.perform({"action": "rhythm_start"})
+    assert ha.calls == [
+        (("light", "toggle", "light.renamed"), {}),
+        (("button", "press", "button.skylight_set_rhythm_start"), {}),
+    ]
+    with pytest.raises(ValueError, match="what the panel did"):
+        await setup_panel.perform({"action": "confirm_test", "result": True})
+    ha.calls.clear()
+    await setup_panel.perform({"action": "confirm_test", "result": "none"})
+    assert setup_panel.first_setup is True
+    assert ha.calls == []  # No answer about power means no record.
+    await setup_panel.perform({"action": "confirm_test", "result": "off"})
+    assert setup_panel.first_setup is True  # Setup ends after the mode step.
+    assert ha.calls == [
+        (("philips_skylight", "set_assumed_power", "light.renamed"), {"is_on": False})
+    ]
+    ha.calls.clear()
+    with pytest.raises(ValueError, match="Unknown mode"):
+        await setup_panel.perform({"action": "finish_setup", "effect": "Disco"})
+    await setup_panel.perform({"action": "finish_setup", "effect": "Rest"})
+    assert ha.calls == [(("button", "press", "button.skylight_rest"), {})]
+    assert setup_panel.first_setup is False
+    await setup_panel.perform({"action": "finish_setup"})  # Skip presses nothing.
+    assert len(ha.calls) == 1
+
+
+async def test_firmware_is_added_to_the_chosen_proxy(setup_panel, tmp_path):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
+    snapshot = setup_panel.snapshot()
+    node = {"file": "proxy.yaml", "node": "proxy", "has_skylight": False}
+    assert snapshot["esphome_nodes"] == [node]
+    result = await setup_panel.perform({"action": "prepare_firmware", "file": "proxy.yaml"})
+    assert result["changed"] is True
+    assert setup_panel.snapshot()["esphome_nodes"][0]["has_skylight"] is True
+
+
+async def test_pairing_window_reports_seconds_left_and_can_stop(setup_panel):
+    from datetime import UTC, datetime, timedelta
+
+    ha = setup_panel.ha
+    await setup_panel.perform({"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name"})
+    until = datetime.now(UTC) + timedelta(seconds=61)
+    ha.states["light.renamed"] = {
+        "state": "unknown",
+        "attributes": {"integration_version": "0.2.0", "pairing_until": until.isoformat()},
+    }
+    assert 59 <= setup_panel.snapshot()["pairing_remaining"] <= 61
+    ha.calls.clear()
+    await setup_panel.perform({"action": "pair", "confirm": True})
+    await setup_panel.perform({"action": "stop_pairing"})
+    assert ha.calls == [
+        (("philips_skylight", "pair_transmitter", "light.renamed"), {"confirm": True}),
+        (("philips_skylight", "stop_pairing", "light.renamed"), {}),
+    ]
+    ha.states["light.renamed"]["attributes"]["pairing_until"] = "not a time"
+    assert setup_panel.snapshot()["pairing_remaining"] == 0
+
+
+async def test_dim_hold_sends_one_hold_command_per_request(setup_panel):
+    ha = setup_panel.ha
+    await setup_panel.perform({"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name"})
+    ha.calls.clear()
+    await setup_panel.perform({"action": "dim_hold", "direction": "up"})
+    assert ha.calls == [
+        (("philips_skylight", "dim", "light.renamed"), {"direction": "up", "hold": 0.6})
+    ]
+    with pytest.raises(ValueError, match="direction"):
+        await setup_panel.perform({"action": "dim_hold", "direction": "sideways"})
