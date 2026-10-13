@@ -188,8 +188,29 @@ changed.
 - Notice the power cycle during pairing by itself. The panel sends a Bluetooth
   beacon all the time, so the proxy can tell when its power goes off and comes
   back. Then nobody needs to select **Done**.
-- Control several panels separately, with one Home Assistant sender address per
-  panel.
+- **Several Skylights.** Not built yet. Two parts are needed:
+  - **Control.** Give each panel its own Home Assistant sender address (`0x7FFE`,
+    `0x7FFD`, and so on), and pair each address only with its own panel. This
+    needs the panels on separate circuits, because one power cycle opens the
+    pairing window of every panel on that circuit.
+  - **State tracking per panel.** Home Assistant hears and decrypts every remote
+    press, paired or not. The preferred design is a table that maps each
+    remote's mesh address to its panel. The user fills it in during setup by
+    pressing each remote once. The remotes stay paired to their panels, so they
+    keep working without Home Assistant. A panel's relay of a press, sent from
+    its own Bluetooth address with TTL 4, can show which panel accepted it. But
+    relays are not always heard, so they can only help.
+  - **This needs each remote to have its own mesh address.** The handheld remote
+    sends as `0x7FFF`. The wall remote's address is unknown. Both remotes work
+    together, which suggests different addresses, because a mesh node drops
+    packets with a lower sequence number from the same address. A capture of
+    one wall-remote press confirms it. A remote paired to two panels controls
+    both, so its presses update both records.
+  - **Fallback if remotes share an address:** unpair the remotes from the
+    panels, and let Home Assistant forward each press to the right panel from
+    that panel's sender address. Then the state is exact. The cost is that the
+    remotes stop working whenever Home Assistant, the proxy or Wi-Fi is down,
+    and each press has a little more delay.
 
 ## More detail
 
