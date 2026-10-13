@@ -117,6 +117,21 @@ bool BleAdvProxy::check_add_dupe_packet(BleAdvParam &&packet) {
   return true;
 }
 
+// Only Bluetooth mesh messages (AD type 0x2A) reach Home Assistant. Adverts from
+// phones, watches and other nearby devices stay on the proxy, so Home Assistant
+// never records them.
+static bool has_mesh_message(const uint8_t *data, size_t len) {
+  for (size_t i = 0; i + 1 < len;) {
+    const uint8_t field = data[i];
+    if (field == 0)
+      break;
+    if (data[i + 1] == 0x2A)
+      return true;
+    i += field + 1;
+  }
+  return false;
+}
+
 std::string get_str_mac(const uint8_t *mac) {
   return str_snprintf("%02X:%02X:%02X:%02X:%02X:%02X", 17, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
@@ -178,11 +193,14 @@ void BleAdvProxy::loop() {
 
   // handle new packets, exclude if one of the following is true:
   // - len is too small
+  // - it carries no Bluetooth mesh message
   // - company ID is part of ignored company ids
   // - mac is part of ignored macs
   // - is dupe of previously received
   for (auto &sr : new_packets) {
     uint16_t cid = (sr.ble_adv[3] << 8) + sr.ble_adv[2];
+    if (!has_mesh_message(sr.ble_adv, sr.adv_data_len))
+      continue;
     std::string str_mac = get_str_mac(sr.bda);
     if (std::find(this->ign_cids_.begin(), this->ign_cids_.end(), cid) == this->ign_cids_.end() &&
         std::find(this->ign_macs_.begin(), this->ign_macs_.end(), str_mac) == this->ign_macs_.end() &&

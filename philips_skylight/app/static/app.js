@@ -10,6 +10,27 @@ let dashboardRevision = null;
 let dashboardRead = 0;
 const el = (id) => document.getElementById(id);
 const show = (id, visible) => { el(id).hidden = !visible; };
+// Home Assistant shows this page in a frame from its own address, so the page can
+// read the open theme and match it, custom themes and dark mode included.
+const THEME = {
+  "--accent": ["--primary-color"], "--on-accent": ["--text-primary-color"],
+  "--text": ["--primary-text-color"], "--muted": ["--secondary-text-color"],
+  "--page": ["--primary-background-color"], "--card": ["--ha-card-background", "--card-background-color"],
+  "--line": ["--divider-color"], "--done": ["--success-color"], "--error": ["--error-color"],
+  "--radius": ["--ha-card-border-radius"], "--font": ["--ha-font-family-body", "--paper-font-body1_-_font-family"],
+};
+function followTheme() {
+  try {
+    const theirs = getComputedStyle(window.parent.document.documentElement);
+    const ours = document.documentElement.style;
+    for (const [name, sources] of Object.entries(THEME)) {
+      const value = sources.map((source) => theirs.getPropertyValue(source).trim()).find(Boolean);
+      if (value) ours.setProperty(name, value);
+    }
+    if (["light", "dark"].includes(theirs.colorScheme)) ours.colorScheme = theirs.colorScheme;
+  } catch { /* Opened outside Home Assistant: keep the default colors. */ }
+}
+followTheme();
 function notice(message, error = false) {
   el("notice").textContent = message;
   el("notice").className = error ? "error" : "";
@@ -103,7 +124,10 @@ function render(data) {
   const firmware = data.firmware?.status;
   const cards = data.outdated_cards || [];
   const nodeNames = (data.firmware?.nodes || []).join(", ");
-  show("updates", ready && (firmware === "files" || firmware === "install" || cards.length > 0));
+  const keyless = nodes.filter((node) => node.has_skylight && node.api_key === false).map((node) => node.node);
+  show("updates", ready && (firmware === "files" || firmware === "install" || cards.length > 0 || keyless.length > 0));
+  show("proxy-key", keyless.length > 0);
+  el("keyless-nodes").textContent = keyless.join(", ");
   show("firmware-files", firmware === "files");
   show("firmware-install", firmware === "install");
   el("firmware-nodes").textContent = nodeNames || "your proxy";
@@ -134,6 +158,7 @@ async function get(path) {
   return result;
 }
 async function refresh() {
+  followTheme();  // The theme can change while the page is open.
   try { render(await get("api/status")); }
   catch (error) { if (!busy) notice(error.message, true); }
 }

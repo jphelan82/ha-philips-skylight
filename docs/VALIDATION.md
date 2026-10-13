@@ -40,7 +40,7 @@ next turn-on attempt. The owner confirmed the physical panel remained off, and
 that manually turning it on/off with the paired remote still worked.
 
 An independent Apollo MSR-2 Bluetooth proxy subsequently received the transmitter's
-Focus advertisement under BLE address `1C:DB:D4:EC:E6:3A`. The packet authenticated
+Focus advertisement under BLE address `AA:AA:AA:00:00:03`. The packet authenticated
 with the factory keys and decoded as sender `0x7FFE`, sequence `3`, destination
 `0xFFFF`, TTL `5`, access payload `c911028304ff0341`. This establishes over-the-air
 transmission; it did not establish panel acceptance at that stage. These initial
@@ -161,7 +161,7 @@ Tested on 2026-10-13 with commit `ae8497c`, on the same server, panel and proxy.
   REST API returned HTTP 500 for the rejection, because the handler raises
   `HomeAssistantError`. Nobody ran the action with `confirm: true`.
 - Through ingress, the status endpoint returned HTTP 200 with the proxy
-  `esphome-web-ece638`, `connected: true` and `restart_required: false`.
+  `skylight-proxy`, `connected: true` and `restart_required: false`.
   The `/health` endpoint that the Docker health check calls returned `ok`.
 - The Supervisor log shows no unhealthy container. Docker's own health status
   was not read, because the SSH add-on has no Docker access.
@@ -204,9 +204,9 @@ Supervisor uninstalled `local_philips_skylight`. The integration stayed at
   `/config/esphome/components/ble_adv_proxy`. The old copy is in
   `/config/esphome/ble_adv_proxy.bak-20261013`. The node YAML did not change.
 - Device Builder validated the node YAML with ESPHome 2026.4.5. It then
-  compiled the firmware and installed it over the air to `esphome-web-ece638`.
+  compiled the firmware and installed it over the air to `skylight-proxy`.
 - The proxy reconnected to Home Assistant about six minutes after the install
-  started. The `esphome_web_ece638_adv_svc_v1` action came back, and the add-on
+  started. The `skylight_proxy_adv_svc_v1` action came back, and the add-on
   status listed the proxy again with no error.
 - A compile through the MCP app proxy does not work. The proxy call times out
   after about two minutes and closes the WebSocket, and Device Builder then
@@ -356,8 +356,8 @@ Deployed on 2026-10-13 with integration 0.3.2.
   Restoring YAML alone does not change running firmware. Do not restore old HA
   sequence storage.
 - Original proxy YAML before raw advertising:
-  `/config/esphome/esphome-web-ece638.yaml.bak-20261012`.
+  `/config/esphome/<proxy>.yaml.bak-20261012`.
 - YAML just before this deployment:
-  `/config/esphome/esphome-web-ece638.yaml.bak-skylight-20261012-1718`.
+  `/config/esphome/<proxy>.yaml.bak-skylight-20261012-1718`.
 - Component before the 0.2.5 firmware: `/config/esphome/ble_adv_proxy.bak-20261013`.
   Copy it back into `components/ble_adv_proxy`, then compile and install.

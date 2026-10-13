@@ -16,7 +16,7 @@ from custom_components.philips_skylight.light import SkylightLight
 from custom_components.philips_skylight.protocol import identify_command, pairing_payload
 
 DATA = {
-    CONF_TRANSMIT_SERVICE: "esphome_web_ece638_adv_svc_v1",
+    CONF_TRANSMIT_SERVICE: "skylight_proxy_adv_svc_v1",
     CONF_PROXY_ENTITY: "sensor.proxy_ble_adv_proxy_name",
 }
 

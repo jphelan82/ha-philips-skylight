@@ -65,7 +65,7 @@ entities, settings and pairing.
 
 ## Updates
 
-After an update, an **Updates** section on the add-on page lists what still
+After an update, a **Needs attention** section on the add-on page lists what still
 needs you.
 
 1. **Update the add-on.** Home Assistant offers the update under **Settings →
@@ -195,7 +195,23 @@ of older integration code live in the add-on's `/data` folder, which Supervisor
 backups include.
 
 The web page is open only through Home Assistant's ingress. No port is exposed.
-A Docker health check inside the container reads only the `/health` page.
+A Docker health check inside the container reads only the `/health` page. The
+page takes its colors from the Home Assistant theme you have open.
+
+### The proxy
+
+- **Give the proxy an API encryption key.** Without one, any device on your
+  home network can connect to the proxy and make it send commands to the
+  panel. The add-on page warns when a proxy that runs the Skylight firmware has
+  no key in its YAML.
+- **Allow the device to perform Home Assistant actions** lets the proxy report
+  remote presses. The same setting lets the proxy call any Home Assistant
+  action. The Skylight firmware only sends press events, but the setting trusts
+  everything that runs on the proxy. Install only firmware you trust on it.
+- The firmware forwards only Bluetooth mesh messages to Home Assistant.
+  Adverts from phones, watches and other nearby devices stay on the proxy, so
+  Home Assistant's recorder never stores them. Firmware before version 2
+  forwarded every advert it heard.
 
 ## Recovery and removal
 

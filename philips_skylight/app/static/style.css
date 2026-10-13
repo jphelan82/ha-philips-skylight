@@ -1,36 +1,46 @@
 :root {
+  /* Home Assistant's default theme. app.js replaces these with the open theme's colors. */
   color-scheme: light dark;
-  --text: #183847; --muted: #5f7884; --page: #f0f5f7; --card: #ffffff; --line: #dce7eb;
-  --button: #f8fbfc; --button-hover: #eaf3f6; --accent: #226c85; --on-accent: #ffffff;
-  --done: #27573d; --done-bg: #dcefe5; --error: #893d29; --error-bg: #fff0ed; --info-bg: #e8f3f7;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --accent: #009ac7; --on-accent: #ffffff;
+  --text: #212121; --muted: #727272; --page: #fafafa; --card: #ffffff;
+  --line: rgba(0, 0, 0, 0.12); --done: #43a047; --error: #db4437;
+  --radius: 12px; --font: Roboto, Noto, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Shades come from the colors above, so a custom theme changes them too. */
+  --button: color-mix(in srgb, var(--text) 6%, var(--card));
+  --button-hover: color-mix(in srgb, var(--text) 11%, var(--card));
+  --done-bg: color-mix(in srgb, var(--done) 16%, var(--card));
+  --error-bg: color-mix(in srgb, var(--error) 14%, var(--card));
+  --info-bg: color-mix(in srgb, var(--accent) 12%, var(--card));
+  font-family: var(--font);
   color: var(--text); background: var(--page);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #e3edf1; --muted: #9db2bb; --page: #111518; --card: #1c2226; --line: #2c363c;
-    --button: #242c31; --button-hover: #2d373d; --accent: #4fa3c0; --on-accent: #0b1a20;
-    --done: #8fd3a9; --done-bg: #1f3a2b; --error: #f2a593; --error-bg: #3a221c; --info-bg: #1e2c33;
+    --text: #e1e1e1; --muted: #9b9b9b; --page: #111111; --card: #1c1c1c;
+    --line: rgba(225, 225, 225, 0.12);
   }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--page); }
 main { max-width: 640px; margin: auto; padding: 24px 16px; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
-h1 { font-size: 30px; margin: 0; font-weight: 650; }
-h2 { font-size: 17px; margin: 0 0 14px; }
-h3 { font-size: 15px; margin: 0 0 8px; }
+h1 { font-size: 28px; margin: 0; font-weight: 400; }
+h2 { font-size: 20px; margin: 0 0 14px; font-weight: 500; }
+h3 { font-size: 16px; margin: 0 0 8px; font-weight: 500; }
 p, li { line-height: 1.55; font-size: 14px; }
 .hint { font-size: 12px; color: var(--muted); }
 .badge { padding: 7px 12px; border-radius: 20px; font-size: 12px; background: var(--line); white-space: nowrap; }
 .badge.online { background: var(--done-bg); color: var(--done); }
-section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
 button {
-  font: inherit; font-size: 14px; cursor: pointer; padding: 11px 16px; min-height: 44px;
-  border: 1px solid var(--line); border-radius: 9px; color: var(--text); background: var(--button);
+  font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; padding: 10px 18px; min-height: 44px;
+  border: 1px solid transparent; border-radius: 9999px; color: var(--text); background: var(--button);
 }
 button:hover { background: var(--button-hover); }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button.primary:hover { background: color-mix(in srgb, var(--accent) 88%, var(--text)); }
+/* The remote's buttons keep a tile shape, like Home Assistant's tile cards. */
+.modes button, button.wide, .row button { border-radius: var(--radius); }
 button:disabled { opacity: .45; cursor: wait; }
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 button.wide { width: 100%; margin-bottom: 10px; }
@@ -59,8 +69,9 @@ details.plain details.plain { border: 0; padding-bottom: 0; }
 summary { cursor: pointer; font-weight: 600; font-size: 14px; }
 details[open] > summary { margin-bottom: 10px; }
 a { color: var(--accent); font-size: 13px; }
+code { font-size: 13px; padding: 1px 5px; border-radius: 4px; background: var(--button); }
 pre { padding: 12px; background: var(--page); border-radius: 8px; overflow: auto; font-size: 13px; }
-#notice { padding: 12px 16px; background: var(--info-bg); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
+#notice { padding: 12px 16px; background: var(--info-bg); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; font-size: 14px; }
 #notice.error { background: var(--error-bg); color: var(--error); }
 footer { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: var(--muted); padding: 4px; }
 footer a { font-size: 11px; }

@@ -2,10 +2,10 @@
 
 ## 0.4.0
 
-- The add-on page has an **Updates** section. It shows only the steps that an
-  update needs: new firmware files, a firmware install on the proxy, or a newer
-  dashboard card.
-- The firmware package has a version number, 1. The proxy reports it as the
+- The add-on page has a **Needs attention** section. It shows only the steps
+  that an update needs: new firmware files, a firmware install on the proxy, or
+  a newer dashboard card.
+- The firmware package has a version number, now 2. The proxy reports it as the
   **Skylight firmware** diagnostic sensor. Firmware from before this version
   reports no number, so the page asks for one install in ESPHome Device
   Builder after this update.
@@ -14,6 +14,18 @@
   YAML.
 - **Update the card** replaces older Skylight cards on every editable
   dashboard, the default one included. It changes nothing else on a dashboard.
+- With firmware 2, the proxy forwards only Bluetooth mesh messages to Home
+  Assistant. Older firmware forwarded every Bluetooth advert in range, so Home
+  Assistant's recorder stored the addresses of nearby phones, watches and other
+  devices.
+- The page warns when a proxy with the Skylight firmware has no ESPHome API
+  encryption key. Without one, any device on the home network can make the
+  proxy control the panel.
+- The page takes its colors, font and shapes from the open Home Assistant
+  theme, custom themes and dark mode included.
+- The add-on's sidebar icon is the flat ceiling light, like the light entity.
+- The docs no longer show the test home's device addresses, host name or IP
+  address.
 - The integration is unchanged, so this update needs no Home Assistant restart.
 
 ## 0.3.3

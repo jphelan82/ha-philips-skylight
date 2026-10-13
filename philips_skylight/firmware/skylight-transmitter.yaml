@@ -9,7 +9,7 @@ esphome:
 # The proxy reports the number, and the add-on compares it with its own copy to
 # tell when the proxy needs an install.
 substitutions:
-  skylight_firmware: "1"
+  skylight_firmware: "2"
 
 text_sensor:
   - platform: template

@@ -45,7 +45,7 @@ for several panels is not built yet.
 ## Install
 
 Requires Home Assistant 2026.6 or newer. Firmware was compiled with ESPHome
-2026.4.5 for the ESP32-C3 `bluetooth-proxy-1`.
+2026.4.5 for the ESP32-C3 `skylight-proxy`.
 
 1. Back up the proxy YAML. Add
    [esphome/skylight-transmitter.yaml](../esphome/skylight-transmitter.yaml) as a local
@@ -56,7 +56,7 @@ Requires Home Assistant 2026.6 or newer. Firmware was compiled with ESPHome
    the mesh-compatible advertisement format and GAP completion handling.
    Build and install through ESPHome Device Builder.
 2. Confirm the proxy reconnects and exposes
-   `esphome.esphome_web_ece638_adv_svc_v1` (prefix depends on node name), plus
+   `esphome.skylight_proxy_adv_svc_v1` (prefix depends on node name), plus
    a **BLE Adv Proxy Name** sensor.
 3. Copy `custom_components/philips_skylight` into HA's
    `/config/custom_components/` and restart HA. Once published, this repository

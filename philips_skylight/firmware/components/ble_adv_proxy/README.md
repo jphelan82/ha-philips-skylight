@@ -10,7 +10,9 @@ so it keeps working after `millis()` rolls over at about 49 days. The runtime
 patch of ESPHome's `api` schema and the support code for ESPHome releases older
 than 2026.4 are removed. `skylight-transmitter.yaml` sets the two `api` options
 that the patch used to force on. The raw API actions and receive event format
-are unchanged.
+are unchanged. The proxy forwards only adverts that carry a Bluetooth mesh
+message (AD type 0x2A). Upstream forwards every advert it hears, which puts
+every nearby phone and watch into Home Assistant's event log.
 The local component targets ESPHome 2026.4.5.
 
 Copy this directory to `/config/esphome/components/ble_adv_proxy` on the HA server

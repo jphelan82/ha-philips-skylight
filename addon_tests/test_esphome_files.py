@@ -22,8 +22,20 @@ def test_lists_only_bluetooth_proxies(tmp_path):
     (tmp_path / "secrets.yaml").write_text("bluetooth_proxy:\n")
     (tmp_path / "manual.yaml").write_text(PROXY.replace("proxy-1", "manual") + "ble_adv_proxy:\n")
     assert esphome_files.list_nodes(tmp_path) == [
-        {"file": "manual.yaml", "node": "manual", "has_skylight": True, "uses_package": False},
-        {"file": "proxy.yaml", "node": "proxy-1", "has_skylight": False, "uses_package": False},
+        {
+            "file": "manual.yaml",
+            "node": "manual",
+            "has_skylight": True,
+            "uses_package": False,
+            "api_key": False,
+        },
+        {
+            "file": "proxy.yaml",
+            "node": "proxy-1",
+            "has_skylight": False,
+            "uses_package": False,
+            "api_key": False,
+        },
     ]
     assert esphome_files.list_nodes(tmp_path / "missing") == []
 
@@ -104,3 +116,11 @@ def test_update_files_refreshes_old_copies_and_keeps_backups(tmp_path):
 
 def test_a_missing_copy_is_not_current(tmp_path):
     assert not esphome_files.files_current(tmp_path, FIRMWARE)
+
+
+def test_api_key_is_found_only_under_api():
+    keyed = PROXY + "api:\n  encryption:\n    key: !secret proxy_key\n"
+    assert esphome_files.has_api_key(keyed)
+    assert not esphome_files.has_api_key(PROXY + "api:\n  reboot_timeout: 0s\n")
+    assert not esphome_files.has_api_key(PROXY + "api:\n\nother:\n  encryption: x\n")
+    assert not esphome_files.has_api_key(PROXY)

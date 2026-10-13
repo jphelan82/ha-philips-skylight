@@ -254,4 +254,16 @@ test("updates show only the firmware and card steps that apply", async () => {
   await poll();
   await setImmediate();
   assert.equal(element("updates").hidden, true);
+
+  // A proxy with the firmware but no API key gets a warning.
+  source.esphome_nodes = [{file: "p.yaml", node: "proxy-1", has_skylight: true, uses_package: true, api_key: false}];
+  await poll();
+  await setImmediate();
+  assert.equal(element("updates").hidden, false);
+  assert.equal(element("proxy-key").hidden, false);
+  assert.equal(element("keyless-nodes").textContent, "proxy-1");
+  source.esphome_nodes[0].api_key = true;
+  await poll();
+  await setImmediate();
+  assert.equal(element("updates").hidden, true);
 });

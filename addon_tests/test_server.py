@@ -478,7 +478,13 @@ async def test_firmware_is_added_to_the_chosen_proxy(setup_panel, tmp_path):
     setup_panel.root = root
     (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
     snapshot = setup_panel.snapshot()
-    node = {"file": "proxy.yaml", "node": "proxy", "has_skylight": False, "uses_package": False}
+    node = {
+        "file": "proxy.yaml",
+        "node": "proxy",
+        "has_skylight": False,
+        "uses_package": False,
+        "api_key": False,
+    }
     assert snapshot["esphome_nodes"] == [node]
     assert snapshot["firmware"] is None  # The setup checklist handles a new proxy.
     result = await setup_panel.perform({"action": "prepare_firmware", "file": "proxy.yaml"})

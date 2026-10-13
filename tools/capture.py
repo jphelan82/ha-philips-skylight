@@ -1,12 +1,14 @@
 """Listen-only capture: read the proxy's raw BLE log lines and decode Skylight mesh packets.
 
 Usage: python capture.py <repo> <proxy-host> <seconds>
+If the proxy's API has an encryption key, set ESPHOME_API_KEY to it first.
 Sends nothing to the panel. Connects to the proxy's ESPHome API as an extra client.
 Run only one copy at a time: each copy streams every advert, and several copies
 overload the proxy so that Home Assistant's commands get lost.
 """
 
 import asyncio
+import os
 import re
 import sys
 import time
@@ -45,7 +47,7 @@ def on_log(message):
 
 
 async def main():
-    client = APIClient(sys.argv[2], 6053, None)
+    client = APIClient(sys.argv[2], 6053, None, noise_psk=os.environ.get("ESPHOME_API_KEY"))
     await client.connect(login=True)
     print("connected", time.strftime("%H:%M:%S"), flush=True)
     client.subscribe_logs(on_log, log_level=LogLevel.LOG_LEVEL_DEBUG)

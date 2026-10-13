@@ -10,9 +10,9 @@ The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7
 
 | Part | What we found |
 |---|---|
-| Panel radio | Bluetooth Low Energy (BLE) Mesh module, address `4C:3C:8F:EA:96:76`. The address prefix belongs to Shenzhen Jingxun Technology. The panel advertises the name `BK_MESH_light`, which points to a Beken chip. |
+| Panel radio | Bluetooth Low Energy (BLE) Mesh module, address prefix `4C:3C:8F`. That prefix belongs to Shenzhen Jingxun Technology. The panel advertises the name `BK_MESH_light`, which points to a Beken chip. |
 | Panel beacon | The panel always sends the "unprovisioned device" beacon (service `0x1827`), even after pairing. Ignore it. The panel is on the default network from the start, and it relays the remote's packets. |
-| Remote | A battery mesh node. It sends from mesh address `0x7FFF` to `0xFFFF` (all nodes). Its BLE address for the proxy advert is `F6:E2:99:FE:DE:B1`. The ESPHome proxy reports its command packets under `FF:FF:FF:FF:FF:FF`. |
+| Remote | A battery mesh node. It sends from mesh address `0x7FFF` to `0xFFFF` (all nodes). Its BLE address for the proxy advert is `AA:AA:AA:00:00:02`. The ESPHome proxy reports its command packets under `FF:FF:FF:FF:FF:FF`. |
 | FCC ID | `2AGBW929004709X`, 2402 to 2480 MHz. |
 
 ## The keys
@@ -134,17 +134,17 @@ It does not show that the panel accepted it.
 
 ## Capture setup
 
-The proxy `bluetooth-proxy-1` (ESP32-C3, `esphome-web-ece638`) did the capture. At ESPHome's default scan settings it listens 30 ms of every 320 ms, and it missed most single presses. On 2026-10-12 its config got `esp32_ble_tracker` scan interval and window of 1100 ms each. After that it caught every press. It dropped off Wi-Fi once, for about 18 seconds, right after the change. It stayed up for the rest of the session. Separately, the proxy's connection to Home Assistant broke about every five minutes, day and night. The cause is ESPHome's Wi-Fi roaming, not the scan window. Every five minutes, ESPHome scanned for a stronger access point and switched to it. On 2026-10-13 the proxy logged `Roaming to C8:7F:54:26:1D:C8 (+33 dB)` at 11:07:22. Home Assistant's connection then stayed dead for 45 seconds before it noticed, and a command sent in that time was lost. The package now sets `wifi: post_connect_roaming: false`. The backup of the old config is `/config/esphome/esphome-web-ece638.yaml.bak-20261012` on the server.
+The proxy, an ESP32-C3, did the capture. At ESPHome's default scan settings it listens 30 ms of every 320 ms, and it missed most single presses. On 2026-10-12 its config got `esp32_ble_tracker` scan interval and window of 1100 ms each. After that it caught every press. It dropped off Wi-Fi once, for about 18 seconds, right after the change. It stayed up for the rest of the session. Separately, the proxy's connection to Home Assistant broke about every five minutes, day and night. The cause is ESPHome's Wi-Fi roaming, not the scan window. Every five minutes, ESPHome scanned for a stronger access point and switched to it. On 2026-10-13 the proxy logged a roam to a stronger access point at 11:07:22. Home Assistant's connection then stayed dead for 45 seconds before it noticed, and a command sent in that time was lost. The package now sets `wifi: post_connect_roaming: false`. The backup of the old config is `/config/esphome/<proxy>.yaml.bak-20261012` on the server.
 
 Home Assistant's `bluetooth/subscribe_advertisements` feed does not help. It sends a device only when the device first appears or disappears, not on each advert. The 2026-10-12 capture polled the Bluetooth diagnostics instead, about twice a second. From 2026-10-13, `tools/capture.py` reads the proxy's own log of raw adverts instead. That catches every advert the proxy hears.
 
-The proxy does not hear its own transmissions. The panel's relay shows that it heard a Home Assistant command, not that it acted on it. The relay is the same packet from `4C:3C:8F:EA:96:76` with TTL 4.
+The proxy does not hear its own transmissions. The panel's relay shows that it heard a Home Assistant command, not that it acted on it. The relay is the same packet from `AA:AA:AA:00:00:01` with TTL 4.
 
 ## Files
 
 - `tools/meshdec.py` decrypts a capture log. Run `uv run --with cryptography python meshdec.py 11111111111111111111111111111111 capture-2026-10-12.log`.
 - `tools/capture-2026-10-12.log` holds the raw mesh adverts from the session, with the panel's constant beacon removed.
-- `tools/capture.py` connects to the proxy's ESPHome API as a second client, reads its `recv raw` log lines and prints each decoded mesh command. It only listens. Run `.venv/bin/python tools/capture.py . 192.168.50.19 240` for a four-minute capture. It needs `aioesphomeapi` and works because the proxy's API has no encryption key. Run only one copy at a time. Each copy streams every advert over Wi-Fi. On 2026-10-13, three copies at once overloaded the proxy, and a Home Assistant toggle was lost.
+- `tools/capture.py` connects to the proxy's ESPHome API as a second client, reads its `recv raw` log lines and prints each decoded mesh command. It only listens. Run `.venv/bin/python tools/capture.py . 192.0.2.10 240` for a four-minute capture. It needs `aioesphomeapi`. If the proxy's API has an encryption key, put the key in the `ESPHOME_API_KEY` environment variable first. Run only one copy at a time. Each copy streams every advert over Wi-Fi. On 2026-10-13, three copies at once overloaded the proxy, and a Home Assistant toggle was lost.
 - `tools/capture-2026-10-13-rhythm.log` holds the decoded commands from the Auto rhythm session: Auto rhythm alone, the Auto rhythm and Relax combination (`E0`), then single mode presses.
 
 ## Implementation and packaging

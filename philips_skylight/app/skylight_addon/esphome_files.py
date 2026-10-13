@@ -28,6 +28,12 @@ def _node_name(text, fallback):
     return fallback
 
 
+def has_api_key(text):
+    """Whether the node YAML gives its ESPHome API an encryption key."""
+    match = re.search(r"^api:[^\n]*\n((?:[ \t]+[^\n]*\n?|\n)*)", text, re.M)
+    return bool(match and re.search(r"^[ \t]+encryption:", match[1], re.M))
+
+
 def has_skylight(text):
     """Whether a node YAML already has the package line or a hand-made setup."""
     return PACKAGE in text or re.search(r"^ble_adv_proxy:", text, re.M) is not None
@@ -54,6 +60,8 @@ def list_nodes(folder: Path):
                 "has_skylight": has_skylight(text),
                 # Only nodes that include the package get firmware updates from the add-on.
                 "uses_package": PACKAGE in text,
+                # Without a key, any device on the network can make the proxy send.
+                "api_key": has_api_key(text),
             }
         )
     return nodes

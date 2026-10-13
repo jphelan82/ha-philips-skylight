@@ -17,6 +17,8 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
   remotes** first, then pair your remote again.
 - One step needs the panel's power switched off and on at its light switch or
   breaker. Use a phone or a portable computer for setup.
+- Give the Bluetooth proxy's ESPHome API an encryption key. Without one, any
+  device on your home network can make the proxy control the panel.
 
 ## Get started
 
@@ -36,7 +38,7 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
 4. Optional: add the Skylight card to a dashboard.
 
 To update, update the add-on in **Settings → Apps**, then open its page. An
-**Updates** section lists any step left: a Home Assistant restart, new proxy
+**Needs attention** section lists any step left: a Home Assistant restart, new proxy
 firmware, or a newer card. It shows only the steps that apply.
 
 ## Use the card

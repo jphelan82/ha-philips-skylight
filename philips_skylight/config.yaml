@@ -11,7 +11,7 @@ timeout: 30
 homeassistant: "2026.6.0"
 homeassistant_api: true
 ingress: true
-panel_icon: mdi:ceiling-light
+panel_icon: mdi:wall-sconce-flat
 panel_title: Skylight
 map:
   - type: homeassistant_config

@@ -34,7 +34,7 @@ from skylight_addon.server import CARD_ENTITIES, LIGHT_ID  # noqa: E402
 
 DATA = {
     CONF_NAME: "Philips Skylight",
-    CONF_TRANSMIT_SERVICE: "esphome_web_ece638_adv_svc_v1",
+    CONF_TRANSMIT_SERVICE: "skylight_proxy_adv_svc_v1",
     CONF_PROXY_ENTITY: "sensor.proxy_ble_adv_proxy_name",
 }
 
@@ -50,7 +50,7 @@ async def test_config_flow_requires_transmitter(hass):
 
 async def test_config_flow_creates_entry_with_online_transmitter(hass):
     hass.services.async_register("esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: None)
-    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "esphome-web-ece638")
+    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "skylight-proxy")
     flow = SkylightConfigFlow()
     flow.hass = hass
     flow.context = {"source": "user"}
@@ -80,7 +80,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     hass.services.async_register(
         "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
     )
-    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "esphome-web-ece638")
+    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "skylight-proxy")
     entry = ConfigEntry(
         domain=DOMAIN,
         title="Philips Skylight",
@@ -233,7 +233,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     )
     assert hass.states.get(correction_mode).state == "off"
     assert len(calls) == 31
-    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "esphome-web-ece638")
+    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "skylight-proxy")
     await hass.async_block_till_done()
     # A short drop keeps the recorded power.
     assert hass.states.get(entity_id).state == "off"
