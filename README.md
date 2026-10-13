@@ -187,7 +187,7 @@ The Skylight card uses the remote's icons and colors.
 | Mode buttons | Auto rhythm, Refresh, Energize, Focus, Relax and Rest. A mode button also switches the panel on. The recorded mode lights up in the remote's color. |
 | **Correct** | Opens a view to fix Home Assistant's guess. |
 | **Rhythm set** | Makes the current time the start of the Auto rhythm schedule. The panel blinks. Auto rhythm does nothing until a start is set. |
-| **Dim −** / **Dim +** | A tap is one step. On a dashboard, holding a button dims for about 3 seconds. On the add-on page, holding keeps dimming until you let go, like the remote. |
+| **Dim −** / **Dim +** | A tap is one step. On a dashboard, a hold dims for about 3 seconds after you let go. Keep your finger still, or Home Assistant cancels the hold. On the add-on page, holding keeps dimming until you let go, like the remote. |
 
 ## Tell Home Assistant what you see
 

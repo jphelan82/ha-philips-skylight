@@ -153,8 +153,10 @@ The card uses the remote's icons and colors:
   and mode. While the panel is on, it glows in the recorded mode's color.
 - Six mode buttons. The recorded mode lights up in the remote's color.
 - **Dim −** and **Dim +**. A tap is one step. A hold sends the remote's hold
-  command for about 3 seconds, because a card cannot tell when you let go. On
-  the add-on page, holding a dim button keeps dimming until you let go.
+  command for about 3 seconds. Home Assistant sends it when you let go, not
+  while you hold, and it cancels the hold if your finger moves. A circle shows
+  when a press counts as a hold. On the add-on page, holding a dim button keeps
+  dimming until you let go.
 - **Rhythm set** sets the current time as the start of the Auto rhythm
   schedule, like holding Auto rhythm and Relax on the remote.
 - **Correct** switches the card to **Panel is on**, **Panel is off**, the

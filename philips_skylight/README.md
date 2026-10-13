@@ -49,8 +49,9 @@ The card uses the remote's icons and colors.
   glows in the color of the recorded mode.
 - A mode button selects that mode and switches the panel on. The recorded mode
   lights up in the remote's color.
-- **Dim −** and **Dim +** dim by one step. Hold one to dim for about 3 seconds.
-  On the add-on page, holding keeps dimming until you let go. You cannot set a
+- **Dim −** and **Dim +** dim by one step. On a dashboard, a hold dims for
+  about 3 seconds after you let go. Keep your finger still, or Home Assistant
+  cancels the hold. On the add-on page, holding keeps dimming until you let go. You cannot set a
   brightness level, because the panel takes only these two commands.
 - **Rhythm set** makes the current time the start of the Auto rhythm schedule.
 - **Correct** fixes Home Assistant's record when it does not match the panel.

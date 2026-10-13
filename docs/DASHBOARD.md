@@ -20,15 +20,23 @@ The card uses the remote's icons and colors. It has three parts: a large
 | Rest | `mdi:power-sleep` | Deep orange when recorded. |
 | **Correct** | `mdi:pencil-outline` | Opens the correction view. |
 | **Rhythm set** | `mdi:clock-start` | Sets the current time as the Auto rhythm start. The panel blinks. |
-| **Dim −** / **Dim +** | `mdi:brightness-4` / `mdi:brightness-7` | A tap is one step. A hold dims for about 3 seconds. |
+| **Dim −** / **Dim +** | `mdi:brightness-4` / `mdi:brightness-7` | A tap is one step. A hold dims for about 3 seconds, after you let go. |
 
 The colors match the dots on the remote. A mode button also switches the panel
 on. The mode that Home Assistant recorded lights up. The others stay grey. When
 the mode is unknown, none lights up.
 
-A tile card cannot tell when you let go. So a hold on a dim tile sends the
-remote's hold command for about 3 seconds. On the add-on page, holding a dim
-button keeps dimming until you let go.
+A hold on a dim tile works differently from a hold on the remote:
+
+- Home Assistant shows a circle when a press counts as a hold, after about half
+  a second.
+- Home Assistant sends the hold when you let go, not while you hold. Then the
+  panel dims for about 3 seconds.
+- If your finger moves during the press, Home Assistant cancels it and sends
+  nothing. Keep your finger still.
+
+Home Assistant's own cards cannot dim while you hold. On the add-on page,
+holding a dim button keeps dimming until you let go, like the remote.
 
 You cannot set a brightness level. The panel takes only "dim down" and "dim up"
 commands and never reports its level.
