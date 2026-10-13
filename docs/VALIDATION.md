@@ -137,6 +137,58 @@ export test resolves renamed entities, parses the standard card configuration,
 checks correction targets and rejects disabled entities. The local suites now
 contain 63 passing tests; the macOS platform runner retains its exit workaround.
 
+## Add-on 0.2.5
+
+Tested on 2026-10-13 with commit `ae8497c`, on the same server, panel and proxy.
+
+### Software checks
+
+- The sync check, 80 pytest tests and ruff pass on macOS with Python 3.14 and
+  Home Assistant 2026.6.0. GitHub Actions ran the same checks, the frontend
+  test, hassfest, the add-on linter, the container build and the firmware
+  compile. All pass. The HACS license check fails until `main` has a LICENSE file.
+- Supervisor refused to clone the repository while the disk had 1.0 GB free.
+  The owner deleted old backups. With 3.5 GB free, the clone and build worked.
+- The local 0.2.4 add-on was stopped and set to manual boot first. Supervisor
+  then installed 0.2.5 from the branch repository as `2cef933b_philips_skylight`.
+- On first start, the add-on installed integration 0.2.4 and asked for a Core
+  restart. After the restart, `light.philips_skylight` kept its entity ID and
+  reported `integration_version` 0.2.4.
+- The sequence high watermark was `1024` before the update and after the
+  restart. The physical tests below moved it to `1280`. It never decreased.
+- `philips_skylight.skip_sequence` is registered. A call with `confirm: false`
+  was rejected with the intended message, and the Store did not change. The
+  REST API returned HTTP 500 for the rejection, because the handler raises
+  `HomeAssistantError`. Nobody ran the action with `confirm: true`.
+- Through ingress, the status endpoint returned HTTP 200 with the proxy
+  `esphome-web-ece638`, `connected: true` and `restart_required: false`.
+  The `/health` endpoint that the Docker health check calls returned `ok`.
+- The Supervisor log shows no unhealthy container. Docker's own health status
+  was not read, because the SSH add-on has no Docker access.
+- The add-on lost its connection during the Core restart. It reconnected about
+  2.5 minutes later and logged no errors after that. The 30-second maximum
+  backoff caused part of the delay.
+- Supervisor turns the watchdog off for a new install. It was turned on again
+  to match the old add-on.
+
+### Physical observations
+
+The owner watched the panel. Home Assistant kept power as unknown throughout.
+
+- The owner pressed Relax on the original remote. The light's `assumed_effect`,
+  the recorded scene select and the add-on status all changed to Relax.
+  The time from press to update was not measured.
+- Starting state: the panel was on, probably in Relax. The owner found Relax
+  hard to tell apart from the other modes.
+- One `light.toggle` from Home Assistant turned the panel off.
+- The owner turned the panel on with the original remote. Home Assistant
+  recorded that remote toggle.
+- One Energize button press changed the panel to Energize.
+- One Dim down press visibly dimmed the panel. The step size is still unmeasured.
+- Nobody paired the transmitter again. The pairing of sender `0x7FFE` survived
+  the add-on change and the Core restart.
+- A mode command sent while the panel is off was not tested.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store
