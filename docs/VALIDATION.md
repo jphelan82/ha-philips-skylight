@@ -332,6 +332,22 @@ Tested on 2026-10-13 with add-on 0.3.0, before the change to 0.3.1.
 Add-on 0.3.1 removes the 90-second stream. Pairing and unpair all send one
 10-second burst, started as soon as the panel is back on.
 
+## Add-on 0.3.3
+
+Deployed on 2026-10-13 with integration 0.3.2.
+
+- The store reload offered 0.3.3, and the update installed it. The add-on
+  installed integration 0.3.2 and asked for a Home Assistant restart.
+- After the restart, the integration loaded with no new errors. The light shows
+  the `mdi:wall-sconce-flat` icon.
+- Home Assistant took about four and a half minutes to finish starting. Until
+  then, the Supervisor answered the add-on's connection with 502, and the
+  add-on retried every 5 seconds. It then connected by itself.
+- The recorded power and mode were unknown after the restart.
+- Before the deployment, a temporary dashboard showed the new card. The
+  owner chose the icon and the order of the icon row from it. The dashboard was
+  then deleted.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store
