@@ -4,7 +4,7 @@ This document contains protocol research, implementation notes and developer
 instructions moved out of the README files. For installation and everyday use,
 start with the [end-user README](../README.md).
 
-The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7 x 25.6 in). Philips sells it as remote-only: no app, no Hue, no Matter, no Wi-Fi. Inside, it runs standard Bluetooth Mesh, and its remote uses factory-default keys. This file records what we decoded on 2026-10-12, so Home Assistant can send the same commands as the remote.
+The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7 x 25.6 in). Philips sells it as remote-only: no app, no Hue, no Matter, no Wi-Fi. Inside, it runs standard Bluetooth Mesh, and its remote uses factory-default keys. This file records what we decoded on 2026-10-12 and 2026-10-13, so Home Assistant can send the same commands as the remote.
 
 ## The hardware
 
@@ -13,6 +13,7 @@ The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7
 | Panel radio | Bluetooth Low Energy (BLE) Mesh module, address `4C:3C:8F:EA:96:76`. The address prefix belongs to Shenzhen Jingxun Technology. The panel advertises the name `BK_MESH_light`, which points to a Beken chip. |
 | Panel beacon | The panel always sends the "unprovisioned device" beacon (service `0x1827`), even after pairing. Ignore it. The panel is on the default network from the start, and it relays the remote's packets. |
 | Remote | A battery mesh node. It sends from mesh address `0x7FFF` to `0xFFFF` (all nodes). Its BLE address for the proxy advert is `F6:E2:99:FE:DE:B1`. The ESPHome proxy reports its command packets under `FF:FF:FF:FF:FF:FF`. |
+| Wall remote | A second, wall-mounted remote. It pairs the same way, and Home Assistant tracks its presses. Its mesh address was not recorded. |
 | FCC ID | `2AGBW929004709X`, 2402 to 2480 MHz. |
 
 ## The keys
@@ -42,9 +43,10 @@ Each command is a vendor message with company ID `0x0211` (Telink Semiconductor)
 | Relax | `C9 11 02 TT 04 FF 04 41` | |
 | Rest | `C9 11 02 TT 04 FF 05 41` | |
 | Auto rhythm | `C9 11 02 TT 04 FF 06 41` | |
-| Set auto rhythm start (hold Auto rhythm and Relax together) | `E0 11 02 TT 00` | Opcode `E0` with one parameter byte. The remote sent it three times in about a second, each with a new `TT`. The panel blinks. The manual says this sets the current time as the start of the Auto rhythm schedule. Captured 2026-10-13. |
-| Unpair all (sent by Home Assistant, no remote gesture known) | `CF 11 02 TT 02 11 11 11 11 11 11` | The pairing request with `02` in place of `01`. Right after power-on, the panel blinks and forgets every paired sender. At other times it ignores it. `00` in the same place does nothing. Tested 2026-10-13. |
-| Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11` | Sent about three times a second for the whole hold. Six `11` parameter bytes follow `01`; the complete access payload is 11 bytes. |
+| Set auto rhythm start (hold Auto rhythm and Relax together) | `E0 11 02 TT 00` | Opcode `E0` with one parameter byte. The remote sent it three times in about a second, each with a new `TT`, and the panel relayed each one. The panel blinks. The manual says this sets the current time as the start of the Auto rhythm schedule. One command from `0x7FFE` is enough. Captured and tested 2026-10-13. |
+| Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11` | The remote repeats it about twice a second, with a new `TT` each time, for the whole hold. Six `11` parameter bytes follow `01`. The complete access payload is 11 bytes. Home Assistant sends it 30 times over 10 seconds. |
+| Unpair all (no remote gesture known) | `CF 11 02 TT 02 11 11 11 11 11 11` | The pairing request with `02` in place of `01`. Sent right after power-on, it makes the panel blink and forget every paired sender. Whether the panel ignores it at other times is untested. Tested 2026-10-13. |
+| Nothing found | `CF 11 02 TT 00 11 11 11 11 11 11` | No visible effect and no change to pairing, both right after power-on and at other times. Tested 2026-10-13. |
 
 Every `C8` and `C9` command ends in `0x41`. Its meaning is unknown.
 
@@ -55,6 +57,17 @@ takes the panel off the schedule until Auto rhythm is pressed again.
 A mode command (`C9`) also turns an off panel on, in that mode. On 2026-10-13,
 with the panel off, one Relax command from `0x7FFE` turned it on in Relax. The
 other five modes were not tested from off.
+
+## Pairing
+
+- The panel ignores every sender that is not paired. `0x7FFE` did nothing
+  until it sent the pairing request. On 2026-10-13, after an unpair all, the
+  handheld remote also did nothing until it paired again.
+- The panel accepts `CF … 01` and `CF … 02` only right after its mains power
+  returns. A request that arrived about two seconds after power-on worked. How
+  long the window stays open was not measured.
+- The panel keeps several paired senders at once, and a new pairing does not
+  replace earlier ones. See [Paired senders](#paired-senders).
 
 ## Rules for sending from Home Assistant
 
@@ -79,16 +92,19 @@ Interleaved remotes and buttons do not reset each other's filtering. Repeated
 dim holds at the captured 0.6-second cadence remain accepted.
 
 Factory keys authenticate the protocol, but do not prove that a remote is paired
-to this particular panel. Other compatible remotes within radio range may also
-affect assumed state. Additional sender addresses are covered by software tests;
-only the original remote has been physically tested.
+to this particular panel. Other compatible remotes within radio range can also
+change the assumed state. Software tests cover other sender addresses. On the
+panel, the handheld remote and the wall remote have both been tracked.
 
 ## Open questions
 
-- Does the panel accept an unpaired sender other than `0x7FFF`? Turn-on attempts from `0x7FFE` did not illuminate the panel, even after correcting the advertising bearer. The owner reports that the original remote also required pairing before it worked.
-- The captured `CF` pairing command authorized `0x7FFE` on this panel: the owner observed blinking during the request, then confirmed HA off/on commands physically worked. The original remote continued working. Other panels' pairing behavior remains unverified. Do not replace the factory network or impersonate `0x7FFF`.
-- Can one sender be removed alone? `CF … 02` removes every sender. `CF … 00` does nothing. Other values, and a remote gesture for unpairing, are untested. No unpair or "remove remote" command is known, and no factory reset procedure for the panel is documented. Removing the add-on leaves the pairing in the panel. Finding one needs a capture of the vendor remote or app removing a remote, or a reset procedure from the vendor.
-- How long does the panel accept pairing after its mains power returns? The tested panel accepted a request sent straight away. The window was not measured.
+- Do other panels pair the same way? We tested only this panel. Do not replace the factory network or send as `0x7FFF`.
+- Can one sender be removed alone? `CF … 02` removes every sender, and `CF … 00` does nothing. Other values, and a remote gesture for unpairing, are untested.
+- Does the panel ignore `CF … 02` outside the pairing window? Untested.
+- How long does the pairing window stay open after mains power returns?
+- How many senders can the panel keep? Three worked at once.
+- Do the other five modes turn an off panel on, as Relax does? Untested.
+- What is the wall remote's mesh address?
 - Do separate on and off codes exist? Candidates to try: `03 00 41` and `03 02 41`.
 - Relative dim down/up with `0x14` physically worked after transmitter pairing. The exact increment and behavior of other step values remain unmeasured.
 
@@ -105,9 +121,11 @@ whether the panel accepts a sender.
 
 ## Capture setup
 
-The proxy `bluetooth-proxy-1` (ESP32-C3, `esphome-web-ece638`) did the capture. At ESPHome's default scan settings it listens 30 ms of every 320 ms, and it missed most single presses. On 2026-10-12 its config got `esp32_ble_tracker` scan interval and window of 1100 ms each. After that it caught every press. It dropped off Wi-Fi once, for about 18 seconds, right after the change. It stayed up for the rest of the session. The backup of the old config is `/config/esphome/esphome-web-ece638.yaml.bak-20261012` on the server.
+The proxy `bluetooth-proxy-1` (ESP32-C3, `esphome-web-ece638`) did the capture. At ESPHome's default scan settings it listens 30 ms of every 320 ms, and it missed most single presses. On 2026-10-12 its config got `esp32_ble_tracker` scan interval and window of 1100 ms each. After that it caught every press. It dropped off Wi-Fi once, for about 18 seconds, right after the change. It stayed up for the rest of the session. That setting has a cost. Since then, the proxy's connection to Home Assistant drops about every five minutes. Most drops last 0.1 seconds, some up to 40 seconds. The ESP32-C3 has one radio for Wi-Fi and Bluetooth, and a scan window equal to the interval leaves Wi-Fi almost no airtime. A command sent during a drop is lost. The backup of the old config is `/config/esphome/esphome-web-ece638.yaml.bak-20261012` on the server.
 
-Home Assistant's `bluetooth/subscribe_advertisements` feed does not help. It sends a device only when the device first appears or disappears, not on each advert. The capture polled the Bluetooth diagnostics instead, about twice a second.
+Home Assistant's `bluetooth/subscribe_advertisements` feed does not help. It sends a device only when the device first appears or disappears, not on each advert. The 2026-10-12 capture polled the Bluetooth diagnostics instead, about twice a second. From 2026-10-13, `tools/capture.py` reads the proxy's own log of raw adverts instead. That catches every advert the proxy hears.
+
+The proxy does not hear its own transmissions. The panel's relay shows that a Home Assistant command arrived. The relay is the same packet from `4C:3C:8F:EA:96:76` with TTL 4.
 
 ## Files
 
@@ -125,7 +143,10 @@ create another transmitter or counter. Its Supervisor ingress panel handles
 setup, firmware downloads and explicit pairing. The dashboard uses standard
 Home Assistant cards and native light, button, select and switch entities.
 
-The light supports the six captured effects and relative dim commands. Separate
+The light supports the six captured effects and relative dim commands. A
+**Set auto rhythm start** button sends `E0`. **Configure** on the integration
+offers pairing and unpair all, and so do the `pair_transmitter` and
+`unpair_all_remotes` actions. Separate
 on/off BLE commands remain unverified: HA's normal on/off actions decide whether
 to send the captured toggle using synchronized power. Same-state requests do
 nothing; uncertain toggle requests are never automatically retried. The panel
@@ -142,8 +163,9 @@ panels within radio range may all respond; only one factory-network integration
 is supported. Permissions, code backup/rollback and removal procedures are in
 the [add-on documentation](../philips_skylight/DOCS.md).
 
-Power off/on, Rest/Energize scene changes, relative dimming and original remote
-coexistence were physically verified after pairing. Keep that evidence separate
+Physically verified on this panel: power toggle, the Rest, Energize and Relax
+modes, a mode turning an off panel on, relative dimming, Set auto rhythm
+start, unpair all, pairing again, and three paired senders working together. Keep that evidence separate
 from broader software coverage; see the [validation record](VALIDATION.md).
 
 The firmware adapts

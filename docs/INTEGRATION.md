@@ -111,8 +111,9 @@ actions do the same for scripts, with `confirm: true`.
 
 Unpair all remotes sends the pairing request with sub-command `02` instead of
 `01`, with the same cadence. Right after power-on, the panel blinks and forgets
-every paired sender: the original remote, wall remotes and Home Assistant. At
-other times the panel ignores it. No command removes only one sender.
+every paired sender: the original remote, wall remotes and Home Assistant.
+Whether the panel ignores it at other times is untested. No known command
+removes only one sender.
 
 ## Sequence safety
 
