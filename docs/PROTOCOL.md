@@ -133,8 +133,20 @@ Supervisor repository installation needs an accessible repository with the
 add-on release on its default branch. Before publishing a release, copy the
 `philips_skylight` folder from this checkout to Home Assistant's `/addons`
 directory, reload the app store, and install **Philips Skylight** from
-**Local apps/add-ons**. The add-on currently uses Supervisor source builds;
-publishing prebuilt container images is a separate release step.
+**Local apps/add-ons**. The add-on currently uses Supervisor source builds.
+
+To publish prebuilt images, push a tag that matches the `config.yaml` version,
+for example `v0.2.5`. The `Publish add-on images` workflow then pushes
+`ghcr.io/jphelan82/{amd64,aarch64}-philips-skylight` to the GitHub container
+registry. The workflow stops if the tag and the version differ. Supervisor
+keeps building from source until `config.yaml` gets this line:
+
+```yaml
+image: "ghcr.io/jphelan82/{arch}-philips-skylight"
+```
+
+Add that line only after the first images exist and the people who install the
+add-on can read the package.
 
 The native integration can also be installed independently through manual
 installation or HACS; see the [integration-only guide](INTEGRATION.md).
@@ -146,6 +158,10 @@ in `esphome` are canonical. `tools/dashboard_card.py` generates the standard
 dashboard card. Run `python tools/sync_addon.py` to generate the card and bundle
 the integration and firmware into the add-on's self-contained build context.
 Its `--check` option verifies parity without modifying files.
+
+The integration's `const.EFFECTS` lists the six modes once. The card generator
+reads it directly. The add-on keeps its own copy, and the real-platform test
+fails if that copy, or any add-on unique ID, differs from the integration.
 
 Use Python 3.14 for the complete Home Assistant suite:
 
@@ -162,7 +178,11 @@ need PyYAML. Add-on-only tests can run on Python 3.12 with `pytest addon_tests`
 when their HTTP/test dependencies are installed.
 
 CI checks generated card and bundle consistency, tests the software on Linux,
-and builds amd64/aarch64 containers. Tests cover real remote capture authentication,
+and builds amd64/aarch64 containers. It also runs Home Assistant's `hassfest`
+check, the HACS (Home Assistant Community Store) validator, and the add-on
+linter. If the firmware changes, CI compiles it for an ESP32-C3 with ESPHome
+2026.4.5, using the placeholder node in `.github/esphome/ci-node.yaml`. Tests
+cover real remote capture authentication,
 sequence reservations, native HA entities and reconfiguration, state-only
 correction, safe dashboard action targets, installer rollback, ingress/session
 access and native API reconnects. The macOS Python 3.14 interpreter-finalization

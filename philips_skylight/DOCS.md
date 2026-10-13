@@ -187,5 +187,13 @@ current sequence Store. An interrupted directory swap can leave
 than deleting sequence storage. The add-on refuses another update until that
 interrupted installation is resolved.
 
+If the paired transmitter worked before, but the panel ignores it after Home
+Assistant was rebuilt without a backup or restored from an older backup, the
+mesh sequence counter is too low. Open **Setup and recovery → Panel ignores
+commands after a rebuild or restore**, confirm, and select **Skip sequence
+forward**. The counter moves forward by about one million. The skip sends no
+light command and does not need pairing again. Each skip uses one sixteenth of
+the counter's range, so use it only for this problem.
+
 Firmware rollback requires restoring your backed-up ESPHome YAML, rebuilding
 and uploading it. Restoring YAML alone does not change running firmware.

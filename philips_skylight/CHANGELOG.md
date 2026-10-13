@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.5
+
+- New recovery control: **Skip sequence forward**. Use it if the panel ignores
+  the transmitter after Home Assistant was rebuilt without a backup or restored
+  from an older backup. It needs confirmation, sends no light command and does
+  not need pairing again. The integration adds the matching
+  `philips_skylight.skip_sequence` action.
+- The add-on follows only the Skylight entities and ESPHome sensors, instead of
+  every state change in Home Assistant. The status page no longer repeats the
+  proxy search for every sensor on each two-second refresh.
+- Firmware: duplicate-packet timers keep working after the proxy's 49-day
+  `millis()` rollover. The runtime patch of ESPHome's `api` schema is removed.
+  The package YAML already sets both options.
+- Native integration 0.2.4: stores its controller in `entry.runtime_data` and
+  uses current Home Assistant import paths. This update needs a Core restart.
+
 ## 0.2.4
 
 - Guided setup shows relevant steps, with completed installation settings

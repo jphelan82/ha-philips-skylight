@@ -106,6 +106,28 @@ an older copy after sending newer packets, or run another transmitter as
 rejection. The real remote uses `0x7FFF` and keeps its own counter. IV update and
 counter exhaustion recovery are outside this prototype's scope.
 
+### Recover a lost or older Store
+
+The panel drops a packet if its sequence number is not higher than the last
+number that the panel accepted from `0x7FFE`. A rebuild without a backup, or a
+restore from an older backup, gives the integration a counter that is too low.
+The panel then ignores every command from this transmitter, with no error.
+
+If the paired transmitter worked before and now has no effect, call the
+`philips_skylight.skip_sequence` action with `confirm: true`. The add-on has the
+same control under **Setup and recovery**. The action moves the counter forward
+by 1,048,576 and saves it before the next command. It sends no light command and
+does not need pairing again. Each skip uses one sixteenth of the 16,777,216
+available numbers. The action refuses a skip that leaves no numbers to send.
+
+```yaml
+action: philips_skylight.skip_sequence
+target:
+  entity_id: light.philips_skylight
+data:
+  confirm: true
+```
+
 ## Development
 
 Use Python 3.14 and your HA version:
