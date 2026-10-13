@@ -68,15 +68,19 @@ def conditional(entity, state, card, *, inverse=False):
     }
 
 
-def highlighted(entity, state, button, name, tap, icon=None, color="blue"):
+def highlighted(entity, state, button, name, tap, icon=None, color="blue", when_on=False):
     # A stable grid slot contains exactly one of the two standard tiles.
-    return {
-        "type": "vertical-stack",
-        "cards": [
-            conditional(entity, state, tile(button, name, tap, color=color, icon=icon)),
-            conditional(entity, state, tile(button, name, tap, icon=icon), inverse=True),
-        ],
-    }
+    lit = conditional(entity, state, tile(button, name, tap, color=color, icon=icon))
+    unlit = conditional(entity, state, tile(button, name, tap, icon=icon), inverse=True)
+    if when_on:
+        # An off panel shows no mode, like any light: light only while the panel is on.
+        power = {"condition": "state", "entity": LIGHT, "state": "on"}
+        lit["conditions"].append(power)
+        unlit["conditions"] = [
+            {"condition": "or", "conditions": [*unlit["conditions"], {**power, "state_not": "on"}]}
+        ]
+        del unlit["conditions"][0]["conditions"][-1]["state"]
+    return {"type": "vertical-stack", "cards": [lit, unlit]}
 
 
 def grid(cards, columns=2):
@@ -100,7 +104,9 @@ def scenes(correction=False):
             if correction
             else action("button.press", button)
         )
-        slot = highlighted(SCENE, effect, button, effect, tap, icon=icon, color=color)
+        slot = highlighted(
+            SCENE, effect, button, effect, tap, icon=icon, color=color, when_on=not correction
+        )
         for variant in slot["cards"]:
             variant["card"]["vertical"] = True
         cards.append(slot)

@@ -304,6 +304,11 @@
                           "condition": "state",
                           "entity": "select.philips_skylight_recorded_scene",
                           "state": "Auto rhythm"
+                        },
+                        {
+                          "condition": "state",
+                          "entity": "light.philips_skylight",
+                          "state": "on"
                         }
                       ],
                       "card": {
@@ -334,9 +339,19 @@
                       "type": "conditional",
                       "conditions": [
                         {
-                          "condition": "state",
-                          "entity": "select.philips_skylight_recorded_scene",
-                          "state_not": "Auto rhythm"
+                          "condition": "or",
+                          "conditions": [
+                            {
+                              "condition": "state",
+                              "entity": "select.philips_skylight_recorded_scene",
+                              "state_not": "Auto rhythm"
+                            },
+                            {
+                              "condition": "state",
+                              "entity": "light.philips_skylight",
+                              "state_not": "on"
+                            }
+                          ]
                         }
                       ],
                       "card": {
@@ -375,6 +390,11 @@
                           "condition": "state",
                           "entity": "select.philips_skylight_recorded_scene",
                           "state": "Refresh"
+                        },
+                        {
+                          "condition": "state",
+                          "entity": "light.philips_skylight",
+                          "state": "on"
                         }
                       ],
                       "card": {
@@ -405,9 +425,19 @@
                       "type": "conditional",
                       "conditions": [
                         {
-                          "condition": "state",
-                          "entity": "select.philips_skylight_recorded_scene",
-                          "state_not": "Refresh"
+                          "condition": "or",
+                          "conditions": [
+                            {
+                              "condition": "state",
+                              "entity": "select.philips_skylight_recorded_scene",
+                              "state_not": "Refresh"
+                            },
+                            {
+                              "condition": "state",
+                              "entity": "light.philips_skylight",
+                              "state_not": "on"
+                            }
+                          ]
                         }
                       ],
                       "card": {
@@ -446,6 +476,11 @@
                           "condition": "state",
                           "entity": "select.philips_skylight_recorded_scene",
                           "state": "Energize"
+                        },
+                        {
+                          "condition": "state",
+                          "entity": "light.philips_skylight",
+                          "state": "on"
                         }
                       ],
                       "card": {
@@ -476,9 +511,19 @@
                       "type": "conditional",
                       "conditions": [
                         {
-                          "condition": "state",
-                          "entity": "select.philips_skylight_recorded_scene",
-                          "state_not": "Energize"
+                          "condition": "or",
+                          "conditions": [
+                            {
+                              "condition": "state",
+                              "entity": "select.philips_skylight_recorded_scene",
+                              "state_not": "Energize"
+                            },
+                            {
+                              "condition": "state",
+                              "entity": "light.philips_skylight",
+                              "state_not": "on"
+                            }
+                          ]
                         }
                       ],
                       "card": {
@@ -517,6 +562,11 @@
                           "condition": "state",
                           "entity": "select.philips_skylight_recorded_scene",
                           "state": "Focus"
+                        },
+                        {
+                          "condition": "state",
+                          "entity": "light.philips_skylight",
+                          "state": "on"
                         }
                       ],
                       "card": {
@@ -547,9 +597,19 @@
                       "type": "conditional",
                       "conditions": [
                         {
-                          "condition": "state",
-                          "entity": "select.philips_skylight_recorded_scene",
-                          "state_not": "Focus"
+                          "condition": "or",
+                          "conditions": [
+                            {
+                              "condition": "state",
+                              "entity": "select.philips_skylight_recorded_scene",
+                              "state_not": "Focus"
+                            },
+                            {
+                              "condition": "state",
+                              "entity": "light.philips_skylight",
+                              "state_not": "on"
+                            }
+                          ]
                         }
                       ],
                       "card": {
@@ -588,6 +648,11 @@
                           "condition": "state",
                           "entity": "select.philips_skylight_recorded_scene",
                           "state": "Relax"
+                        },
+                        {
+                          "condition": "state",
+                          "entity": "light.philips_skylight",
+                          "state": "on"
                         }
                       ],
                       "card": {
@@ -618,9 +683,19 @@
                       "type": "conditional",
                       "conditions": [
                         {
-                          "condition": "state",
-                          "entity": "select.philips_skylight_recorded_scene",
-                          "state_not": "Relax"
+                          "condition": "or",
+                          "conditions": [
+                            {
+                              "condition": "state",
+                              "entity": "select.philips_skylight_recorded_scene",
+                              "state_not": "Relax"
+                            },
+                            {
+                              "condition": "state",
+                              "entity": "light.philips_skylight",
+                              "state_not": "on"
+                            }
+                          ]
                         }
                       ],
                       "card": {
@@ -659,6 +734,11 @@
                           "condition": "state",
                           "entity": "select.philips_skylight_recorded_scene",
                           "state": "Rest"
+                        },
+                        {
+                          "condition": "state",
+                          "entity": "light.philips_skylight",
+                          "state": "on"
                         }
                       ],
                       "card": {
@@ -689,9 +769,19 @@
                       "type": "conditional",
                       "conditions": [
                         {
-                          "condition": "state",
-                          "entity": "select.philips_skylight_recorded_scene",
-                          "state_not": "Rest"
+                          "condition": "or",
+                          "conditions": [
+                            {
+                              "condition": "state",
+                              "entity": "select.philips_skylight_recorded_scene",
+                              "state_not": "Rest"
+                            },
+                            {
+                              "condition": "state",
+                              "entity": "light.philips_skylight",
+                              "state_not": "on"
+                            }
+                          ]
                         }
                       ],
                       "card": {

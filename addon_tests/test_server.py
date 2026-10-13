@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -214,23 +215,24 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
         for item in correction_actions
         if item["perform_action"] == "button.press"
     } == {"button.custom_8", "button.custom_9"}
+    lit_when = {"condition": "state", "entity": "light.renamed", "state": "on"}
+    unlit_when = {"condition": "state", "entity": "light.renamed", "state_not": "on"}
     for effect in ("Refresh", "Energize", "Focus", "Relax", "Rest", "Auto rhythm"):
+        is_mode = {"condition": "state", "entity": "select.observed_scene", "state": effect}
+        not_mode = {"condition": "state", "entity": "select.observed_scene", "state_not": effect}
         choices = [
             item
             for item in walk(normal)
             if item.get("type") == "conditional"
             and item["card"].get("entity", "").startswith("button.")
-            and any(
-                condition.get("entity") == "select.observed_scene"
-                and effect in (condition.get("state"), condition.get("state_not"))
-                for condition in item["conditions"]
-            )
+            and effect in json.dumps(item["conditions"])
         ]
-        assert len(choices) == 2
-        for choice in choices:
-            selected = "state" in choice["conditions"][0]
-            # The selected choice lights up in its own color; the rest stay grey.
-            assert (choice["card"]["color"] != "grey") is selected
+        lit, unlit = choices
+        # The recorded mode lights up in its own color, but only while the panel is on.
+        assert lit["conditions"] == [is_mode, lit_when]
+        assert lit["card"]["color"] != "grey"
+        assert unlit["conditions"] == [{"condition": "or", "conditions": [not_mode, unlit_when]}]
+        assert unlit["card"]["color"] == "grey"
     # The light's tile has one variant per mode in that mode's color, plus amber.
     hero = [
         item
