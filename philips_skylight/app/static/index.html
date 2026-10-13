@@ -53,6 +53,12 @@
     <button data-action="pair">Send pairing request</button>
     <p class="hint">Check the physical panel and original remote afterward. Pairing completion is not an acknowledgment; record the starting state again.</p>
   </details>
+  <details id="recovery" hidden><summary>Panel ignores commands after a rebuild or restore</summary>
+    <p>The panel ignores any command whose sequence number is not higher than the last one it accepted from this transmitter. If Home Assistant was rebuilt without a backup, or restored from an older backup, its counter is too low. Skipping forward fixes that without pairing again.</p>
+    <p>Try this only when the paired transmitter worked before and now has no effect, while the proxy is connected and the original remote still works. Each skip uses about one million of the counter's 16.7 million numbers. Skipping sends no light command.</p>
+    <label class="check"><input id="skip-confirm" type="checkbox">The panel ignores this transmitter after a rebuild or restore.</label>
+    <button data-action="skip_sequence">Skip sequence forward</button>
+  </details>
   </details>
   <details id="matching" hidden><summary>Record initial state</summary>
     <p>Look at the panel to record whether it is on or off. Choose its mode below, or leave it Unknown.</p>

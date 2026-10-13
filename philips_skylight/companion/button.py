@@ -1,14 +1,21 @@
 """Known relative dim commands and direct scene selection."""
 
 from homeassistant.components.button import ButtonEntity
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.const import EntityCategory
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN, EFFECTS
+from .const import EFFECTS
+from .controller import SkylightConfigEntry, SkylightController
 from .entity import SkylightEntity
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    controller = hass.data[DOMAIN][entry.entry_id]
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: SkylightConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    controller = entry.runtime_data
     async_add_entities(
         SkylightButton(controller, entry, command, name)
         for command, name in (
@@ -23,7 +30,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class SkylightButton(SkylightEntity, ButtonEntity):
-    def __init__(self, controller, entry, command: str, name: str):
+    def __init__(
+        self,
+        controller: SkylightController,
+        entry: SkylightConfigEntry,
+        command: str,
+        name: str,
+    ) -> None:
         super().__init__(controller, entry)
         self.command = command
         self._attr_name = name
@@ -40,7 +53,9 @@ class SkylightPowerSyncButton(SkylightEntity, ButtonEntity):
     _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:eye-check-outline"
 
-    def __init__(self, controller, entry, is_on: bool):
+    def __init__(
+        self, controller: SkylightController, entry: SkylightConfigEntry, is_on: bool
+    ) -> None:
         super().__init__(controller, entry)
         self.is_on = is_on
         power = "on" if is_on else "off"

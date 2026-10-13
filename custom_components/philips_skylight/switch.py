@@ -1,14 +1,20 @@
 """Dashboard view mode; never transmit a command to the physical panel."""
 
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.const import EntityCategory
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN
+from .controller import SkylightConfigEntry
 from .entity import SkylightEntity
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([SkylightStateCorrection(hass.data[DOMAIN][entry.entry_id], entry)])
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: SkylightConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    async_add_entities([SkylightStateCorrection(entry.runtime_data, entry)])
 
 
 class SkylightStateCorrection(SkylightEntity, SwitchEntity):

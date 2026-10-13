@@ -67,3 +67,35 @@ async def test_sequence_never_wraps():
     assert await allocator.async_next() == 0xFFFFFF
     with pytest.raises(ValueError, match="exhausted"):
         await allocator.async_next()
+
+
+async def test_skip_moves_past_every_reserved_number_and_survives_restart():
+    store = MemoryStore()
+    allocator = SequenceAllocator(store)
+    await allocator.async_load()
+    assert await allocator.async_next() == 0
+    assert await allocator.async_skip() == 256 + 0x100000
+    assert store.saved == {"high_watermark": 256 + 0x100000}
+    assert await allocator.async_next() == 256 + 0x100000
+    restarted = SequenceAllocator(store)
+    await restarted.async_load()
+    assert await restarted.async_next() > 256 + 0x100000
+
+
+async def test_failed_skip_keeps_the_previous_counter():
+    store = MemoryStore()
+    allocator = SequenceAllocator(store)
+    await allocator.async_load()
+    store.fail = True
+    with pytest.raises(OSError):
+        await allocator.async_skip()
+    store.fail = False
+    assert await allocator.async_next() == 0
+
+
+async def test_skip_refuses_to_exhaust_the_sequence_space():
+    allocator = SequenceAllocator(MemoryStore({"high_watermark": 0x1000000 - 0x100000}))
+    await allocator.async_load()
+    with pytest.raises(ValueError, match="Too little"):
+        await allocator.async_skip()
+    assert await allocator.async_next() == 0x1000000 - 0x100000

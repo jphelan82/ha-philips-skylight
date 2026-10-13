@@ -40,7 +40,7 @@ function render(data) {
   el("install-message").textContent = data.installed
     ? "The companion integration is installed. Restart Home Assistant to activate it."
     : "Install the bundled integration to create the native light entity. No MQTT broker is needed.";
-  for (const id of ["pairing", "matching", "dashboard"]) el(id).hidden = !data.configured;
+  for (const id of ["pairing", "recovery", "matching", "dashboard"]) el(id).hidden = !data.configured;
   const presentation = !data.configured ? "proxy" : data.first_setup ? "pair" : "ready";
   const initial = presentation !== "ready";
   el("title").textContent = initial ? "Set up Skylight" : "Skylight";
@@ -119,8 +119,10 @@ async function action(body) {
       : body.action === "restart" ? "Home Assistant is restarting. This page will reconnect."
       : body.action === "setup" ? "Transmitter saved. Enable remote tracking, pair on first setup, and record the starting state."
       : body.action === "create_dashboard" ? (result.created ? "Dashboard created. Use Open dashboard below." : "Existing dashboard preserved. Use Open dashboard below.")
-      : body.action === "add_card" ? (result.added ? "Card added. Use Open dashboard below." : "This card is already in that view. No changes made.") : "");
+      : body.action === "add_card" ? (result.added ? "Card added. Use Open dashboard below." : "This card is already in that view. No changes made.")
+      : body.action === "skip_sequence" ? "Sequence skipped forward. Try a power or mode command and watch the panel." : "");
     if (body.action === "pair") el("pair-confirm").checked = false;
+    if (body.action === "skip_sequence") el("skip-confirm").checked = false;
     if (body.action === "setup") el("matching").open = true;
     if (body.action === "add_card") await loadViews();
   } catch (error) { notice(error.message, true); }
@@ -162,7 +164,8 @@ document.addEventListener("click", (event) => {
   const kind = button.dataset.action;
   if (kind === "restart" && !confirm("Restart Home Assistant to activate the installed integration?")) return;
   if (kind === "pair" && !el("pair-confirm").checked) return notice("Confirm that you are ready to pair first.", true);
-  if (kind) action({action: kind, confirm: kind === "pair" || kind === "restart", style: el("card-style").value});
+  if (kind === "skip_sequence" && !el("skip-confirm").checked) return notice("Confirm that the panel ignores this transmitter first.", true);
+  if (kind) action({action: kind, confirm: ["pair", "restart", "skip_sequence"].includes(kind), style: el("card-style").value});
 });
 el("setup-form").addEventListener("submit", (event) => {
   event.preventDefault();

@@ -2,18 +2,19 @@
 
 from homeassistant.const import EVENT_SERVICE_REGISTERED, EVENT_SERVICE_REMOVED
 from homeassistant.core import Event, callback
-from homeassistant.helpers.entity import DeviceInfo, Entity
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_state_change_event
 
 from .const import CONF_PROXY_ENTITY, DOMAIN
-from .controller import SkylightController
+from .controller import SkylightConfigEntry, SkylightController
 
 
 class SkylightEntity(Entity):
     _attr_has_entity_name = True
     _attr_should_poll = False
 
-    def __init__(self, controller: SkylightController, entry) -> None:
+    def __init__(self, controller: SkylightController, entry: SkylightConfigEntry) -> None:
         self.controller = controller
         self.proxy_entity = entry.data[CONF_PROXY_ENTITY]
         self._attr_device_info = DeviceInfo(

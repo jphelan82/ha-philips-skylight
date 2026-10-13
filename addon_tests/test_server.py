@@ -84,6 +84,12 @@ async def test_pairing_confirmation_and_action_allowlist(panel):
     assert panel.ha.calls == [
         (("philips_skylight", "pair_transmitter", "light.renamed"), {"confirm": True})
     ]
+    with pytest.raises(ValueError, match="Confirm that the panel ignores"):
+        await panel.perform({"action": "skip_sequence"})
+    await panel.perform({"action": "skip_sequence", "confirm": True})
+    assert panel.ha.calls[-1] == (
+        ("philips_skylight", "skip_sequence", "light.renamed"), {"confirm": True}
+    )
     with pytest.raises(ValueError, match="Unknown"):
         await panel.perform({"action": "call_any_service", "service": "lock.unlock"})
     with pytest.raises(ValueError, match="Specify"):

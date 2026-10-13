@@ -1,17 +1,24 @@
 """Record the physically observed scene using a standard HA select entity."""
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.const import EntityCategory
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN, EFFECTS
+from .const import EFFECTS
+from .controller import SkylightConfigEntry
 from .entity import SkylightEntity
 
 UNKNOWN_SCENE = "Unknown"
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([SkylightRecordedScene(hass.data[DOMAIN][entry.entry_id], entry)])
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: SkylightConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    async_add_entities([SkylightRecordedScene(entry.runtime_data, entry)])
 
 
 class SkylightRecordedScene(SkylightEntity, SelectEntity):

@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import Callable
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.storage import Store
@@ -100,6 +101,13 @@ class SkylightController:
                 self.state.effect = None
                 self.notify()
 
+    async def async_skip_sequence(self) -> int:
+        """Recover from a lost sequence Store without changing the sender address."""
+        async with self.lock:
+            start = await self.sequence.async_skip()
+        _LOGGER.warning("Skylight mesh sequence skipped forward to %s", start)
+        return start
+
     async def async_power(self, on: bool, effect: str | None = None) -> None:
         async with self.lock:
             if self.state.is_on is None:
@@ -130,3 +138,6 @@ class SkylightController:
     @callback
     def async_subscribe(self) -> Callable[[], None]:
         return self.hass.bus.async_listen(RECEIVE_EVENT, self.receive)
+
+
+type SkylightConfigEntry = ConfigEntry[SkylightController]

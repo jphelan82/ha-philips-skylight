@@ -2,22 +2,32 @@
 
 import voluptuous as vol
 from homeassistant.components.light import ATTR_EFFECT, ColorMode, LightEntity, LightEntityFeature
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_platform
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN, EFFECTS, VERSION
+from .const import EFFECTS, VERSION
+from .controller import SkylightConfigEntry
 from .entity import SkylightEntity
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([SkylightLight(hass.data[DOMAIN][entry.entry_id], entry)])
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: SkylightConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    async_add_entities([SkylightLight(entry.runtime_data, entry)])
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(
         "set_assumed_power", {vol.Required("is_on"): cv.boolean}, "async_set_assumed_power"
     )
     platform.async_register_entity_service(
         "pair_transmitter", {vol.Required("confirm"): cv.boolean}, "async_pair_transmitter"
+    )
+    platform.async_register_entity_service(
+        "skip_sequence", {vol.Required("confirm"): cv.boolean}, "async_skip_sequence"
     )
 
 
@@ -60,6 +70,14 @@ class SkylightLight(SkylightEntity, LightEntity):
                 "when ready to test after cycling the panel's mains power."
             )
         await self.controller.async_pair()
+
+    async def async_skip_sequence(self, confirm: bool) -> None:
+        if not confirm:
+            raise HomeAssistantError(
+                "Skip the sequence only when the panel ignores this transmitter after "
+                "Home Assistant was rebuilt or restored from an older backup."
+            )
+        await self.controller.async_skip_sequence()
 
     async def async_turn_on(self, **kwargs) -> None:
         effect = kwargs.get(ATTR_EFFECT)

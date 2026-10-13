@@ -1,15 +1,28 @@
 """Build the standard Skylight card with a separate state-correction view."""
 
+import importlib.util
 import json
 from pathlib import Path
 
 import yaml
 
-EFFECTS = ("Refresh", "Energize", "Focus", "Relax", "Rest", "Auto rhythm")
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _integration_const():
+    # Load const.py alone: the package __init__ imports Home Assistant.
+    path = ROOT / "custom_components/philips_skylight/const.py"
+    spec = importlib.util.spec_from_file_location("skylight_const", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+EFFECTS = _integration_const().EFFECTS
 LIGHT = "light.philips_skylight"
 SCENE = "select.philips_skylight_recorded_scene"
 EDIT = "switch.philips_skylight_state_correction"
-OUTPUT = Path(__file__).resolve().parents[1] / "philips_skylight/app/static/skylight-card.yaml"
+OUTPUT = ROOT / "philips_skylight/app/static/skylight-card.yaml"
 COMPACT_OUTPUT = OUTPUT.with_name("skylight-card-compact.yaml")
 JSON_OUTPUT = OUTPUT.with_name("skylight-cards.json")
 

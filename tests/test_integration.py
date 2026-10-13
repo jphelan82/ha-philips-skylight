@@ -1,5 +1,8 @@
 """Exercise the real light platform, entity actions, and unload lifecycle."""
 
+import sys
+from pathlib import Path
+
 import pytest
 from homeassistant import loader
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
@@ -17,6 +20,11 @@ from custom_components.philips_skylight.const import (
     RECEIVE_EVENT,
 )
 from custom_components.philips_skylight.protocol import MeshCodec, command_payload
+
+# The add-on names integration entities by unique ID; keep both sides in step.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "philips_skylight/app"))
+import skylight_addon  # noqa: E402
+from skylight_addon.server import CARD_ENTITIES, LIGHT_ID  # noqa: E402
 
 DATA = {
     CONF_NAME: "Philips Skylight",
@@ -96,6 +104,14 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert recorded_scene
     assert hass.states.get(entity_id).state == "unknown"
     assert hass.states.get(recorded_scene).state == "Unknown"
+    skylight_ids = {
+        entity.unique_id
+        for entity in registry.entities.values()
+        if entity.config_entry_id == entry.entry_id
+    }
+    assert {LIGHT_ID, *CARD_ENTITIES.values()} <= skylight_ids
+    assert skylight_addon.EFFECTS == EFFECTS
+    assert hass.states.get(entity_id).attributes["effect_list"] == list(skylight_addon.EFFECTS)
     await hass.services.async_call(
         DOMAIN, "set_assumed_power", {"entity_id": entity_id, "is_on": False}, blocking=True
     )
@@ -222,9 +238,17 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert entry.title == "Renamed Skylight"
     assert hass.states.get(correction_mode).state == "off"
     assert registry.async_get(entity_id).config_entry_id == entry.entry_id
-    controller = hass.data[DOMAIN][entry.entry_id]
+    controller = entry.runtime_data
     assert await controller.sequence.async_next() == 256
+    with pytest.raises(HomeAssistantError, match="Skip the sequence only"):
+        await hass.services.async_call(
+            DOMAIN, "skip_sequence", {"entity_id": entity_id, "confirm": False}, blocking=True
+        )
+    await hass.services.async_call(
+        DOMAIN, "skip_sequence", {"entity_id": entity_id, "confirm": True}, blocking=True
+    )
+    assert await controller.sequence.async_next() == 512 + 0x100000
+    assert len(calls) == 32
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"
-    assert DOMAIN not in hass.data or entry.entry_id not in hass.data[DOMAIN]

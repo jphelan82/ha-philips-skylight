@@ -13,26 +13,25 @@ from pathlib import Path
 import aiohttp
 from aiohttp import web
 
-from . import DOMAIN, VERSION, dashboards
+from . import DOMAIN, EFFECTS, VERSION, dashboards, slug, unique_id
 from .ha import HAError
 from .proxies import discover_proxies
 
-EFFECTS = ("Refresh", "Energize", "Focus", "Relax", "Rest", "Auto rhythm")
+LIGHT_ID = unique_id("light")
+SCENE_ID = unique_id("recorded_scene")
 CARD_ENTITIES = {
-    "light.philips_skylight": "factory_mesh_7ffe_light",
-    "select.philips_skylight_recorded_scene": "factory_mesh_7ffe_recorded_scene",
-    "switch.philips_skylight_state_correction": "factory_mesh_7ffe_state_correction",
+    "light.philips_skylight": LIGHT_ID,
+    "select.philips_skylight_recorded_scene": SCENE_ID,
+    "switch.philips_skylight_state_correction": unique_id("state_correction"),
     **{
-        f"button.philips_skylight_{slug}": f"factory_mesh_7ffe_{slug}"
-        for slug in (
-            "dim_down",
-            "dim_up",
-            *(effect.lower().replace(" ", "_") for effect in EFFECTS),
-            "record_panel_on",
-            "record_panel_off",
-        )
+        f"button.philips_skylight_{slug(name)}": unique_id(name)
+        for name in ("dim_down", "dim_up", *EFFECTS, "record_panel_on", "record_panel_off")
     },
 }
+
+
+def _version(text):
+    return tuple(int(part) for part in text.split("."))
 
 
 class Panel:
@@ -55,6 +54,28 @@ class Panel:
             except (ValueError, KeyError, TypeError, OSError):
                 self.first_setup = True  # Show help; never trigger a physical action.
         ha.on_ready = self.connected
+        # Actions that work before the integration has a light entity.
+        self.setup_actions = {
+            "install": self._install,
+            "restart": self._restart,
+            "setup": self._setup,
+        }
+        # Actions that need a loaded, current integration. Each takes (entity, body).
+        self.light_actions = {
+            "create_dashboard": self._create_dashboard,
+            "add_card": self._add_card,
+            "sync_state": self._sync_state,
+            "sync_mode": self._sync_mode,
+            "sync_power": self._sync_power,
+            "on": self._power,
+            "off": self._power,
+            "toggle": self._power,
+            "scene": self._scene,
+            "dim_up": self._dim,
+            "dim_down": self._dim,
+            "pair": self._pair,
+            "skip_sequence": self._skip_sequence,
+        }
 
     async def set_first_setup(self, in_progress):
         def save():
@@ -72,53 +93,70 @@ class Panel:
             self.installer.mark_restarted()
         self.ever_connected = True
 
+    def entities(self):
+        """Map each enabled Skylight unique ID to its current entity ID."""
+        return {
+            item["unique_id"]: item["entity_id"]
+            for item in self.ha.registry
+            if item.get("platform") == DOMAIN
+            and item.get("unique_id")
+            and not item.get("disabled_by")
+        }
+
     def light(self):
-        return next(
-            (
-                item["entity_id"]
-                for item in self.ha.registry
-                if item.get("platform") == DOMAIN
-                and item.get("unique_id") == "factory_mesh_7ffe_light"
-                and not item.get("disabled_by")
-            ),
-            None,
-        )
+        return self.entities().get(LIGHT_ID)
 
     def button(self, command):
-        unique_id = f"factory_mesh_7ffe_{command.lower().replace(' ', '_')}"
-        entity = next(
-            (
-                item["entity_id"]
-                for item in self.ha.registry
-                if item.get("platform") == DOMAIN
-                and item.get("unique_id") == unique_id
-                and not item.get("disabled_by")
-            ),
-            None,
-        )
+        entity = self.entities().get(unique_id(command))
         if not entity:
             raise HAError("This control entity is disabled or missing in Home Assistant")
         return entity
+
+    def restart_required(self, entity=None):
+        """Return whether Core still runs an older integration than the installed one."""
+        if self.installer.pending_restart:
+            return True
+        entity = entity or self.light()
+        if not entity:
+            return False
+        attributes = self.ha.states.get(entity, {}).get("attributes", {})
+        running = attributes.get("integration_version")
+        try:
+            return _version(running) < _version(self.installer.version)
+        except (ValueError, AttributeError):
+            return True
+
+    def proxies(self):
+        return discover_proxies(
+            self.ha.states, self.ha.services.get("esphome", {}), self.ha.registry
+        )
+
+    def transmit_services(self):
+        return sorted(
+            service
+            for service in self.ha.services.get("esphome", {})
+            if service.endswith("_adv_svc_v1")
+        )
+
+    def proxy_sensors(self, proxies):
+        matched = {item["entity_id"] for item in proxies}
+        return [
+            {"entity_id": name, "name": item.get("attributes", {}).get("friendly_name", name)}
+            for name, item in sorted(self.ha.states.items())
+            if name.startswith("sensor.") and ("ble_adv_proxy_name" in name or name in matched)
+        ]
 
     def snapshot(self):
         entity = self.light()
         state = self.ha.states.get(entity, {})
         attributes = state.get("attributes", {})
-        running = attributes.get("integration_version")
-        try:
-            stale = bool(entity) and (
-                not running
-                or tuple(int(n) for n in running.split("."))
-                < tuple(int(n) for n in self.installer.version.split("."))
-            )
-        except (ValueError, AttributeError):
-            stale = bool(entity)
+        proxies = self.proxies()
         return {
             "version": VERSION,
             "connected": self.ha.ready,
             "error": self.ha.error,
             "installed": self.installer.installed(),
-            "restart_required": self.installer.pending_restart or stale,
+            "restart_required": self.restart_required(entity),
             "configured": bool(entity),
             "first_setup": self.first_setup,
             "entity_id": entity,
@@ -128,29 +166,9 @@ class Panel:
             "last_command": attributes.get("last_command"),
             "power_synchronized": attributes.get("power_synchronized", False),
             "effects": list(EFFECTS),
-            "proxies": discover_proxies(
-                self.ha.states, self.ha.services.get("esphome", {}), self.ha.registry
-            ),
-            "transmit_services": sorted(
-                service
-                for service in self.ha.services.get("esphome", {})
-                if service.endswith("_adv_svc_v1")
-            ),
-            "proxy_sensors": [
-                {"entity_id": name, "name": item.get("attributes", {}).get("friendly_name", name)}
-                for name, item in sorted(self.ha.states.items())
-                if name.startswith("sensor.")
-                and (
-                    "ble_adv_proxy_name" in name
-                    or name
-                    in {
-                        item["entity_id"]
-                        for item in discover_proxies(
-                            self.ha.states, self.ha.services.get("esphome", {}), self.ha.registry
-                        )
-                    }
-                )
-            ],
+            "proxies": proxies,
+            "transmit_services": self.transmit_services(),
+            "proxy_sensors": self.proxy_sensors(proxies),
         }
 
     @web.middleware
@@ -200,105 +218,120 @@ class Panel:
 
     async def perform(self, body):
         action = body.get("action")
-        if action == "install":
-            await asyncio.to_thread(self.installer.install)
-            return
-        if action == "restart":
-            if body.get("confirm") is not True:
-                raise ValueError("Confirm the Home Assistant restart")
-            await self.ha.call("homeassistant", "restart")
-            return
-        if action == "setup":
-            if self.snapshot()["restart_required"]:
-                raise ValueError("Restart Home Assistant to load the installed integration first")
-            service = body.get("transmit_service")
-            proxy = body.get("proxy_entity")
-            if "proxy" in body:
-                candidate = next(
-                    (
-                        item
-                        for item in self.snapshot()["proxies"]
-                        if item["entity_id"] == body["proxy"]
-                    ),
-                    None,
-                )
-                if candidate is None:
-                    raise ValueError("Choose an available Skylight proxy")
-                proxy, service = candidate["entity_id"], candidate["transmit_service"]
-            if not isinstance(service, str) or not isinstance(proxy, str):
-                raise ValueError("Choose a transmitter and its proxy sensor")
-            if service not in self.snapshot()["transmit_services"]:
-                raise ValueError("Choose an available advertising action")
-            if proxy not in {s["entity_id"] for s in self.snapshot()["proxy_sensors"]}:
-                raise ValueError("Choose a BLE Adv Proxy Name sensor")
-            name = body.get("name", "Philips Skylight")
-            if not isinstance(name, str) or not 1 <= len(name.strip()) <= 80:
-                raise ValueError("Enter a light name of 1–80 characters")
-            if not self.ha.entries and not self.light():
-                await self.set_first_setup(True)
-            await self.ha.configure(name.strip(), service, proxy)
-            return
+        if action in self.setup_actions:
+            return await self.setup_actions[action](body)
+        if action not in self.light_actions:
+            raise ValueError("Unknown action")
         entity = self.light()
         if not entity:
             raise ValueError("Set up the Skylight integration first")
-        if self.snapshot()["restart_required"]:
+        if self.restart_required(entity):
             raise ValueError("Restart Home Assistant before using the updated integration")
-        if action == "create_dashboard":
-            return await dashboards.create_dashboard(self.ha, self.card_config(body.get("style")))
-        if action == "add_card":
-            return await dashboards.add_card(
-                self.ha,
-                body.get("url_path"),
-                body.get("view_index"),
-                body.get("revision"),
-                self.card_config(body.get("style")),
+        return await self.light_actions[action](entity, body)
+
+    async def _install(self, body):
+        await asyncio.to_thread(self.installer.install)
+
+    async def _restart(self, body):
+        if body.get("confirm") is not True:
+            raise ValueError("Confirm the Home Assistant restart")
+        await self.ha.call("homeassistant", "restart")
+
+    async def _setup(self, body):
+        if self.restart_required():
+            raise ValueError("Restart Home Assistant to load the installed integration first")
+        proxies = self.proxies()
+        service = body.get("transmit_service")
+        proxy = body.get("proxy_entity")
+        if "proxy" in body:
+            candidate = next(
+                (item for item in proxies if item["entity_id"] == body["proxy"]), None
             )
-        if action == "sync_state":
-            power, effect = body.get("power"), body.get("effect")
-            if power not in ("on", "off") or effect not in (*EFFECTS, "Unknown"):
-                raise ValueError("Record the power you can see and a mode (or Unknown)")
-            # Resolve every entity before making either local-only change.
-            entities = self.card_entities()
-            await self.ha.call(
-                "button", "press", entities[f"button.philips_skylight_record_panel_{power}"]
-            )
-            await self.ha.call(
-                "select",
-                "select_option",
-                entities["select.philips_skylight_recorded_scene"],
-                option=effect,
-            )
-            await self.set_first_setup(False)
-        elif action in ("on", "off", "toggle"):
-            service = "toggle" if action == "toggle" else f"turn_{action}"
-            await self.ha.call("light", service, entity)
-        elif action == "scene":
-            effect = body.get("effect")
-            if effect not in EFFECTS:
-                raise ValueError("Unknown scene")
-            await self.ha.call("button", "press", self.button(effect))
-        elif action in ("dim_up", "dim_down"):
-            await self.ha.call("button", "press", self.button(action))
-        elif action == "sync_mode":
-            effect = body.get("effect")
-            if effect not in (*EFFECTS, "Unknown"):
-                raise ValueError("Choose a mode or Unknown")
-            entities = self.card_entities()
-            await self.ha.call(
-                "select", "select_option", entities["select.philips_skylight_recorded_scene"],
-                option=effect,
-            )
-        elif action == "sync_power":
-            if type(body.get("is_on")) is not bool:
-                raise ValueError("Specify whether the panel is currently on")
-            await self.ha.call(DOMAIN, "set_assumed_power", entity, is_on=body["is_on"])
-            await self.set_first_setup(False)
-        elif action == "pair":
-            if body.get("confirm") is not True:
-                raise ValueError("Confirm the possible change to the original remote's pairing")
-            await self.ha.call(DOMAIN, "pair_transmitter", entity, confirm=True)
-        else:
-            raise ValueError("Unknown action")
+            if candidate is None:
+                raise ValueError("Choose an available Skylight proxy")
+            proxy, service = candidate["entity_id"], candidate["transmit_service"]
+        if not isinstance(service, str) or not isinstance(proxy, str):
+            raise ValueError("Choose a transmitter and its proxy sensor")
+        if service not in self.transmit_services():
+            raise ValueError("Choose an available advertising action")
+        if proxy not in {item["entity_id"] for item in self.proxy_sensors(proxies)}:
+            raise ValueError("Choose a BLE Adv Proxy Name sensor")
+        name = body.get("name", "Philips Skylight")
+        if not isinstance(name, str) or not 1 <= len(name.strip()) <= 80:
+            raise ValueError("Enter a light name of 1–80 characters")
+        if not self.ha.entries and not self.light():
+            await self.set_first_setup(True)
+        await self.ha.configure(name.strip(), service, proxy)
+
+    async def _create_dashboard(self, entity, body):
+        return await dashboards.create_dashboard(self.ha, self.card_config(body.get("style")))
+
+    async def _add_card(self, entity, body):
+        return await dashboards.add_card(
+            self.ha,
+            body.get("url_path"),
+            body.get("view_index"),
+            body.get("revision"),
+            self.card_config(body.get("style")),
+        )
+
+    async def _sync_state(self, entity, body):
+        power, effect = body.get("power"), body.get("effect")
+        if power not in ("on", "off") or effect not in (*EFFECTS, "Unknown"):
+            raise ValueError("Record the power you can see and a mode (or Unknown)")
+        # Resolve every entity before making either local-only change.
+        entities = self.card_entities()
+        await self.ha.call(
+            "button", "press", entities[f"button.philips_skylight_record_panel_{power}"]
+        )
+        await self.ha.call(
+            "select",
+            "select_option",
+            entities["select.philips_skylight_recorded_scene"],
+            option=effect,
+        )
+        await self.set_first_setup(False)
+
+    async def _sync_mode(self, entity, body):
+        effect = body.get("effect")
+        if effect not in (*EFFECTS, "Unknown"):
+            raise ValueError("Choose a mode or Unknown")
+        entities = self.card_entities()
+        await self.ha.call(
+            "select",
+            "select_option",
+            entities["select.philips_skylight_recorded_scene"],
+            option=effect,
+        )
+
+    async def _sync_power(self, entity, body):
+        if type(body.get("is_on")) is not bool:
+            raise ValueError("Specify whether the panel is currently on")
+        await self.ha.call(DOMAIN, "set_assumed_power", entity, is_on=body["is_on"])
+        await self.set_first_setup(False)
+
+    async def _power(self, entity, body):
+        action = body["action"]
+        await self.ha.call("light", "toggle" if action == "toggle" else f"turn_{action}", entity)
+
+    async def _scene(self, entity, body):
+        effect = body.get("effect")
+        if effect not in EFFECTS:
+            raise ValueError("Unknown scene")
+        await self.ha.call("button", "press", self.button(effect))
+
+    async def _dim(self, entity, body):
+        await self.ha.call("button", "press", self.button(body["action"]))
+
+    async def _pair(self, entity, body):
+        if body.get("confirm") is not True:
+            raise ValueError("Confirm the possible change to the original remote's pairing")
+        await self.ha.call(DOMAIN, "pair_transmitter", entity, confirm=True)
+
+    async def _skip_sequence(self, entity, body):
+        if body.get("confirm") is not True:
+            raise ValueError("Confirm that the panel ignores commands after a restore or rebuild")
+        await self.ha.call(DOMAIN, "skip_sequence", entity, confirm=True)
 
     async def firmware(self, request):
         data = io.BytesIO()
@@ -313,26 +346,18 @@ class Panel:
         )
 
     def card_entities(self):
-        if not self.ha.ready or self.snapshot()["restart_required"]:
+        if not self.ha.ready or self.restart_required():
             raise ValueError("Wait for Home Assistant to load the updated integration")
+        entities = self.entities()
         replacements = {}
-        for default, unique_id in CARD_ENTITIES.items():
-            entity = next(
-                (
-                    item["entity_id"]
-                    for item in self.ha.registry
-                    if item.get("platform") == DOMAIN
-                    and item.get("unique_id") == unique_id
-                    and not item.get("disabled_by")
-                ),
-                None,
-            )
+        for default, unique in CARD_ENTITIES.items():
+            entity = entities.get(unique)
             if (
                 not entity
                 or not re.fullmatch(r"[a-z_]+\.[a-z0-9_]+", entity)
                 or entity.split(".")[0] != default.split(".")[0]
             ):
-                raise ValueError(f"Enable the Skylight control entity: {unique_id}")
+                raise ValueError(f"Enable the Skylight control entity: {unique}")
             replacements[default] = entity
         return replacements
 

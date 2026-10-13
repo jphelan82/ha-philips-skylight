@@ -3,7 +3,7 @@
 import asyncio
 from typing import Any
 
-from .const import SEQUENCE_BLOCK
+from .const import SEQUENCE_BLOCK, SEQUENCE_SKIP
 
 
 class SequenceAllocator:
@@ -43,3 +43,19 @@ class SequenceAllocator:
             value = self._next
             self._next += 1
             return value
+
+    async def async_skip(self, amount: int = SEQUENCE_SKIP) -> int:
+        """Jump past numbers a lost or older restored Store may already have used.
+
+        The panel drops any packet whose sequence is not above the last one it
+        accepted from this sender, so a reset counter is silently ignored.
+        """
+        async with self._lock:
+            start = self._limit + amount
+            if start >= 0x1000000:
+                raise ValueError(
+                    "Too little mesh sequence space remains to skip forward again"
+                )
+            await self.store.async_save({"high_watermark": start})
+            self._next = self._limit = start
+            return start
