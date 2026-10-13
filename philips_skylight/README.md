@@ -37,9 +37,9 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
       mode.
 4. Optional: add the Skylight card to a dashboard.
 
-To update, update the add-on in **Settings → Apps**, then open its page. An
-**Needs attention** section lists any step left: a Home Assistant restart, new proxy
-firmware, or a newer card. It shows only the steps that apply.
+To update, update the add-on in **Settings → Apps**, then open its page. A
+**Needs attention** section lists any step left: a Home Assistant restart, new
+proxy firmware, or a newer card. It shows only the steps that apply.
 
 ## Use the card
 
@@ -51,8 +51,9 @@ The card uses the remote's icons and colors.
   lights up in the remote's color.
 - **Dim −** and **Dim +** dim by one step. On a dashboard, a hold dims for
   about 3 seconds after you let go. Keep your finger still, or Home Assistant
-  cancels the hold. On the add-on page, holding keeps dimming until you let go. You cannot set a
-  brightness level, because the panel takes only these two commands.
+  cancels the hold. On the add-on page, holding keeps dimming until you let go.
+  You cannot set a brightness level, because the panel takes only these two
+  commands.
 - **Rhythm set** makes the current time the start of the Auto rhythm schedule.
 - **Correct** fixes Home Assistant's record when it does not match the panel.
 
