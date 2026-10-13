@@ -39,6 +39,7 @@ test("initial-state form always follows modes, records manual choices and saves 
         posts.push(body);
         // Mode choices record immediately; a remote mode can arrive during power saving.
         source.effect = body.action === "sync_mode" ? body.effect : "Energize";
+        if (body.action === "sync_power") source.power_synchronized = true;
         return {ok: true, json: async () => ({ok: true})};
       }
       return {ok: true, json: async () => structuredClone(source)};
@@ -58,6 +59,8 @@ test("initial-state form always follows modes, records manual choices and saves 
   await setImmediate();
   assert.deepEqual(posts, [{action: "sync_mode", effect: "Relax"}]);
   assert.equal(element("observed-mode").value, "Relax");
+  assert.equal(element("notice").hidden, true);
+  assert.equal(element("matching").open, true); // Mode alone cannot establish power.
   source.effect = "Rest";
   await poll();
   assert.equal(element("observed-mode").value, "Rest");
@@ -71,12 +74,16 @@ test("initial-state form always follows modes, records manual choices and saves 
   source.power_synchronized = true;
   await poll();
   assert.equal(element("observed-power").value, ""); // Never invent the user's observation.
+  source.power_synchronized = false;
+  await poll();
 
   element("observed-power").value = "on";
   element("match-form").listeners.submit({preventDefault() {}});
   await setImmediate();
   assert.deepEqual(posts[1], {action: "sync_power", is_on: true});
   assert.equal(element("observed-mode").value, "Energize");
+  assert.equal(element("matching").open, false);
+  assert.equal(element("notice").hidden, true);
   element("observed-mode").value = "Unknown";
   element("observed-mode").listeners.change();
   await setImmediate();

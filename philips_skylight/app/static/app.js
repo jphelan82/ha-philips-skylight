@@ -102,7 +102,8 @@ async function action(body) {
   if (busy) return;
   busy = true;
   if (state) render(state);
-  notice(body.action === "pair" ? "Sending pairing request for about ten seconds…" : "Applying…");
+  const recording = ["sync_state", "sync_power", "sync_mode"].includes(body.action);
+  notice(recording ? "" : body.action === "pair" ? "Sending pairing request for about ten seconds…" : "Applying…");
   try {
     const response = await fetch(new URL("api/action", base), {
       method: "POST", headers: {"Content-Type": "application/json", "X-Skylight-CSRF": csrf},
@@ -117,8 +118,6 @@ async function action(body) {
     notice(body.action === "pair" ? "Request finished. Check the panel and original remote, then record the starting state."
       : body.action === "restart" ? "Home Assistant is restarting. This page will reconnect."
       : body.action === "setup" ? "Transmitter saved. Enable remote tracking, pair on first setup, and record the starting state."
-      : ["sync_state", "sync_power"].includes(body.action) ? "Initial state recorded. No light command was sent. Dashboard setup is optional."
-      : body.action === "sync_mode" ? "Mode recorded. No light command was sent."
       : body.action === "create_dashboard" ? (result.created ? "Dashboard created. Use Open dashboard below." : "Existing dashboard preserved. Use Open dashboard below.")
       : body.action === "add_card" ? (result.added ? "Card added. Use Open dashboard below." : "This card is already in that view. No changes made.") : "");
     if (body.action === "pair") el("pair-confirm").checked = false;
