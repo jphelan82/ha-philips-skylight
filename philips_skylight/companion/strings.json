@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Connect your Skylight transmitter",
-        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. This integration controls the factory mesh network, so all matching panels in range may respond. Power is assumed; synchronize it after setup or reconnect.",
+        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. Every panel paired with this transmitter responds to its commands. Support for several separately controlled panels is not built yet. Power is assumed; synchronize it after setup or reconnect.",
         "data": {
           "name": "Light name",
           "transmit_service": "ESPHome advertising action",
@@ -13,7 +13,7 @@
       },
       "reconfigure": {
         "title": "Change Skylight transmitter",
-        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. This integration controls the factory mesh network, so all matching panels in range may respond. Power is assumed; synchronize it after setup or reconnect.",
+        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. Every panel paired with this transmitter responds to its commands. Support for several separately controlled panels is not built yet. Power is assumed; synchronize it after setup or reconnect.",
         "data": {
           "name": "Light name",
           "transmit_service": "ESPHome advertising action",

@@ -35,8 +35,9 @@ cannot establish actual power.
 Absolute brightness and color temperature are not exposed: dim step size is
 unverified. Normal controls send captured commands only, without provisioning
 or speculative power codes. A separate experimental pairing action is described
-below. Factory-key commands broadcast to all
-matching panels in radio range; only one integration entry is allowed.
+below. Commands go to every panel in range, but a panel obeys only the
+senders it has paired with. Only one integration entry is allowed, and support
+for several panels is not built yet.
 
 ## Install
 

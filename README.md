@@ -30,9 +30,11 @@ This is an experimental project. Please read these limits before you install it.
   off commands. If Home Assistant thinks the light is on when it is off, then
   "turn on" does nothing, and "turn off" turns it on.
 - **It supports one Skylight.** It was built and tested with one panel.
-  Support for several panels is not built and not tested. All panels of this
-  model use the same factory keys, so every Skylight in range responds to every
-  command. You cannot control two nearby panels separately.
+  Support for several panels is not built yet. A panel obeys only the senders
+  it has paired with. So any panel that paired with Home Assistant responds to
+  its commands, and a second panel paired the same way responds too. Home
+  Assistant also tracks every compatible remote it hears, so a second panel's
+  remote changes the recorded state.
 - **Dimming is up or down by one step.** No brightness slider or color
   temperature control exists. Holding a dashboard dim button does not keep
   dimming. Only the physical remote does that.

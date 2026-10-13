@@ -158,9 +158,11 @@ outage. State-correction entities change only those assumptions; the view switch
 changes only the dashboard mode. Neither path transmits a BLE command.
 
 Retain the sequence Store across removal or reinstallation. Never reset it,
-restore an older counter, or run another sender using `0x7FFE`. Matching factory-key
-panels within radio range may all respond; only one factory-network integration
-is supported. Permissions, code backup/rollback and removal procedures are in
+restore an older counter, or run another sender using `0x7FFE`. Commands go to every
+panel in range, but only panels paired with `0x7FFE` obey them. Only one
+integration entry is supported. Separate control of several panels needs one
+sender address per panel, each paired with its own panel. That needs panels on separate circuits,
+because one power cycle opens the pairing window of every panel on it. Permissions, code backup/rollback and removal procedures are in
 the [add-on documentation](../philips_skylight/DOCS.md).
 
 Physically verified on this panel: power toggle, the Rest, Energize and Relax
