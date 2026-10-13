@@ -90,6 +90,11 @@ async def test_pairing_confirmation_and_action_allowlist(panel):
     with pytest.raises(ValueError, match="Confirm"):
         await panel.perform({"action": "pair", "confirm": False})
     assert not panel.ha.calls
+    # Once setup has succeeded, pairing again is refused: it can drop the remote.
+    with pytest.raises(ValueError, match="already paired"):
+        await panel.perform({"action": "pair", "confirm": True})
+    assert not panel.ha.calls
+    panel.first_setup = True
     await panel.perform({"action": "pair", "confirm": True})
     assert panel.ha.calls == [
         (("philips_skylight", "pair_transmitter", "light.renamed"), {"confirm": True})
@@ -502,3 +507,18 @@ async def test_dim_hold_sends_one_hold_command_per_request(setup_panel):
     ]
     with pytest.raises(ValueError, match="direction"):
         await setup_panel.perform({"action": "dim_hold", "direction": "sideways"})
+
+
+
+async def test_start_over_unpairs_everything_then_reopens_pairing(panel):
+    with pytest.raises(ValueError, match="Tick the box"):
+        await panel.perform({"action": "unpair_all"})
+    await panel.perform({"action": "unpair_all", "confirm": True})
+    assert panel.ha.calls == [
+        (("philips_skylight", "unpair_all_remotes", "light.renamed"), {"confirm": True})
+    ]
+    assert panel.first_setup is False
+    await panel.perform({"action": "start_over"})
+    assert panel.first_setup is True
+    await panel.perform({"action": "pair", "confirm": True})  # Allowed again.
+    assert panel.ha.calls[-1][0][1] == "pair_transmitter"

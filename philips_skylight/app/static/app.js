@@ -140,6 +140,8 @@ const results = {
   create_dashboard: (body, result) => result.created ? "Dashboard created." : "You already have a Skylight dashboard.",
   add_card: (body, result) => result.added ? "Card added." : "That view already has the card.",
   skip_sequence: () => "Counter moved forward. Try the power button above.",
+  unpair_all: () => "Unpairing for 10 seconds. When the panel blinks, pair your remote, then select Continue.",
+  start_over: () => "",
   rhythm_start: () => "Schedule started. The panel blinks.",
 };
 async function action(body) {
@@ -166,6 +168,8 @@ async function action(body) {
     if (body.action === "confirm_test") pairStage = body.result === "none" ? "pair" : "mode";
     if (body.action === "finish_setup") pairStage = "pair";
     if (body.action === "skip_sequence") el("skip-confirm").checked = false;
+    if (body.action === "unpair_all") el("unpair-confirm").checked = false;
+    if (body.action === "start_over") pairStage = "pair";
     if (body.action === "add_card") await loadViews();
   } catch (error) { notice(error.message, true); }
   finally { busy = false; await refresh(); }
@@ -254,6 +258,7 @@ document.addEventListener("click", (event) => {
   if (!kind) return;
   if (kind === "restart" && !confirm("Restart Home Assistant now?")) return;
   if (kind === "skip_sequence" && !el("skip-confirm").checked) return notice("Tick the box first.", true);
+  if (kind === "unpair_all" && !el("unpair-confirm").checked) return notice("Tick the box first.", true);
   if (kind === "connect") return action(connectBody(button));
   if (kind === "prepare_firmware") return el("node-choice").value
     ? action({action: kind, file: el("node-choice").value}) : notice("Choose a proxy first.", true);
@@ -261,7 +266,7 @@ document.addEventListener("click", (event) => {
   if (kind === "finish_setup") return action(button.dataset.effect ? {action: kind, effect: button.dataset.effect} : {action: kind});
   if (kind === "confirm_test") return action({action: kind, result: button.dataset.result});
   if (kind === "sync_power") return action({action: kind, is_on: button.dataset.on === "yes"});
-  action({action: kind, confirm: ["pair", "restart", "skip_sequence"].includes(kind), style: el("card-style").value});
+  action({action: kind, confirm: ["pair", "restart", "skip_sequence", "unpair_all"].includes(kind), style: el("card-style").value});
 });
 el("observed-mode").addEventListener("change", () => {
   action({action: "sync_mode", effect: el("observed-mode").value});

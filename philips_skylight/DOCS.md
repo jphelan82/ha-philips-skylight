@@ -77,8 +77,16 @@ Home Assistant sends a short burst, like the remote's own 10-second hold. A long
 stream of requests makes the panel drop your remote. Your remote stays paired.
 Pairing never happens by itself.
 
+Pair Home Assistant only once. Pairing it again can make the panel drop your
+remote, so the add-on page refuses it after setup. To pair again, use **Settings
+and fixes → Start over** on the add-on page. It unpairs every remote, has you
+pair your remote first, and then pairs Home Assistant through the setup
+checklist.
+
 **Configure** on the Skylight integration also offers **Pair this transmitter**
-and **Unpair all remotes**, with the same steps. **Unpair all remotes** makes the
+and **Unpair all remotes**, with the same steps. Use **Pair this transmitter**
+only when Home Assistant is not paired yet, for example after **Unpair all
+remotes**. **Unpair all remotes** makes the
 panel forget every remote, Home Assistant included. If its request reaches the
 panel too late, the panel only switches off. Then try again. Afterward, pair your
 remote again.

@@ -127,6 +127,12 @@ You can also pair from **Settings → Devices & services → Philips Skylight �
 Configure → Pair this transmitter**, or with the `philips_skylight.pair_transmitter`
 action.
 
+Pair Home Assistant only once. Pairing it again can make the panel drop your
+remote, so the add-on page refuses it after setup. To pair again, use **Settings
+and fixes → Start over** on the add-on page. It unpairs every remote, has you
+pair your remote first, and then pairs Home Assistant through the setup
+checklist.
+
 To make the panel forget **every** remote, use **Configure → Unpair all
 remotes**, with the same steps. It removes your remote and Home Assistant.
 Afterward, pair your remote again with its own steps, and pair Home Assistant

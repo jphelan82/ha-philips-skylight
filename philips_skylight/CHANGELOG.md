@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2
+
+- After setup, the add-on page refuses to pair Home Assistant again, because a
+  second pairing can make the panel drop your remote.
+- **Settings and fixes → Pair again** is now **Start over**. It unpairs every
+  remote, has you pair your remote first, and then reopens the setup checklist
+  to pair Home Assistant and run the tests.
+- The integration is unchanged, so this update needs no Home Assistant restart.
+
 ## 0.3.1
 
 - Pairing and **Unpair all remotes** send one 10-second burst again, like the

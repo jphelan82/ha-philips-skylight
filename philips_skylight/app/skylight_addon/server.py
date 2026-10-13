@@ -102,6 +102,8 @@ class Panel:
             "dim_down": self._dim,
             "dim_hold": self._dim_hold,
             "pair": self._pair,
+            "unpair_all": self._unpair_all,
+            "start_over": self._start_over,
             "skip_sequence": self._skip_sequence,
             "test": self._test,
             "confirm_test": self._confirm_test,
@@ -423,6 +425,16 @@ class Panel:
     async def _dim(self, entity, body):
         await self.ha.call("button", "press", self.button(body["action"]))
 
+    async def _unpair_all(self, entity, body):
+        if body.get("confirm") is not True:
+            raise ValueError("Tick the box first")
+        await self.ha.call(DOMAIN, "unpair_all_remotes", entity, confirm=True)
+
+    async def _start_over(self, entity, body):
+        # The panel forgot every remote, and the user paired the remote again.
+        # The checklist now pairs Home Assistant and runs the tests.
+        await self.set_first_setup(True)
+
     async def _dim_hold(self, entity, body):
         direction = body.get("direction")
         if direction not in ("down", "up"):
@@ -433,6 +445,9 @@ class Panel:
     async def _pair(self, entity, body):
         if body.get("confirm") is not True:
             raise ValueError("Confirm that the panel just came back on")
+        if not self.first_setup:
+            # Pairing Home Assistant again can make the panel drop the remote.
+            raise ValueError("Home Assistant is already paired. To pair again, use Start over.")
         # Returns at once; the integration sends the request for 10 seconds.
         await self.ha.call(DOMAIN, "pair_transmitter", entity, confirm=True)
 

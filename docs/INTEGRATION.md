@@ -126,6 +126,10 @@ between the requests. The light's `pairing_until` attribute shows when the burst
 ends. Each request uses a newly reserved sequence number. Pairing never runs by
 itself.
 
+Pair Home Assistant only once. Pairing it again can make the panel drop the
+other remote. To start over, run `philips_skylight.unpair_all_remotes`, pair the
+remote with its own steps, and then pair Home Assistant.
+
 ### Pairing and unpairing from Configure
 
 **Configure** on the integration offers **Pair this transmitter** and **Unpair

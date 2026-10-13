@@ -60,11 +60,11 @@ Assistant. Use the wall switch or breaker only for pairing.
 ## Pairing and unpairing
 
 Pairing is a one-time step. Updates do not need it, and your remote stays
-paired. To pair again, use **Settings and fixes → Pair again** on the add-on
-page.
+paired. Pairing Home Assistant again can make the panel drop your remote, so the
+page refuses it after setup.
 
-To make the panel forget every remote, Home Assistant included, use **Settings →
-Devices & services → Philips Skylight → Configure → Unpair all remotes**. Then
-pair each remote again.
+To start over, use **Settings and fixes → Start over**. It unpairs every remote,
+has you pair your remote first, and then pairs Home Assistant through the setup
+checklist.
 
 See the **Documentation** tab for options, troubleshooting and recovery.

@@ -182,6 +182,13 @@ test("corrections change only the record, and controls send commands", async () 
   await press({action: "skip_sequence"});
   assert.equal(posts.at(-1).action, "scene"); // Needs the tick box first.
   assert.equal(element("notice").textContent, "Tick the box first.");
+  await press({action: "unpair_all"});
+  assert.equal(posts.at(-1).action, "scene"); // Unpair all needs its tick box too.
+  element("unpair-confirm").checked = true;
+  await press({action: "unpair_all"});
+  assert.deepEqual(posts.at(-1), {action: "unpair_all", confirm: true, style: ""});
+  await press({action: "start_over"});
+  assert.equal(posts.at(-1).action, "start_over");
 });
 
 test("holding a dim button repeats the hold command until release", async () => {

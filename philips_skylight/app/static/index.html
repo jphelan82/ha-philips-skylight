@@ -116,13 +116,16 @@
       <div class="row"><button data-action="sync_power" data-on="yes">Panel is on</button><button data-action="sync_power" data-on="no">Panel is off</button></div>
       <label>Mode<select id="observed-mode"></select></label>
     </details>
-    <details class="plain" id="fix-pair"><summary>Pair again</summary>
+    <details class="plain" id="fix-pair"><summary>Start over</summary>
+      <p>Home Assistant is paired. Pairing it again can make the panel drop your remote, so start over instead. This removes every remote, Home Assistant included, and then pairs them again in the right order.</p>
       <ol>
         <li>Switch the panel's power off at its light switch or breaker, then on again.</li>
-        <li>Wait until the panel is back on. That can take up to 30 seconds.</li>
-        <li>Select <strong>Pair</strong> straight away. The panel blinks.</li>
+        <li>Wait until the panel is back on. Then select <strong>Unpair all</strong> straight away. The panel blinks. If it only switches off, the request came too late. Try again.</li>
+        <li>Pair your remote: switch the power off and on, wait until the panel is back on, then hold the remote's power button for 10 seconds until the panel blinks.</li>
+        <li>Select <strong>Continue</strong>. The setup checklist pairs Home Assistant.</li>
       </ol>
-      <button data-action="pair">Pair</button>
+      <label class="check"><input id="unpair-confirm" type="checkbox">Remove every remote. I will pair my remote again.</label>
+      <div class="row"><button data-action="unpair_all">Unpair all</button><button data-action="start_over">Continue</button></div>
     </details>
     <details class="plain" id="fix-proxy"><summary>Change the Bluetooth proxy</summary>
       <label>Proxy<select id="proxy-change"></select></label>
@@ -135,8 +138,7 @@
       </details>
     </details>
     <details class="plain"><summary>Unpair all remotes</summary>
-      <p>This makes the panel forget every remote, Home Assistant included. Use <strong>Configure</strong> on the Skylight integration.</p>
-      <p><a href="/config/integrations/integration/philips_skylight" target="_top">Open the Skylight integration</a></p>
+      <p>This makes the panel forget every remote, Home Assistant included. Use <strong>Start over</strong> above. It unpairs everything and pairs your remote and Home Assistant again.</p>
     </details>
     <details class="plain"><summary>The panel ignores Home Assistant after a backup restore</summary>
       <p>An older backup has an older command counter, and the panel ignores old numbers. Moving the counter forward fixes this. It sends nothing to the panel.</p>
