@@ -270,12 +270,13 @@ async function holdTick() {
   const current = hold;
   if (!current) return;
   current.sent = true;
-  if (!current.busy) {
-    current.busy = true;
-    await post({action: "dim_hold", direction: current.direction});
-    current.busy = false;
-  }
-  if (hold === current) current.timer = setTimeout(holdTick, 600);
+  // Keep a steady 0.6-second beat, like the remote: set the next step first,
+  // so the time a request takes never adds a pause.
+  current.timer = setTimeout(holdTick, 600);
+  if (current.busy) return;
+  current.busy = true;
+  await post({action: "dim_hold", direction: current.direction});
+  current.busy = false;
 }
 function holdEnd() {
   if (!hold) return;

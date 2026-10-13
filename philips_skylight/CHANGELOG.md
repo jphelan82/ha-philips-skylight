@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.4
+
+- Holding a dim button on the add-on page sends a hold command every 0.6
+  seconds again, like the remote. Before, each command waited for the one
+  before it to finish, so there were pauses of about 1.3 seconds or more.
+- The add-on answers a hold request at once and sends the command in the
+  background. At most two hold commands wait at a time, so a slow connection
+  cannot keep the panel dimming after you let go.
+
 ## 0.4.3
 
 - Holding **Dim −** or **Dim +** on the dashboard card works from the tile's

@@ -5,6 +5,7 @@ import hmac
 import html
 import io
 import json
+import logging
 import re
 import secrets
 import time
@@ -19,6 +20,7 @@ from . import DOMAIN, EFFECTS, VERSION, dashboards, esphome_files, slug, unique_
 from .ha import HAError
 from .proxies import discover_proxies
 
+LOG = logging.getLogger(__name__)
 TRACKING_OPTION = "allow_service_calls"
 # The remote's button order. EFFECTS keeps the protocol's order.
 REMOTE_ORDER = ("Auto rhythm", "Refresh", "Energize", "Focus", "Relax", "Rest")
@@ -71,6 +73,7 @@ class Panel:
         self._cards_checked = 0.0
         self._check_task = None
         self._auto_setup_tried = False
+        self._holds = set()  # Hold commands still on their way to the panel.
         self.allowed_ips = {"172.30.32.2"} if allowed_ips is None else set(allowed_ips)
         self.csrf = secrets.token_urlsafe(32)
         self.lock = asyncio.Lock()
@@ -517,8 +520,20 @@ class Panel:
         direction = body.get("direction")
         if direction not in ("down", "up"):
             raise ValueError("Choose a dim direction")
-        # One hold command; the page repeats it every 0.6 seconds while pressed.
-        await self.ha.call(DOMAIN, "dim", entity, direction=direction, hold=0.6)
+        # One hold command. The page asks again every 0.6 seconds while pressed,
+        # so answer at once: the integration waits 0.6 seconds after each command.
+        if len(self._holds) >= 2:
+            return  # A slow link must not queue steps that keep dimming after release.
+        task = asyncio.create_task(
+            self.ha.call(DOMAIN, "dim", entity, direction=direction, hold=0.6)
+        )
+        self._holds.add(task)
+        task.add_done_callback(self._hold_done)
+
+    def _hold_done(self, task):
+        self._holds.discard(task)
+        if not task.cancelled() and task.exception():
+            LOG.warning("A hold command failed: %s", task.exception())
 
     async def _pair(self, entity, body):
         if body.get("confirm") is not True:

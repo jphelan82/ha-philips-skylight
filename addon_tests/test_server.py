@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -563,9 +564,27 @@ async def test_dim_hold_sends_one_hold_command_per_request(setup_panel):
     await setup_panel.perform({"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name"})
     ha.calls.clear()
     await setup_panel.perform({"action": "dim_hold", "direction": "up"})
+    await asyncio.gather(*setup_panel._holds)  # The page got its answer before this.
     assert ha.calls == [
         (("philips_skylight", "dim", "light.renamed"), {"direction": "up", "hold": 0.6})
     ]
+    assert not setup_panel._holds
+    # At most two hold commands wait at once. A third request is dropped.
+    gate = asyncio.Event()
+    original = ha.call
+
+    async def slow_call(*args, **kwargs):
+        await gate.wait()
+        return await original(*args, **kwargs)
+
+    ha.call = slow_call
+    for _ in range(3):
+        await setup_panel.perform({"action": "dim_hold", "direction": "down"})
+    assert len(setup_panel._holds) == 2
+    gate.set()
+    await asyncio.gather(*setup_panel._holds)
+    assert len(ha.calls) == 3
+    ha.call = original
     with pytest.raises(ValueError, match="direction"):
         await setup_panel.perform({"action": "dim_hold", "direction": "sideways"})
 
