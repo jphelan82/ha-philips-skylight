@@ -3,6 +3,8 @@
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
+from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
 
 from .const import CONF_PROXY_ENTITY, CONF_TRANSMIT_SERVICE, DOMAIN
@@ -10,6 +12,11 @@ from .const import CONF_PROXY_ENTITY, CONF_TRANSMIT_SERVICE, DOMAIN
 
 class SkylightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return SkylightOptionsFlow()
 
     async def async_step_user(self, user_input=None):
         await self.async_set_unique_id("factory_mesh_7ffe")
@@ -62,5 +69,42 @@ class SkylightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                 }
             ),
+            errors=errors,
+        )
+
+
+class SkylightOptionsFlow(config_entries.OptionsFlow):
+    """Configure: pair this transmitter, or make the panel forget every sender."""
+
+    async def async_step_init(self, user_input=None):
+        return self.async_show_menu(step_id="init", menu_options=["pair", "unpair_all"])
+
+    async def async_step_pair(self, user_input=None):
+        return await self._async_pairing_step("pair", user_input)
+
+    async def async_step_unpair_all(self, user_input=None):
+        return await self._async_pairing_step("unpair_all", user_input)
+
+    async def _async_pairing_step(self, step_id, user_input):
+        errors = {}
+        if user_input is not None:
+            controller = getattr(self.config_entry, "runtime_data", None)
+            if not user_input.get("confirm"):
+                errors["base"] = "confirm_required"
+            elif controller is None:
+                return self.async_abort(reason="not_loaded")
+            else:
+                try:
+                    if step_id == "pair":
+                        await controller.async_pair()
+                    else:
+                        await controller.async_unpair_all()
+                except HomeAssistantError:
+                    errors["base"] = "send_failed"
+                else:
+                    return self.async_abort(reason=f"{step_id}_sent")
+        return self.async_show_form(
+            step_id=step_id,
+            data_schema=vol.Schema({vol.Required("confirm", default=False): bool}),
             errors=errors,
         )

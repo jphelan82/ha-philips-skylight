@@ -19,7 +19,6 @@ from .const import (
     NETWORK_KEY,
     RHYTHM_START,
     SOURCE,
-    UNPAIR_CODES,
 )
 
 
@@ -158,13 +157,14 @@ def pairing_payload(transaction: int) -> bytes:
     return bytes([0xCF, 0x11, 0x02, transaction, 0x01]) + b"\x11" * 6
 
 
-def unpair_payload(transaction: int, code: int) -> bytes:
-    """Experimental: the pairing request with a guessed sub-command byte instead of 0x01."""
+def unpair_all_payload(transaction: int) -> bytes:
+    """The pairing request with sub-command 0x02: the panel forgets every paired sender.
+
+    Found by test on 2026-10-13. Like pairing, it works only right after power-on.
+    """
     if not 0x80 <= transaction <= 0xFF:
         raise ValueError("Transaction must be in the remote's 0x80..0xFF range")
-    if code not in UNPAIR_CODES:
-        raise ValueError(f"Unsupported unpair code: {code}")
-    return bytes([0xCF, 0x11, 0x02, transaction, code]) + b"\x11" * 6
+    return bytes([0xCF, 0x11, 0x02, transaction, 0x02]) + b"\x11" * 6
 
 
 def identify_command(payload: bytes) -> str | None:

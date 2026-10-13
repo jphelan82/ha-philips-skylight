@@ -102,14 +102,17 @@ sequence for each. Afterward, check the physical light and both controllers.
 Power remains unknown until synchronized; action completion is not a pairing
 acknowledgment. Have the original remote's pairing instructions available.
 
-### Unpairing (experiment)
+### Pairing and unpairing from Configure
 
-No unpair command is known yet. The `philips_skylight.unpair_transmitter` action
-sends the pairing request with a guessed sub-command byte, `0` or `2`, in place
-of pairing's `1`. It uses the same cadence: 30 requests over 10 seconds. Use it
-only right after cycling the panel's mains power, while you watch the panel.
-Then check whether a toggle from Home Assistant and the original remote still
-work. To undo an unpair, pair again.
+**Configure** on the integration offers **Pair this transmitter** and **Unpair
+all remotes**. Each step explains the power cycle and needs a tick box. The
+`philips_skylight.pair_transmitter` and `philips_skylight.unpair_all_remotes`
+actions do the same for scripts, with `confirm: true`.
+
+Unpair all remotes sends the pairing request with sub-command `02` instead of
+`01`, with the same cadence. Right after power-on, the panel blinks and forgets
+every paired sender: the original remote, wall remotes and Home Assistant. At
+other times the panel ignores it. No command removes only one sender.
 
 ## Sequence safety
 

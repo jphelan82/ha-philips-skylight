@@ -18,7 +18,7 @@ from custom_components.philips_skylight.protocol import (
     k3,
     k4,
     pairing_payload,
-    unpair_payload,
+    unpair_all_payload,
 )
 
 CAPTURE = Path(__file__).resolve().parents[1] / "tools/capture-2026-10-12.log"
@@ -69,14 +69,12 @@ def test_rhythm_start_matches_the_captured_combo_press():
         assert command_payload(RHYTHM_START, payload[3]) == payload
 
 
-def test_unpair_payload_changes_only_the_sub_command_byte():
-    for code in (0x00, 0x02):
-        payload = unpair_payload(0x80, code)
-        assert payload == pairing_payload(0x80)[:4] + bytes([code]) + b"\x11" * 6
-        assert identify_command(payload) is None
-    for code in (0x01, 0x03):
-        with pytest.raises(ValueError):
-            unpair_payload(0x80, code)
+def test_unpair_all_changes_only_the_sub_command_byte():
+    payload = unpair_all_payload(0x80)
+    assert payload == pairing_payload(0x80)[:4] + b"\x02" + b"\x11" * 6
+    assert identify_command(payload) is None
+    with pytest.raises(ValueError):
+        unpair_all_payload(0x7F)
 
 
 def test_all_capture_mesh_pdus_authenticate():

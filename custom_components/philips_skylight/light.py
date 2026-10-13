@@ -8,7 +8,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import EFFECTS, UNPAIR_CODES, VERSION
+from .const import EFFECTS, VERSION
 from .controller import SkylightConfigEntry
 from .entity import SkylightEntity
 
@@ -17,8 +17,8 @@ PAIR_CONFIRM = (
     "when ready to test after cycling the panel's mains power."
 )
 UNPAIR_CONFIRM = (
-    "Unpairing is an untested experiment. Set confirm to true only right after "
-    "cycling the panel's mains power, while you watch the panel."
+    "Unpairing removes every remote, the original one included, and this "
+    "transmitter. Set confirm to true only right after cycling the panel's mains power."
 )
 SKIP_CONFIRM = (
     "Skip the sequence only when the panel ignores this transmitter after "
@@ -43,12 +43,9 @@ async def async_setup_entry(
         "async_pair_transmitter",
     )
     platform.async_register_entity_service(
-        "unpair_transmitter",
-        {
-            vol.Required("confirm"): vol.All(cv.boolean, vol.IsTrue(UNPAIR_CONFIRM)),
-            vol.Required("code"): vol.All(vol.Coerce(int), vol.In(UNPAIR_CODES)),
-        },
-        "async_unpair_transmitter",
+        "unpair_all_remotes",
+        {vol.Required("confirm"): vol.All(cv.boolean, vol.IsTrue(UNPAIR_CONFIRM))},
+        "async_unpair_all_remotes",
     )
     platform.async_register_entity_service(
         "skip_sequence",
@@ -94,10 +91,10 @@ class SkylightLight(SkylightEntity, LightEntity):
             raise ServiceValidationError(PAIR_CONFIRM)
         await self.controller.async_pair()
 
-    async def async_unpair_transmitter(self, confirm: bool, code: int) -> None:
+    async def async_unpair_all_remotes(self, confirm: bool) -> None:
         if not confirm:
             raise ServiceValidationError(UNPAIR_CONFIRM)
-        await self.controller.async_unpair(code)
+        await self.controller.async_unpair_all()
 
     async def async_skip_sequence(self, confirm: bool) -> None:
         if not confirm:

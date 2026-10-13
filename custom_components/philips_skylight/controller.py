@@ -11,7 +11,7 @@ from homeassistant.helpers.storage import Store
 
 from .const import CONF_TRANSMIT_SERVICE, DOMAIN, RECEIVE_EVENT, STORAGE_KEY
 from .model import AssumedState, RemoteTracker
-from .protocol import MeshCodec, command_payload, pairing_payload, unpair_payload
+from .protocol import MeshCodec, command_payload, pairing_payload, unpair_all_payload
 from .sequence import SequenceAllocator
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,31 +86,29 @@ class SkylightController:
 
     async def async_pair(self) -> None:
         """Explicit, unverified pairing attempt: 30 fresh requests over 10 seconds."""
+        await self._async_pairing_request(pairing_payload, "pairing attempt")
+
+    async def async_unpair_all(self) -> None:
+        """Ask the panel to forget every paired sender, this one included."""
+        await self._async_pairing_request(unpair_all_payload, "unpair all attempt")
+
+    async def _async_pairing_request(
+        self, payload_builder: Callable[[int], bytes], label: str
+    ) -> None:
         async with self.lock:
             self.state.is_on = None
             self.state.effect = None
-            self.state.last_command = "pairing attempt"
+            self.state.last_command = label
             self.notify()
             try:
                 for _ in range(30):
-                    await self._async_transmit_locked(pairing_payload, repeat=1)
+                    await self._async_transmit_locked(payload_builder, repeat=1)
                     await asyncio.sleep(1 / 3)
             finally:
                 # Neither API acceptance nor completion confirms pairing or power.
                 self.state.is_on = None
                 self.state.effect = None
                 self.notify()
-
-    async def async_unpair(self, code: int) -> None:
-        """Experimental unpair attempt: the pairing cadence with a guessed sub-command byte."""
-        async with self.lock:
-            self.state.last_command = f"unpair attempt {code:#04x}"
-            self.notify()
-            for _ in range(30):
-                await self._async_transmit_locked(
-                    lambda transaction: unpair_payload(transaction, code), repeat=1
-                )
-                await asyncio.sleep(1 / 3)
 
     async def async_skip_sequence(self) -> int:
         """Recover from a lost sequence Store without changing the sender address."""

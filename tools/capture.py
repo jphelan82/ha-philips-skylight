@@ -2,6 +2,8 @@
 
 Usage: python capture.py <repo> <proxy-host> <seconds>
 Sends nothing to the panel. Connects to the proxy's ESPHome API as an extra client.
+Run only one copy at a time: each copy streams every advert, and several copies
+overload the proxy so that Home Assistant's commands get lost.
 """
 
 import asyncio

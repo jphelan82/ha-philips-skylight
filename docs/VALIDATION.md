@@ -231,6 +231,46 @@ Deployed on 2026-10-13 as an add-on update, followed by a Core restart.
   services into HTTP 400. A `ServiceValidationError` from the handler is not
   enough. Integration 0.2.6 moves the check into the service schema.
 
+## Add-on 0.2.7
+
+Deployed on 2026-10-13 with integration 0.2.6.
+
+### Software checks
+
+- After the Core restart, `integration_version` was 0.2.6 and the watermark
+  stayed at `1280`. A REST call to `skip_sequence` with `confirm: false` returned
+  HTTP 400.
+- `button.philips_skylight_set_auto_rhythm_start` registered with the
+  `mdi:clock-start` icon.
+- The proxy's connection to Home Assistant dropped about every five minutes
+  since at least 12 October, about 90 times in a day. Most drops lasted about
+  0.1 seconds, some up to 40 seconds. Each drop resets recorded power and mode
+  to unknown, and a command sent during a drop is lost. The continuous Bluetooth
+  scan set on 12 October, on an ESP32-C3 with one shared radio, is the likely
+  cause. This is not fixed yet.
+
+### Physical observations
+
+- Set auto rhythm start from Home Assistant made the panel blink, as the
+  remote's Auto rhythm and Relax combination does. One command was enough.
+- Unpair candidate `00`, sent without a power cycle: no visible change. A
+  toggle afterward worked.
+- Candidate `00`, sent right after power-on: no visible change. The first toggle
+  afterward was lost to a proxy drop. A second toggle worked.
+- Candidate `02`, sent right after power-on: the panel blinked. Two toggles from
+  Home Assistant and the handheld remote's toggles were then all ignored. The
+  panel did not relay the remote's toggles. `02` removes every paired sender.
+- The owner paired the handheld remote again, and it worked. Home Assistant then
+  sent its pairing request after a power cycle, and the panel blinked. A
+  Home Assistant toggle and the handheld remote then failed. Three capture
+  copies were connected to the proxy at that time, and the capture went silent,
+  so the overloaded proxy probably lost the toggle.
+- After the captures were stopped, the owner paired the wall remote. Then a
+  Home Assistant toggle worked, and the handheld remote worked. The panel keeps
+  several paired senders, and a new pairing does not replace earlier ones.
+- Home Assistant recorded the wall remote's presses and synchronized power from
+  them.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store

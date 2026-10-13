@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.8
+
+- Native integration 0.2.7: **Configure** on the integration offers **Pair
+  this transmitter** and **Unpair all remotes**. Each one explains the power
+  cycle first and needs a tick box. This update needs a Core restart.
+- Unpair all remotes makes the panel forget every paired sender: the original
+  remote, wall remotes and Home Assistant. Afterward each one needs pairing
+  again. The `philips_skylight.unpair_all_remotes` action does the same for
+  scripts.
+- `tools/capture.py` warns against running more than one copy.
+
 ## 0.2.7
 
 - Native integration 0.2.6: the pairing and skip actions require `confirm:
@@ -10,9 +21,6 @@
   that the remote sends when Auto rhythm and Relax are held together. The
   panel takes the current time as the start of its daily schedule. Received
   presses of that combination are recognized too. Auto rhythm stays a mode.
-- New experimental `philips_skylight.unpair_transmitter` action. It sends the
-  pairing request with a guessed sub-command byte. Whether the panel forgets
-  the transmitter is untested.
 - `tools/capture.py` records remote commands through the proxy's ESPHome API.
   It only listens.
 

@@ -28,7 +28,41 @@
     "abort": {
       "already_configured": "The factory Skylight mesh is already configured.",
       "no_transmitter": "No BLE advertising transmitter was found. Install the ble_adv_proxy firmware on your ESPHome proxy, wait for it to reconnect, then try again.",
-      "reconfigure_successful": "Transmitter updated. Synchronize the light\u2019s power state again."
+      "reconfigure_successful": "Transmitter updated. Synchronize the light’s power state again."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Skylight pairing",
+        "menu_options": {
+          "pair": "Pair this transmitter",
+          "unpair_all": "Unpair all remotes"
+        }
+      },
+      "pair": {
+        "title": "Pair this transmitter",
+        "description": "The panel ignores Home Assistant until you pair it. Your other remotes stay paired.\n\n1. Tick the box below.\n2. Switch the panel's mains power off at the wall switch or breaker.\n3. Switch the mains power on again.\n4. Select **Submit** straight away.\n\nHome Assistant then sends the pairing request for about ten seconds, and the panel blinks.",
+        "data": {
+          "confirm": "I am ready to switch the panel's power off and on"
+        }
+      },
+      "unpair_all": {
+        "title": "Unpair all remotes",
+        "description": "This makes the panel forget **every** remote: the original remote, any wall remote and Home Assistant. Afterward, none of them works until you pair it again.\n\n1. Tick the box below.\n2. Switch the panel's mains power off at the wall switch or breaker.\n3. Switch the mains power on again.\n4. Select **Submit** straight away.\n\nThe panel blinks. Then pair each remote again with its own steps, and pair Home Assistant again with **Pair this transmitter**.",
+        "data": {
+          "confirm": "Remove every remote, and I will pair them again"
+        }
+      }
+    },
+    "error": {
+      "confirm_required": "Tick the box to continue.",
+      "send_failed": "The proxy did not accept the request. Check that the proxy is online, then try again."
+    },
+    "abort": {
+      "not_loaded": "The Skylight integration is not running. Reload it, then try again.",
+      "pair_sent": "The pairing request was sent. If the panel blinked, check that the toggle works. If it does not, try again right after a power cycle.",
+      "unpair_all_sent": "The unpair request was sent. If the panel blinked, it forgot every remote. Pair each remote again, then use Pair this transmitter for Home Assistant."
     }
   }
 }

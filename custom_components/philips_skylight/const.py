@@ -1,7 +1,7 @@
 """Configuration and protocol constants."""
 
 DOMAIN = "philips_skylight"
-VERSION = "0.2.6"
+VERSION = "0.2.7"
 CONF_TRANSMIT_SERVICE = "transmit_service"
 CONF_PROXY_ENTITY = "proxy_entity"
 RECEIVE_EVENT = "esphome.ble_adv.raw_adv"
@@ -14,8 +14,6 @@ IV_INDEX = 0
 EFFECTS = ("Refresh", "Energize", "Focus", "Relax", "Rest", "Auto rhythm")
 # Sets the current time as the start of the Auto rhythm schedule. Not a mode.
 RHYTHM_START = "set_rhythm_start"
-# Guessed sub-command bytes for an unpair request. Pairing uses 0x01. Untested.
-UNPAIR_CODES = (0x00, 0x02)
 # Reserved before use and retained independently of config-entry removal.
 STORAGE_KEY = f"{DOMAIN}.sequence_7ffe"
 SEQUENCE_BLOCK = 256

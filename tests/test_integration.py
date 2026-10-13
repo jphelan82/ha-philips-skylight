@@ -268,26 +268,48 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert hass.states.get(entity_id).attributes["effect"] == effect
     assert hass.states.get(entity_id).attributes["last_command"] == RHYTHM_START
 
-    # The unpair experiment needs confirmation and one of the guessed codes.
-    for bad in ({"confirm": False, "code": 0}, {"confirm": True, "code": 1}):
-        with pytest.raises(vol.Invalid):
-            await hass.services.async_call(
-                DOMAIN, "unpair_transmitter", {"entity_id": entity_id, **bad}, blocking=True
-            )
+    # Unpair all remotes needs confirmation and sends sub-command 0x02.
+    with pytest.raises(vol.Invalid, match="removes every remote"):
+        await hass.services.async_call(
+            DOMAIN, "unpair_all_remotes", {"entity_id": entity_id, "confirm": False}, blocking=True
+        )
     assert len(calls) == 32
     with monkeypatch.context() as timing:
         timing.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
         await hass.services.async_call(
-            DOMAIN,
-            "unpair_transmitter",
-            {"entity_id": entity_id, "confirm": True, "code": 2},
-            blocking=True,
+            DOMAIN, "unpair_all_remotes", {"entity_id": entity_id, "confirm": True}, blocking=True
         )
     assert len(calls) == 62
     for call in calls[32:]:
         (message,) = MeshCodec().decode(bytes.fromhex(call.data["raw"]))
         assert message.payload[:3] == bytes.fromhex("cf1102")
         assert message.payload[4:] == b"\x02" + b"\x11" * 6
+
+    # The Configure dialog offers pairing and unpairing, each behind a tick box.
+    for step, sub_command in (("pair", 0x01), ("unpair_all", 0x02)):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        assert result["type"] == "menu"
+        assert result["menu_options"] == ["pair", "unpair_all"]
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": step}
+        )
+        assert result["type"] == "form"
+        before = len(calls)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"confirm": False}
+        )
+        assert result["errors"] == {"base": "confirm_required"}
+        assert len(calls) == before
+        with monkeypatch.context() as timing:
+            timing.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
+            result = await hass.config_entries.options.async_configure(
+                result["flow_id"], {"confirm": True}
+            )
+        assert result["type"] == "abort"
+        assert result["reason"] == f"{step}_sent"
+        assert len(calls) == before + 30
+        (message,) = MeshCodec().decode(bytes.fromhex(calls[-1].data["raw"]))
+        assert message.payload[4] == sub_command
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"

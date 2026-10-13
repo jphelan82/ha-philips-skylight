@@ -94,8 +94,15 @@ blinks. Afterward, check the original remote and correct the recorded state.
 Other models can need the original remote paired again. Pairing never happens
 automatically.
 
-No unpair command is known. To pair the transmitter again, repeat the same
-steps. Removing or reinstalling the add-on does not unpair the panel.
+To make the panel forget **every** remote, open **Settings → Devices & services →
+Philips Skylight → Configure** and choose **Unpair all remotes**. It removes the
+original remote, any wall remote and Home Assistant. Afterward, pair each remote
+again with its own steps, and pair Home Assistant again with **Pair this
+transmitter** in the same dialog. No command removes only one remote.
+
+Removing or reinstalling the add-on does not unpair the panel, because the panel
+stores the pairing itself. That leftover pairing does no harm: nothing else
+sends as Home Assistant's address.
 
 See the **Documentation** tab for complete proxy setup, options, troubleshooting
 and recovery. Protocol and developer notes are maintained separately in the
