@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.3
+
+- Native integration 0.3.2: **Configure → Pair this transmitter** and the
+  `philips_skylight.pair_transmitter` action warn to pair Home Assistant only
+  once, and explain why: a second pairing can make the panel drop your remote.
+  This update needs a Home Assistant restart.
+
 ## 0.3.2
 
 - After setup, the add-on page refuses to pair Home Assistant again, because a

@@ -42,7 +42,7 @@
       },
       "pair": {
         "title": "Pair this transmitter",
-        "description": "The panel ignores Home Assistant until you pair it. Your other remote stays paired. The panel accepts at most two remotes, and Home Assistant counts as one.\n\n1. Switch the panel's power off at its light switch or breaker, then on again. The remote's power button does not work for this.\n2. Wait until the panel is back on. That can take up to 30 seconds.\n3. Tick the box below and select **Submit** straight away. The panel blinks.",
+        "description": "**Pair Home Assistant only once.** Use this only if Home Assistant is not paired yet, for example after **Unpair all remotes**. The panel keeps at most two remotes. Pairing Home Assistant again can make the panel drop your other remote, and then only Unpair all and pairing everything again brings it back.\n\nThe panel ignores Home Assistant until you pair it. Your other remote stays paired. The panel accepts at most two remotes, and Home Assistant counts as one.\n\n1. Switch the panel's power off at its light switch or breaker, then on again. The remote's power button does not work for this.\n2. Wait until the panel is back on. That can take up to 30 seconds.\n3. Tick the box below and select **Submit** straight away. The panel blinks.",
         "data": {
           "confirm": "The panel just came back on"
         }

@@ -28,7 +28,7 @@ skip_sequence:
         boolean:
 pair_transmitter:
   name: Pair transmitter
-  description: Sends the pairing request for 10 seconds. First switch the panel's power off and on at its light switch or breaker, then run this as soon as the panel is back on. The panel blinks when it pairs. Your other remote stays paired. The panel sends no confirmation, so test a command afterward.
+  description: Sends the pairing request for 10 seconds. First switch the panel's power off and on at its light switch or breaker, then run this as soon as the panel is back on. The panel blinks when it pairs. The panel sends no confirmation, so test a command afterward. Pair Home Assistant only once, for example after Unpair all remotes. Pairing it again can make the panel drop your other remote.
   target:
     entity:
       integration: philips_skylight
