@@ -173,7 +173,9 @@ class Panel:
 
     @web.middleware
     async def access(self, request, handler):
-        if request.remote not in self.allowed_ips:
+        # The Docker health check runs inside the container and reads only /health.
+        local_health = request.path == "/health" and request.remote in ("127.0.0.1", "::1")
+        if request.remote not in self.allowed_ips and not local_health:
             raise web.HTTPForbidden(text="Use Home Assistant ingress")
         if request.method == "POST":
             if request.content_type != "application/json" or not hmac.compare_digest(

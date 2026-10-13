@@ -57,6 +57,16 @@ async def test_ingress_rejects_forged_forwarded_ip(aiohttp_client, panel):
     assert response.status == 403
 
 
+async def test_container_health_check_reaches_only_the_health_endpoint(aiohttp_client, panel):
+    panel.allowed_ips = {"172.30.32.2"}
+    client = await aiohttp_client(panel.app())
+    response = await client.get("/health")
+    assert response.status == 200
+    assert (await response.json())["ok"] is True
+    for path in ("/", "/api/status", "/api/firmware"):
+        assert (await client.get(path)).status == 403
+
+
 async def test_actions_require_page_session_and_use_registered_entities(aiohttp_client, panel):
     client = await aiohttp_client(panel.app())
     response = await client.post("/api/action", json={"action": "toggle"})

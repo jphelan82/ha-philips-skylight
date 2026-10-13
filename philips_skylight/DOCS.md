@@ -169,8 +169,8 @@ Core's configuration volume and must be retained in Core backups too.
 
 The ingress panel accepts only the Supervisor ingress gateway. No direct port
 is exposed. Pairing and Core restarts require explicit confirmation in the UI.
-The watchdog tests the web process, allowing Core to restart without causing
-the add-on to restart continuously.
+A Docker health check inside the container reads only the `/health` page. It
+tests the web process, not Core, so a Core restart does not restart the add-on.
 
 ## Recovery and removal
 

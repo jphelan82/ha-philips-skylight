@@ -13,5 +13,8 @@ COPY app /app
 COPY companion /app/companion
 COPY firmware /app/firmware
 WORKDIR /app
+# Process health only: Core restarts must not restart the add-on.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD ["/opt/venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/health', timeout=4)"]
 ENV PYTHONUNBUFFERED=1
 CMD ["/usr/bin/with-contenv", "/opt/venv/bin/python", "-m", "skylight_addon"]
