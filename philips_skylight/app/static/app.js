@@ -6,6 +6,8 @@ let state = null;
 let dashboardRevision = null;
 let dashboardRead = 0;
 let initializedName = false;
+let setupPresentation = null;
+let matchingPresentation = null;
 const el = (id) => document.getElementById(id);
 function notice(message, error = false) {
   el("notice").textContent = message;
@@ -39,6 +41,28 @@ function render(data) {
     ? "The companion integration is installed. Restart Home Assistant to activate it."
     : "Install the bundled integration to create the native light entity. No MQTT broker is needed.";
   for (const id of ["pairing", "matching", "dashboard"]) el(id).hidden = !data.configured;
+  const presentation = !data.configured ? "proxy" : data.first_setup ? "pair" : "ready";
+  const initial = presentation !== "ready";
+  el("title").textContent = initial ? "Set up Skylight" : "Skylight";
+  el("first-setup").hidden = !initial;
+  el("next-step").textContent = data.configured ? "Pair, then match the starting state" : "Connect your proxy";
+  el("setup-guidance").textContent = data.configured
+    ? "Enable the proxy's remote-tracking permission, pair this new transmitter, then record the panel's power and mode below. Already paired transmitters can skip pairing."
+    : data.proxies.length ? "Choose your Bluetooth proxy below and save. A single compatible proxy is selected for you."
+    : "Prepare your Bluetooth proxy with the downloadable ESPHome package, then choose it below. Your existing Wi-Fi and node settings are kept.";
+  if (setupPresentation !== presentation) {
+    el("maintenance").open = initial;
+    el("setup").open = !data.configured;
+    el("firmware").open = !data.configured && !data.proxies.length;
+    el("tracking").open = data.configured && data.first_setup;
+    el("pairing").open = data.configured && data.first_setup;
+    setupPresentation = presentation;
+  }
+  const needsMatch = data.configured && !data.power_synchronized;
+  if (matchingPresentation !== needsMatch) {
+    el("matching").open = needsMatch;
+    matchingPresentation = needsMatch;
+  }
   if (!initializedName && data.configured) {
     el("light-name").value = data.name;
     initializedName = true;
@@ -55,22 +79,7 @@ function render(data) {
   el("firmware-status").textContent = data.proxies.length
     ? "Compatible transmitter firmware found. You can skip the firmware update."
     : "No compatible transmitter has been matched yet. Install the package if your proxy needs it.";
-  const checklist = [
-    [data.installed && !data.restart_required, "Load the native integration"],
-    [data.proxies.length > 0, "Find compatible proxy firmware"],
-    [data.configured, "Save a transmitter"],
-    [false, "Check the ESPHome remote-tracking permission (step 4)"],
-    [false, "Pair on first setup (step 5); skip if already paired"],
-    [data.power_synchronized, "Record the observed starting power and mode (step 6)"],
-  ];
-  el("checklist").replaceChildren(...checklist.map(([done, text], index) => {
-    const item = document.createElement("li");
-    item.textContent = (done ? "✓ " : "") + text;
-    item.className = done ? "complete" : (index === 3 || index === 4 ? "manual" : "");
-    return item;
-  }));
   el("recorded-state").textContent = "Current record: " + data.state + " · " + (data.effect || "mode unknown") + ". This is an estimate.";
-  if (!data.configured) el("setup").open = true;
   for (const button of document.querySelectorAll("button")) {
     const install = button.dataset.action === "install";
     button.disabled = busy || (!install && (!data.connected || data.restart_required));

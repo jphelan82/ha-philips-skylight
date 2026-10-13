@@ -34,7 +34,7 @@ native API credential.
    or newer. The download includes instructions and tested component source.
    Your node's settings can override the package; remove conflicting disabled
    API custom/Home Assistant services and allow the package's BLE scan settings.
-4. In **Choose a transmitter**, select a **Bluetooth proxy** and save. One
+4. In **Transmitter settings**, select a **Bluetooth proxy** and save. One
    compatible proxy is automatically selected. Advanced action/sensor selectors
    are available for custom adapter names or unmatched proxies; both must refer
    to the same device. Existing settings are not changed until you save.
@@ -43,12 +43,18 @@ native API credential.
    the integration. Finding a transmitter does not verify this permission.
 6. **Pair the HA transmitter on first setup**, following the explicit pairing
    procedure below. Already paired, working installations skip this step.
-7. **Match the state before first use.** In the add-on's **Match the starting
+7. **Match the state before first use.** In the add-on's **Match recorded
    state** form, observe the physical panel and record its power and mode (or
    **Unknown**). This sends no light command. Repeat after pairing or an outage.
 8. **Optional:** choose Compact or Full in **Dashboard controls** and create a
    dedicated dashboard or add a card to an existing editable view. You can use
    only native entities instead; creating a dashboard is not a setup requirement.
+
+Only relevant setup guidance is expanded. After recording the initial state,
+firmware/transmitter/permission/pairing details collapse under **Setup and recovery**.
+An unknown power state opens **Match recorded state** again without repeating
+transmitter setup or pairing. The first-setup guide survives add-on restarts until
+its starting-state form has been completed.
 
 If you already use the Philips Skylight integration, the add-on preserves your
 existing entities, transmitter setup and pairing. Repeat pairing only if the

@@ -44,7 +44,28 @@ class Panel:
         self.csrf = secrets.token_urlsafe(32)
         self.lock = asyncio.Lock()
         self.ever_connected = False
+        self.first_setup = False
+        data = getattr(installer, "data", None)
+        self.onboarding_file = data / "onboarding.json" if data is not None else None
+        if self.onboarding_file and self.onboarding_file.exists():
+            try:
+                self.first_setup = (
+                    json.loads(self.onboarding_file.read_text())["in_progress"] is True
+                )
+            except (ValueError, KeyError, TypeError, OSError):
+                self.first_setup = True  # Show help; never trigger a physical action.
         ha.on_ready = self.connected
+
+    async def set_first_setup(self, in_progress):
+        def save():
+            if self.onboarding_file:
+                self.onboarding_file.parent.mkdir(parents=True, exist_ok=True)
+                staging = self.onboarding_file.with_suffix(".tmp")
+                staging.write_text(json.dumps({"in_progress": in_progress}))
+                staging.replace(self.onboarding_file)
+
+        await asyncio.to_thread(save)
+        self.first_setup = in_progress
 
     def connected(self):
         if self.ever_connected and self.installer.pending_restart:
@@ -99,6 +120,7 @@ class Panel:
             "installed": self.installer.installed(),
             "restart_required": self.installer.pending_restart or stale,
             "configured": bool(entity),
+            "first_setup": self.first_setup,
             "entity_id": entity,
             "name": attributes.get("friendly_name", "Philips Skylight"),
             "state": state.get("state", "unknown") if self.ha.ready else "unavailable",
@@ -212,6 +234,8 @@ class Panel:
             name = body.get("name", "Philips Skylight")
             if not isinstance(name, str) or not 1 <= len(name.strip()) <= 80:
                 raise ValueError("Enter a light name of 1–80 characters")
+            if not self.ha.entries and not self.light():
+                await self.set_first_setup(True)
             await self.ha.configure(name.strip(), service, proxy)
             return
         entity = self.light()
@@ -244,6 +268,7 @@ class Panel:
                 entities["select.philips_skylight_recorded_scene"],
                 option=effect,
             )
+            await self.set_first_setup(False)
         elif action in ("on", "off", "toggle"):
             service = "toggle" if action == "toggle" else f"turn_{action}"
             await self.ha.call("light", service, entity)

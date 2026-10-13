@@ -11,18 +11,18 @@
 </head>
 <body>
 <main>
-  <header><div><p class="eyebrow">PHILIPS · LOCAL CONTROL</p><h1>Skylight setup</h1></div><span id="connection" class="badge">Connecting</span></header>
+  <header><div><p class="eyebrow">PHILIPS · LOCAL CONTROL</p><h1 id="title">Skylight</h1></div><span id="connection" class="badge">Connecting</span></header>
   <div id="notice" role="status" aria-live="polite" hidden></div>
   <section id="installation" hidden>
-    <h2>1. Home Assistant integration</h2><p id="install-message"></p>
+    <h2>Load the integration</h2><p id="install-message"></p>
     <button data-action="install" id="install">Install companion integration</button>
     <button data-action="restart" id="restart">Restart Home Assistant</button>
   </section>
-  <section>
-    <h2>Setup checklist</h2><ol id="checklist"></ol>
-    <p class="hint">The panel does not report its physical state. Setup never pairs, sends a test command, or creates a dashboard automatically.</p>
+  <section id="first-setup" hidden>
+    <h2 id="next-step">Connect your proxy</h2><p id="setup-guidance"></p>
   </section>
-  <details id="firmware"><summary>2. Prepare your Bluetooth proxy</summary>
+  <details id="maintenance"><summary>Setup and recovery</summary>
+  <details id="firmware"><summary>Prepare your Bluetooth proxy</summary>
     <p id="firmware-status">Looking for compatible firmware…</p>
     <p><a href="api/firmware" download>Download ESPHome Skylight package</a></p>
     <p>Extract <code>skylight-transmitter.yaml</code> and the <code>components</code> folder beside your existing ESPHome node YAML. Add this entry to its <code>packages</code> mapping:</p>
@@ -30,7 +30,7 @@
   skylight: !include skylight-transmitter.yaml</pre>
     <p class="hint">Keep your node name, board, Wi-Fi, API encryption and OTA settings. If you already have a packages mapping, add just its skylight entry. Compile and install with ESPHome Device Builder. The download includes full instructions; an already compatible proxy needs no update.</p>
   </details>
-  <details id="setup"><summary>3. Choose a transmitter</summary><form id="setup-form">
+  <details id="setup"><summary>Transmitter settings</summary><form id="setup-form">
     <label>Light name<input name="name" id="light-name" value="Philips Skylight" required maxlength="80"></label>
     <label>Bluetooth proxy<select name="proxy" id="proxy-choice"></select></label>
     <p id="proxy-hint" class="hint"></p>
@@ -42,18 +42,19 @@
     <button id="save-transmitter" class="primary" type="submit">Save transmitter</button>
     <p class="hint">Existing entity IDs, pairing and sequence storage are preserved. Saving a transmitter does not pair it or operate the light.</p>
   </form></details>
-  <details id="tracking"><summary>4. Enable remote tracking</summary>
+  <details id="tracking"><summary>Remote tracking permission</summary>
     <p>In the proxy's ESPHome integration options, enable <strong>Allow the device to perform Home Assistant actions</strong>. This lets BLE presses from other compatible remote/control panels update the recorded state.</p>
     <p><a href="/config/integrations/integration/esphome" target="_top">Open ESPHome integrations</a></p>
     <p class="hint">Check this permission yourself; finding a transmitter does not verify it. After recording the starting state, press a remote button and check the native light entity. A received press is not confirmation that the panel acted on it.</p>
   </details>
-  <details id="pairing" hidden><summary>5. Pair the transmitter on first setup</summary>
+  <details id="pairing" hidden><summary>Pair the transmitter on first setup</summary>
     <p>A new HA transmitter needs to be paired before the panel accepts commands. If this transmitter already controls your panel, skip this step; updates do not require re-pairing. Cycle the panel's mains power, then send the request promptly. It lasts about ten seconds and the panel should blink. Pairing may replace the original remote's pairing on some panels.</p>
     <label class="check"><input id="pair-confirm" type="checkbox">I am ready to pair and may need to pair the original remote again.</label>
     <button data-action="pair">Send pairing request</button>
     <p class="hint">Check the physical panel and original remote afterward. Pairing completion is not an acknowledgment; record the starting state again.</p>
   </details>
-  <details id="matching" hidden><summary>6. Match the starting state</summary>
+  </details>
+  <details id="matching" hidden><summary>Match recorded state</summary>
     <p>Look at the physical panel and record what you see. These choices only update Home Assistant's record; they do not operate the light.</p>
     <form id="match-form">
       <label>Panel power<select id="observed-power" required><option value="">Choose what you can see</option><option value="on">Panel is on</option><option value="off">Panel is off</option></select></label>

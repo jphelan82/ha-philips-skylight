@@ -226,6 +226,7 @@ async def test_friendly_proxy_setup_requires_explicit_save_and_does_not_create_d
     assert panel.ha.calls == [
         (("Office", "proxy_adv_svc_v1", "sensor.proxy_ble_adv_proxy_name"), {})
     ]
+    assert not panel.snapshot()["first_setup"]
     with pytest.raises(ValueError, match="available Skylight proxy"):
         await panel.perform({"action": "setup", "proxy": "sensor.missing"})
 
@@ -257,3 +258,28 @@ async def test_compact_export_and_initial_matching_never_send_light_commands(pan
     assert len(panel.ha.calls) == 2
     response = await client.get("/api/dashboard-card?style=custom")
     assert response.status == 400
+
+
+async def test_first_setup_guidance_survives_restart_and_ends_after_state_matching(panel, tmp_path):
+    from skylight_addon.server import CARD_ENTITIES
+
+    panel.installer.data = tmp_path
+    fresh = Panel(panel.ha, panel.installer, ROOT, allowed_ips={"127.0.0.1"})
+    assert not fresh.snapshot()["first_setup"]  # Existing installs are not sent through pairing.
+    fresh.ha.registry = [
+        {"entity_id": "sensor.proxy_ble_adv_proxy_name", "platform": "esphome"},
+    ]
+    await fresh.perform({"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name"})
+    restarted = Panel(fresh.ha, panel.installer, ROOT, allowed_ips={"127.0.0.1"})
+    assert restarted.snapshot()["first_setup"]
+    restarted.ha.registry = [
+        {"entity_id": entity, "unique_id": unique, "platform": "philips_skylight"}
+        for entity, unique in CARD_ENTITIES.items()
+    ]
+    restarted.ha.states = {
+        "light.philips_skylight": {"attributes": {"integration_version": "0.2.0"}}
+    }
+    await restarted.perform({"action": "sync_state", "power": "on", "effect": "Unknown"})
+    final = Panel(restarted.ha, panel.installer, ROOT, allowed_ips={"127.0.0.1"})
+    assert not final.snapshot()["first_setup"]
+    assert [args[0] for args, _ in final.ha.calls] == ["Philips Skylight", "button", "select"]

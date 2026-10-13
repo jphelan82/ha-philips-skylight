@@ -32,7 +32,7 @@ control of individual nearby panels is not supported.
    its web UI.
 3. If the add-on asks you to restart Home Assistant, do so to activate the
    light integration.
-4. Follow the add-on's **Setup checklist**. If your proxy needs firmware,
+4. Follow the add-on's guided setup. If your proxy needs firmware,
    download the ESPHome package and add its single `packages`/`!include` entry
    to the existing node configuration. Keep the node's Wi-Fi, API, OTA and board
    settings. Compile and install with ESPHome Device Builder. See the
@@ -54,6 +54,11 @@ control of individual nearby panels is not supported.
 Repository installation requires a published add-on on the repository's default
 branch and access to that repository. If the add-on is not yet available in the
 store, use the [local development installation](docs/PROTOCOL.md#development-installation).
+
+After first setup, firmware, transmitter settings, permission guidance and
+pairing are collapsed under **Setup and recovery**. If the recorded power is
+unknown, **Match recorded state** opens so you can record a fresh baseline.
+Dashboard setup remains optional.
 
 If you already use the Philips Skylight integration, the add-on keeps your
 existing light, settings and pairing. You do not need to pair again unless
@@ -86,7 +91,7 @@ through **Add card**. See the [dashboard guide](docs/DASHBOARD.md).
 observed starting state; listening for a power toggle cannot tell whether the
 panel started on or off.
 
-1. Look at the physical Skylight. Use **Match the starting state** in the add-on,
+1. Look at the physical Skylight. Use **Match recorded state** in the add-on,
    or select **Correct recorded state** at the bottom of the optional card.
 2. Select **Panel is on** or **Panel is off** to match what you can see.
 3. Select its current mode, or **Mode unknown** if you cannot identify it.

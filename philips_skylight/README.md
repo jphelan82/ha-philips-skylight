@@ -14,7 +14,7 @@ panel has been tested with an ESP32-C3 proxy.
 
 1. Install and start the add-on, enable **Start on boot**, and open its web UI.
 2. Restart Home Assistant if requested to activate the light integration.
-3. Follow the setup checklist. If needed, download the ESPHome local package,
+3. Follow the guided setup. If needed, download the ESPHome local package,
    add its `packages`/`!include` entry to your existing node YAML, and compile
    and install it with ESPHome Device Builder. Preserve Wi-Fi, API, OTA and board
    settings. Choose your **Bluetooth proxy** and save; a sole proxy is preselected.
@@ -25,7 +25,7 @@ panel has been tested with an ESP32-C3 proxy.
    remote. Skip this step if the HA transmitter already works; updates do not
    require re-pairing.
 6. **Before first use, match the recorded state to the physical panel.** In
-   **Match the starting state**, record the power and mode you can see, or
+   **Match recorded state**, record the power and mode you can see, or
    **Unknown** for the mode. This records observations without operating the light.
 7. **Optional:** choose Compact or Full, then **Create Skylight dashboard** or
    **Add card to an existing dashboard**. Existing dashboards are preserved.

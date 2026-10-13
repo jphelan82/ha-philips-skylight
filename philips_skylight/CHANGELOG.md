@@ -2,7 +2,8 @@
 
 ## 0.2.4
 
-- Guided setup with one matched proxy selector, an advanced fallback, explicit
+- Guided setup shows relevant steps, with completed installation settings
+  collapsed under Setup and recovery. One matched proxy selector, an advanced fallback, explicit
   first-time pairing, remote-tracking permission instructions and initial state matching.
 - Downloadable ESPHome local package, added with one packages/include entry.
 - Optional dashboard creation or additive card installation into an existing
