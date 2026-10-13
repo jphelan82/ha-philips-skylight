@@ -3,7 +3,7 @@
 from homeassistant.components.select import SelectEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import EFFECTS
@@ -34,7 +34,7 @@ class SkylightRecordedScene(SkylightEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         if option not in self.options:
-            raise HomeAssistantError(f"Unknown Skylight scene: {option}")
+            raise ServiceValidationError(f"Unknown Skylight scene: {option}")
         async with self.controller.lock:
             self.controller.state.effect = None if option == UNKNOWN_SCENE else option
             self.controller.notify()

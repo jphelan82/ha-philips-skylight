@@ -7,7 +7,7 @@ import pytest
 from homeassistant import loader
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_NAME
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
@@ -148,7 +148,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             await hass.async_block_till_done()
             assert hass.states.get(entity_id) == state
     assert len(calls) == 2
-    with pytest.raises(HomeAssistantError, match="may replace"):
+    with pytest.raises(ServiceValidationError, match="may replace"):
         await hass.services.async_call(
             DOMAIN, "pair_transmitter", {"entity_id": entity_id, "confirm": False}, blocking=True
         )
@@ -240,7 +240,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert registry.async_get(entity_id).config_entry_id == entry.entry_id
     controller = entry.runtime_data
     assert await controller.sequence.async_next() == 256
-    with pytest.raises(HomeAssistantError, match="Skip the sequence only"):
+    with pytest.raises(ServiceValidationError, match="Skip the sequence only"):
         await hass.services.async_call(
             DOMAIN, "skip_sequence", {"entity_id": entity_id, "confirm": False}, blocking=True
         )

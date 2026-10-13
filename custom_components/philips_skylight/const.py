@@ -1,7 +1,7 @@
 """Configuration and protocol constants."""
 
 DOMAIN = "philips_skylight"
-VERSION = "0.2.4"
+VERSION = "0.2.5"
 CONF_TRANSMIT_SERVICE = "transmit_service"
 CONF_PROXY_ENTITY = "proxy_entity"
 RECEIVE_EVENT = "esphome.ble_adv.raw_adv"

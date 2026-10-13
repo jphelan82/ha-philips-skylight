@@ -3,7 +3,7 @@
 import voluptuous as vol
 from homeassistant.components.light import ATTR_EFFECT, ColorMode, LightEntity, LightEntityFeature
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -65,7 +65,7 @@ class SkylightLight(SkylightEntity, LightEntity):
 
     async def async_pair_transmitter(self, confirm: bool) -> None:
         if not confirm:
-            raise HomeAssistantError(
+            raise ServiceValidationError(
                 "Pairing may replace the working remote. Set confirm to true only "
                 "when ready to test after cycling the panel's mains power."
             )
@@ -73,7 +73,7 @@ class SkylightLight(SkylightEntity, LightEntity):
 
     async def async_skip_sequence(self, confirm: bool) -> None:
         if not confirm:
-            raise HomeAssistantError(
+            raise ServiceValidationError(
                 "Skip the sequence only when the panel ignores this transmitter after "
                 "Home Assistant was rebuilt or restored from an older backup."
             )
@@ -82,7 +82,7 @@ class SkylightLight(SkylightEntity, LightEntity):
     async def async_turn_on(self, **kwargs) -> None:
         effect = kwargs.get(ATTR_EFFECT)
         if effect is not None and effect not in EFFECTS:
-            raise HomeAssistantError(f"Unknown Skylight effect: {effect}")
+            raise ServiceValidationError(f"Unknown Skylight effect: {effect}")
         await self.controller.async_power(True, effect)
 
     async def async_turn_off(self, **kwargs) -> None:

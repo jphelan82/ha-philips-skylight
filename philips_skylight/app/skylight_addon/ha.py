@@ -300,4 +300,4 @@ class HAClient:
                     with suppress(asyncio.CancelledError, Exception):
                         await reader
             await asyncio.sleep(delay)
-            delay = min(delay * 2, 30)
+            delay = min(delay * 2, 5)
