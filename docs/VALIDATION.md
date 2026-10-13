@@ -189,6 +189,28 @@ The owner watched the panel. Home Assistant kept power as unknown throughout.
   the add-on change and the Core restart.
 - A mode command sent while the panel is off was not tested.
 
+### Removing the old add-on
+
+After the checks above, the owner approved removing the local 0.2.4 add-on.
+Supervisor uninstalled `local_philips_skylight`. The integration stayed at
+0.2.4, the watermark stayed at `1280`, and the 0.2.5 add-on kept running.
+
+### Firmware
+
+- The repository's `ble_adv_proxy` component replaced the copy in
+  `/config/esphome/components/ble_adv_proxy`. The old copy is in
+  `/config/esphome/ble_adv_proxy.bak-20261013`. The node YAML did not change.
+- Device Builder validated the node YAML with ESPHome 2026.4.5. It then
+  compiled the firmware and installed it over the air to `esphome-web-ece638`.
+- The proxy reconnected to Home Assistant about six minutes after the install
+  started. The `esphome_web_ece638_adv_svc_v1` action came back, and the add-on
+  status listed the proxy again with no error.
+- A compile through the MCP app proxy does not work. The proxy call times out
+  after about two minutes and closes the WebSocket, and Device Builder then
+  stops the compile. The install worked from the Device Builder page.
+- Physical check: the panel was on in Energize. One `light.toggle` from Home
+  Assistant turned it off, as the owner confirmed. The new firmware transmits.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store
@@ -200,3 +222,5 @@ The owner watched the panel. Home Assistant kept power as unknown throughout.
   `/config/esphome/esphome-web-ece638.yaml.bak-20261012`.
 - YAML just before this deployment:
   `/config/esphome/esphome-web-ece638.yaml.bak-skylight-20261012-1718`.
+- Component before the 0.2.5 firmware: `/config/esphome/ble_adv_proxy.bak-20261013`.
+  Copy it back into `components/ble_adv_proxy`, then compile and install.
