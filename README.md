@@ -1,14 +1,15 @@
 # Philips Skylight for Home Assistant
 
-> [!WARNING]
-> **Work in progress.** If you found this project by chance: I am still
-> developing and testing it. You are welcome to try it. Expect parts that do not
-> work fully yet, and expect bugs and errors.
+
+> **Work in progress.** Early stage alpha. Back up your Home Assistant and only install on a bluetooth-proxy you are willing to reset if necessary. Currently, I am the only person who has tried this. 
 >
 > **One Skylight only.** I have tested this with one Skylight panel. Support for
-> several Skylights is not built and not tested.
+> several Skylights is not built and not tested. 
+> 
+>**Own a Skylight?**  Give it a whirl and let me know how it goes. Installation reports, bug reports, feature requests, and pull requests welcome.
+> 
 
-The Philips LED Skylight panel comes with a remote and no smart functionality. It has no app, no Wi-Fi and no Hue support. This project lets Home Assistant act as a
+The Philips LED Skylight panel comes with a remote and (famously) no smart functionality. It has no app, no Wi-Fi and no Hue support. This project lets Home Assistant act as a
 second remote. You get a power toggle, the six modes and dim buttons on your
 dashboard and in automations. Your original remote keeps working.
 This allows Home Assistant to treat the device as a light entity, enabling you to include your Skylight in your automations, scenes, and more. The add-on also does its best to mirror the current state of your light, including whether it's powered on and its current scene (see limitations below). 
@@ -17,9 +18,14 @@ Home Assistant talks to the panel through an ESPHome Bluetooth proxy.
 
 I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your bluetooth-proxy and will guide you through all the requisite steps necessary to get the add-on set up.
 
->AI Disclosure: This repository was created primarily with the assistance of agentic coding. The Bluetooth protocol for the Philips Skylight remote was captured using Claude Opus 5.5, using the Bluetooth proxy via Home Assistant to inspect BLE messages during the pairing and signaling process. Further development was done in Codex, and then additional refactoring and final implementation were done in Opus. I am a software developer by trade and created specifications for this code and reviewed and vetted it, however, probably not with the level of scrutiny I would apply to a high-value production-level project (aka, you decide and use at your own risk).
+>AI Disclosure: This repository was created primarily with the assistance of agentic coding. The Bluetooth protocol for the Philips Skylight remote was captured using Claude Opus 5.5, using the Bluetooth proxy via Home Assistant to inspect BLE messages during the pairing and signaling process. Further development was done in Codex, and then additional refactoring and final implementation were done in Opus. I am a software developer by trade and created specifications for this code and reviewed and vetted it, however, probably not with the level of scrutiny I would apply to a high-stakes, production-level project (aka, you decide and use at your own risk).
 
 ## What it does
+
+<p>
+  <img src="docs/images/dashboard.png" width="320" alt="The Skylight card on a Home Assistant dashboard. The top tile shows the panel on in Auto rhythm, and glows purple. Below are the six mode buttons, then Correct, Rhythm set, Dim minus and Dim plus.">
+  <img src="docs/images/addon-controls.png" width="400" alt="The add-on page after setup: the shown state, On and Relax, with buttons for power, the six modes and dimming, then dashboard tools and Settings and fixes.">
+</p>
 
 - **A light entity.** The Skylight appears in Home Assistant as a light, with
   the six modes as its effects.
@@ -163,6 +169,11 @@ integration for you.
 5. Optional: create a Skylight dashboard, or add the Skylight card to one of
    your dashboards. You can also use the entities in your own cards.
 
+<p>
+  <img src="docs/images/addon-setup.png" width="400" alt="The add-on's setup checklist, step 1: choose a Bluetooth proxy and select Add Skylight firmware. Steps 2 to 4 follow.">
+  <img src="docs/images/addon-pairing.png" width="400" alt="The setup checklist at step 4, with steps 1 to 3 ticked: switch the panel's power off and on, wait until it is back on, then select Pair.">
+</p>
+
 No app store? Home Assistant Container and Core have none. Use the
 [integration-only guide](docs/INTEGRATION.md). It installs the integration
 through HACS or by hand.
@@ -250,6 +261,8 @@ The Skylight card uses the remote's icons and colors.
 ## Tell Home Assistant what you see
 
 Do this any time the card does not match the panel.
+
+<img src="docs/images/card-correct.png" width="320" alt="The card's correction view: Panel is on and Panel is off, the six modes, Mode unknown and Done, with a note that this changes only what Home Assistant shows.">
 
 1. On the card, select **Correct**. On the add-on page, open **Settings
    and fixes → Correct the shown state**.

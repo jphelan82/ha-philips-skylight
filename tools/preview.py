@@ -1,21 +1,26 @@
 """Click through the add-on page with a fake backend. Sends nothing to Home Assistant.
 
-Run: python tools/preview.py [port]. Each action moves the fake setup one stage on.
+Run: python tools/preview.py [port] [stage]. Each action moves the fake setup one
+stage on. The stage starts the page later in setup, for screenshots: "pair" or
+"ready".
 """
 
 import asyncio
+import re
 import sys
 from pathlib import Path
 
 from aiohttp import web
 
 STATIC = Path(__file__).resolve().parents[1] / "philips_skylight/app/static"
+INIT = STATIC.parent / "skylight_addon/__init__.py"
+VERSION = re.search(r'VERSION = "([^"]+)"', INIT.read_text())[1]
 PROXY = {"entity_id": "sensor.p", "name": "Bluetooth Proxy", "node": "proxy-1",
          "transmit_service": "proxy_1_adv_svc_v1"}
 state = {
     "connected": True, "installed": True, "restart_required": False, "configured": False,
     "first_setup": False, "state": "unknown", "effect": None, "name": "Philips Skylight",
-    "version": "preview", "entity_id": None,
+    "version": VERSION, "entity_id": None,
     "effects": ["Auto rhythm", "Refresh", "Energize", "Focus", "Relax", "Rest"],
     "proxies": [], "transmit_services": [], "proxy_sensors": [], "proxy_online": False,
     "tracking": None, "esphome_nodes": [{"file": "proxy-1.yaml", "node": "proxy-1",
@@ -73,6 +78,18 @@ async def action(request):
         state["state"] = "on" if body.get("is_on") else "off"
     return web.json_response({"ok": True})
 
+
+STAGES = {
+    "pair": {
+        "proxies": [PROXY], "proxy_online": True, "configured": True, "first_setup": True,
+        "entity_id": "light.x", "tracking": True,
+        "esphome_nodes": [{"file": "proxy-1.yaml", "node": "proxy-1", "has_skylight": True,
+                           "uses_package": True, "api_key": True}],
+    },
+}
+STAGES["ready"] = {**STAGES["pair"], "first_setup": False, "state": "on", "effect": "Relax"}
+if len(sys.argv) > 2:
+    state.update(STAGES[sys.argv[2]])
 
 app = web.Application()
 app.router.add_get("/", index)
