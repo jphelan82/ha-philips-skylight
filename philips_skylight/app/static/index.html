@@ -85,10 +85,10 @@
   </section>
 
   <section id="updates" hidden>
-    <h2>Needs attention</h2>
+    <h2 id="updates-title">Needs attention</h2>
     <div id="proxy-key" hidden>
-      <p><strong id="keyless-nodes"></strong> has no encryption key for its ESPHome API. Without one, any device on your home network can make the proxy send commands to the panel.</p>
-      <p>In ESPHome Device Builder, edit the proxy and add a key under <code>api:</code>, as <code>encryption:</code> → <code>key:</code>. The ESPHome API documentation page creates a key for you. Then install the proxy, and enter the same key when Home Assistant asks for it.</p>
+      <p><strong>Optional:</strong> <strong id="keyless-nodes"></strong> has no encryption key for its ESPHome API. Without one, any device on your home network can make the proxy send commands to the panel.</p>
+      <p>To add one, edit the proxy in ESPHome Device Builder and add a key under <code>api:</code>, as <code>encryption:</code> → <code>key:</code>. The ESPHome API documentation page creates a key for you. Then install the proxy, and enter the same key when Home Assistant asks for it.</p>
     </div>
     <div id="firmware-files" hidden>
       <p>New Skylight firmware is ready for <strong id="firmware-nodes"></strong>. First update the firmware files. The add-on keeps a copy of the old ones.</p>

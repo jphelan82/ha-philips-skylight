@@ -206,10 +206,10 @@ page takes its colors from the Home Assistant theme you have open.
 
 ### The proxy
 
-- **Give the proxy an API encryption key.** Without one, any device on your
-  home network can connect to the proxy and make it send commands to the
-  panel. The add-on page warns when a proxy that runs the Skylight firmware has
-  no key in its YAML.
+- **An API encryption key for the proxy is optional.** Without one, any
+  device on your home network can connect to the proxy and make it send
+  commands to the panel. The add-on page notes, as optional, when a proxy that
+  runs the Skylight firmware has no key in its YAML.
 - **Allow the device to perform Home Assistant actions** lets the proxy report
   remote presses. The same setting lets the proxy call any Home Assistant
   action. The Skylight firmware only sends press events, but the setting trusts

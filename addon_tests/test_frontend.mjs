@@ -230,6 +230,7 @@ test("updates show only the firmware and card steps that apply", async () => {
   assert.equal(element("firmware-files").hidden, false);
   assert.equal(element("firmware-install").hidden, true);
   assert.equal(element("firmware-nodes").textContent, "proxy-1");
+  assert.equal(element("updates-title").textContent, "Needs attention");
   await press({action: "update_firmware"});
   assert.equal(posts.at(-1).action, "update_firmware");
 
@@ -262,6 +263,7 @@ test("updates show only the firmware and card steps that apply", async () => {
   assert.equal(element("updates").hidden, false);
   assert.equal(element("proxy-key").hidden, false);
   assert.equal(element("keyless-nodes").textContent, "proxy-1");
+  assert.equal(element("updates-title").textContent, "Needs attention (optional)");
   source.esphome_nodes[0].api_key = true;
   await poll();
   await setImmediate();

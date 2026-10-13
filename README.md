@@ -74,8 +74,9 @@ does when its power returns.
 - Home Assistant OS or Supervised, version 2026.6 or newer.
 - A Philips Skylight panel.
 - An ESPHome Bluetooth proxy near the panel, set up in ESPHome Device Builder.
-  ESPHome 2026.4.5 or newer. Give its API an encryption key. Without one, any
-  device on your home network can make the proxy control the panel.
+  ESPHome 2026.4.5 or newer. An encryption key for its API is optional.
+  Without one, any device on your home network can make the proxy control the
+  panel.
 
 ## Install
 

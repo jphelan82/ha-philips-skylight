@@ -125,7 +125,10 @@ function render(data) {
   const cards = data.outdated_cards || [];
   const nodeNames = (data.firmware?.nodes || []).join(", ");
   const keyless = nodes.filter((node) => node.has_skylight && node.api_key === false).map((node) => node.node);
-  show("updates", ready && (firmware === "files" || firmware === "install" || cards.length > 0 || keyless.length > 0));
+  const needed = firmware === "files" || firmware === "install" || cards.length > 0;
+  show("updates", ready && (needed || keyless.length > 0));
+  // The API key is the user's choice, so a page with only that item says so.
+  el("updates-title").textContent = needed ? "Needs attention" : "Needs attention (optional)";
   show("proxy-key", keyless.length > 0);
   el("keyless-nodes").textContent = keyless.join(", ");
   show("firmware-files", firmware === "files");

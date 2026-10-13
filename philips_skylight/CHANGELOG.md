@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+- The API key note on the add-on page is marked optional. If it is the only
+  item, the section heading reads **Needs attention (optional)**. The docs call
+  the key optional too.
+
 ## 0.4.0
 
 - The add-on page has a **Needs attention** section. It shows only the steps
@@ -18,8 +24,8 @@
   Assistant. Older firmware forwarded every Bluetooth advert in range, so Home
   Assistant's recorder stored the addresses of nearby phones, watches and other
   devices.
-- The page warns when a proxy with the Skylight firmware has no ESPHome API
-  encryption key. Without one, any device on the home network can make the
+- The page notes, as optional, when a proxy with the Skylight firmware has no
+  ESPHome API encryption key. Without one, any device on the home network can make the
   proxy control the panel.
 - The page takes its colors, font and shapes from the open Home Assistant
   theme, custom themes and dark mode included.

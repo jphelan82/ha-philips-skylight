@@ -17,8 +17,8 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
   remotes** first, then pair your remote again.
 - One step needs the panel's power switched off and on at its light switch or
   breaker. Use a phone or a portable computer for setup.
-- Give the Bluetooth proxy's ESPHome API an encryption key. Without one, any
-  device on your home network can make the proxy control the panel.
+- Optional: give the Bluetooth proxy's ESPHome API an encryption key. Without
+  one, any device on your home network can make the proxy control the panel.
 
 ## Get started
 
