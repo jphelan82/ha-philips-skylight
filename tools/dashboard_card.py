@@ -27,7 +27,6 @@ SCENE = "select.philips_skylight_recorded_scene"
 EDIT = "switch.philips_skylight_state_correction"
 RHYTHM_START = "button.philips_skylight_set_auto_rhythm_start"
 OUTPUT = ROOT / "philips_skylight/app/static/skylight-card.yaml"
-COMPACT_OUTPUT = OUTPUT.with_name("skylight-card-compact.yaml")
 JSON_OUTPUT = OUTPUT.with_name("skylight-cards.json")
 
 
@@ -108,66 +107,69 @@ def scenes(correction=False):
     return grid(cards, columns=3)
 
 
-def build_card(compact=False):
-    status = {
-        "type": "tile",
-        "entity": LIGHT,
-        "name": "Skylight",
-        "color": "amber",
-        "state_content": ["state", "assumed_effect"],
-        "icon": "mdi:power",
-        "tap_action": action("light.toggle", LIGHT),
-        "icon_tap_action": action("light.toggle", LIGHT),
-    }
-    dims = grid(
-        [
-            tile(
-                "button.philips_skylight_" + dim,
-                name,
-                action("button.press", "button.philips_skylight_" + dim),
-                icon=CONST.DIM_ICONS[dim],
-                # A card cannot see the finger lift, so a hold acts like 3 seconds on the remote.
-                hold=action(f"{CONST.DOMAIN}.dim", LIGHT, direction=dim[4:], hold=3),
-            )
-            for dim, name in (("dim_down", "Dim down"), ("dim_up", "Dim up"))
-        ]
+def hero():
+    """The panel's tile. It glows in the recorded mode's color while the panel is on."""
+    tap = action("light.toggle", LIGHT)
+
+    def variant(color):
+        return {
+            "type": "tile",
+            "entity": LIGHT,
+            "name": "Skylight",
+            "icon": "mdi:ceiling-light",
+            "color": color,
+            "state_content": ["state", "assumed_effect"],
+            "tap_action": tap,
+            "icon_tap_action": tap,
+        }
+
+    # A stable slot holds exactly one variant. The tile itself turns grey when off.
+    cards = [
+        {
+            "type": "conditional",
+            "conditions": [{"condition": "state", "entity": SCENE, "state": mode}],
+            "card": variant(CONST.EFFECT_STYLE[mode][1]),
+        }
+        for mode in MODES
+    ]
+    cards.append(
+        {
+            "type": "conditional",
+            "conditions": [
+                {"condition": "state", "entity": SCENE, "state_not": mode} for mode in MODES
+            ],
+            "card": variant("amber"),
+        }
     )
-    normal = {
-        "type": "vertical-stack",
-        "cards": [
-            status,
-            *([] if compact else [heading("Modes")]),
-            scenes(),
-            dims,
-            grid(
-                [
-                    tile(
-                        RHYTHM_START,
-                        "Rhythm start",
-                        action("button.press", RHYTHM_START),
-                        icon="mdi:clock-start",
-                    ),
-                    tile(
-                        EDIT,
-                        "Correct state",
-                        action("switch.turn_on", EDIT),
-                        icon="mdi:pencil-outline",
-                    ),
-                ]
-            ),
+    return {"type": "vertical-stack", "cards": cards}
+
+
+def small(entity, name, tap, icon, hold=None):
+    card = tile(entity, name, tap, icon=icon, hold=hold)
+    card["vertical"] = True
+    return card
+
+
+def build_card():
+    tools = grid(
+        [
             *(
-                []
-                if compact
-                else [
-                    {
-                        "type": "markdown",
-                        "content": "Tap **Skylight** to switch the panel on or off. The shown "
-                        "state is a best guess. If it is wrong, use **Correct state**.",
-                    }
-                ]
+                small(
+                    "button.philips_skylight_" + dim,
+                    name,
+                    action("button.press", "button.philips_skylight_" + dim),
+                    CONST.DIM_ICONS[dim],
+                    # A card cannot see the finger lift: a hold is 3 seconds on the remote.
+                    hold=action(f"{CONST.DOMAIN}.dim", LIGHT, direction=dim[4:], hold=3),
+                )
+                for dim, name in (("dim_down", "Dim −"), ("dim_up", "Dim +"))
             ),
+            small(RHYTHM_START, "Rhythm", action("button.press", RHYTHM_START), "mdi:clock-start"),
+            small(EDIT, "Correct", action("switch.turn_on", EDIT), "mdi:pencil-outline"),
         ],
-    }
+        columns=4,
+    )
+    normal = {"type": "vertical-stack", "cards": [hero(), scenes(), tools]}
     correction = {
         "type": "vertical-stack",
         "cards": [
@@ -208,18 +210,6 @@ def build_card(compact=False):
     return {
         "type": "vertical-stack",
         "cards": [
-            *(
-                []
-                if compact
-                else [
-                    {
-                        "type": "heading",
-                        "heading": "Skylight",
-                        "heading_style": "title",
-                        "icon": "mdi:ceiling-light",
-                    }
-                ]
-            ),
             conditional(EDIT, "on", normal, inverse=True),
             conditional(EDIT, "on", correction),
         ],
@@ -231,20 +221,18 @@ class CardDumper(yaml.SafeDumper):
         return True
 
 
-def rendered_card(compact=False):
+def rendered_card():
     return (
         "# Generated by tools/dashboard_card.py. Uses only standard Home Assistant cards.\n"
         "# The add-on download fills in your installation's actual entity IDs.\n"
-        + yaml.dump(build_card(compact), Dumper=CardDumper, sort_keys=False, allow_unicode=True)
+        + yaml.dump(build_card(), Dumper=CardDumper, sort_keys=False, allow_unicode=True)
     )
 
 
 def generated_files():
     return {
         OUTPUT: rendered_card(),
-        COMPACT_OUTPUT: rendered_card(True),
-        JSON_OUTPUT: json.dumps({"full": build_card(), "compact": build_card(True)}, indent=2)
-        + "\n",
+        JSON_OUTPUT: json.dumps({"card": build_card()}, indent=2) + "\n",
     }
 
 

@@ -103,16 +103,17 @@ dashboards, generated dashboards and panel views, use **Download the card
 instead** and paste it into **Edit dashboard → Add card → Manual**. The card
 uses only built-in Home Assistant cards.
 
-The card follows the remote's layout and icons:
+The card uses the remote's icons and colors:
 
-- **Skylight** (⏻) toggles the power and shows the recorded power and mode.
+- The large **Skylight** tile toggles the power and shows the recorded power
+  and mode. While the panel is on, it glows in the recorded mode's color.
 - Six mode buttons. The recorded mode lights up in the remote's color.
-- **Dim down** and **Dim up**. A tap is one step. A hold sends the remote's hold
+- **Dim −** and **Dim +**. A tap is one step. A hold sends the remote's hold
   command for about 3 seconds, because a card cannot tell when you let go. On
   the add-on page, holding a dim button keeps dimming until you let go.
-- **Rhythm start** sets the current time as the start of the Auto rhythm
+- **Rhythm** sets the current time as the start of the Auto rhythm
   schedule, like holding Auto rhythm and Relax on the remote.
-- **Correct state** switches the card to **Panel is on**, **Panel is off**, the
+- **Correct** switches the card to **Panel is on**, **Panel is off**, the
   six modes and **Mode unknown**. These change only Home Assistant's record.
   **Done** returns to the controls.
 
@@ -125,11 +126,15 @@ Home Assistant never sends a command because of a received press.
 
 The record goes wrong after a missed press, a power cut, a wall switch, or a
 proxy or Home Assistant outage. A proxy reconnect within 60 seconds keeps the
-record. A longer outage clears it. Then use **Correct state**.
+record. A longer outage clears it. Then use **Correct** on the card.
 
 Leave the wall switch on. Control the panel with its remotes or Home Assistant.
 If the panel's power runs through a smart switch in Home Assistant, an
 automation can record the panel as off when the switch turns off.
+
+You cannot set a brightness level. The panel takes only "dim down" and "dim
+up" commands and never reports its level. Home Assistant ignores a brightness
+in `light.turn_on`.
 
 For automations, send commands that do not depend on the record:
 `light.toggle`, `button.press` on a mode button, and `philips_skylight.dim`.

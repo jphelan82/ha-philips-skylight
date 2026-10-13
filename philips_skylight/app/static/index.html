@@ -98,7 +98,6 @@
 
   <section id="dashboard" hidden>
     <h2>Add to a dashboard</h2>
-    <label>Card size<select id="card-style"><option value="compact">Compact</option><option value="full">Full</option></select></label>
     <div class="row"><button data-action="create_dashboard">Create a Skylight dashboard</button><button id="choose-dashboard">Add to a dashboard</button></div>
     <div id="dashboard-target" hidden>
       <label>Dashboard<select id="dashboard-choice"></select></label>
@@ -106,7 +105,7 @@
       <button id="add-card" class="primary">Add the card</button>
     </div>
     <p><a id="dashboard-link" target="_top" hidden>Open the dashboard</a></p>
-    <p><a id="card-download" href="api/dashboard-card?style=compact" download>Download the card instead</a></p>
+    <p><a id="card-download" href="api/dashboard-card" download>Download the card instead</a></p>
   </section>
 
   <section id="fixes" hidden>

@@ -6,20 +6,21 @@ automation. The Skylight integration supplies the entities.
 
 ## The layout
 
-The card follows the remote's layout and icons.
+The card uses the remote's icons and colors. It has three parts: a large
+**Skylight** tile, the six mode buttons, and one row of small icon tiles.
 
 | Control | Icon | What it does |
 |---|---|---|
-| **Skylight** | ⏻ `mdi:power` | Toggles the power. Shows the recorded power and mode. Amber when on. |
+| **Skylight** | `mdi:ceiling-light` | Toggles the power. Shows the recorded power and mode. While the panel is on, it glows in the recorded mode's color, or amber when the mode is unknown. |
 | Auto rhythm | `mdi:sun-clock-outline` | Follows the daily schedule. Purple when recorded. |
 | Refresh | `mdi:weather-sunset-up` | Blue when recorded. |
 | Energize | `mdi:lightning-bolt` | Light blue when recorded. |
 | Focus | `mdi:crosshairs-gps` | Amber when recorded. |
 | Relax | `mdi:sofa-outline` | Orange when recorded. |
 | Rest | `mdi:power-sleep` | Deep orange when recorded. |
-| **Dim down** / **Dim up** | `mdi:brightness-4` / `mdi:brightness-7` | A tap is one step. A hold dims for about 3 seconds. |
-| **Rhythm start** | `mdi:clock-start` | Sets the current time as the Auto rhythm start. The panel blinks. |
-| **Correct state** | `mdi:pencil-outline` | Opens the correction view. |
+| **Dim −** / **Dim +** | `mdi:brightness-4` / `mdi:brightness-7` | A tap is one step. A hold dims for about 3 seconds. |
+| **Rhythm** | `mdi:clock-start` | Sets the current time as the Auto rhythm start. The panel blinks. |
+| **Correct** | `mdi:pencil-outline` | Opens the correction view. |
 
 The colors match the dots on the remote. A mode button also switches the panel
 on. The mode that Home Assistant recorded lights up. The others stay grey. When
@@ -29,12 +30,12 @@ A tile card cannot tell when you let go. So a hold on a dim tile sends the
 remote's hold command for about 3 seconds. On the add-on page, holding a dim
 button keeps dimming until you let go.
 
-**Compact** fits a shared dashboard. **Full** adds a title, a "Modes" heading and
-one line of help.
+You cannot set a brightness level. The panel takes only "dim down" and "dim up"
+commands and never reports its level.
 
 ## Add the card
 
-On the add-on page, choose **Compact** or **Full**, then:
+On the add-on page:
 
 - **Create a Skylight dashboard** makes a dashboard with the card. If one
   already exists, the add-on opens it and changes nothing.
@@ -48,16 +49,15 @@ window while the add-on adds the card.
 For YAML dashboards, panel views and generated dashboards, select **Download the
 card instead**. Then use **Edit dashboard → Add card → Manual** and paste it.
 The download fills in your real entity IDs, renamed ones included. The
-generated [full card](../philips_skylight/app/static/skylight-card.yaml) and
-[compact card](../philips_skylight/app/static/skylight-card-compact.yaml) are
-also in this repository.
+generated [card](../philips_skylight/app/static/skylight-card.yaml) is also in
+this repository.
 
 ## Correct the state
 
 The panel never reports its state, so the record can drift: a missed remote
 press, a power cut, a wall switch, or an outage. To fix it:
 
-1. Select **Correct state**. The card switches to the correction view.
+1. Select **Correct**. The card switches to the correction view.
 2. Select **Panel is on** or **Panel is off**.
 3. Select the mode you can see, or **Mode unknown**.
 4. Select **Done**.

@@ -2,10 +2,6 @@
 # The add-on download fills in your installation's actual entity IDs.
 type: vertical-stack
 cards:
-- type: heading
-  heading: Skylight
-  heading_style: title
-  icon: mdi:ceiling-light
 - type: conditional
   conditions:
   - condition: state
@@ -14,27 +10,191 @@ cards:
   card:
     type: vertical-stack
     cards:
-    - type: tile
-      entity: light.philips_skylight
-      name: Skylight
-      color: amber
-      state_content:
-      - state
-      - assumed_effect
-      icon: mdi:power
-      tap_action:
-        action: perform-action
-        perform_action: light.toggle
-        target:
-          entity_id: light.philips_skylight
-      icon_tap_action:
-        action: perform-action
-        perform_action: light.toggle
-        target:
-          entity_id: light.philips_skylight
-    - type: heading
-      heading: Modes
-      heading_style: subtitle
+    - type: vertical-stack
+      cards:
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state: Auto rhythm
+        card:
+          type: tile
+          entity: light.philips_skylight
+          name: Skylight
+          icon: mdi:ceiling-light
+          color: purple
+          state_content:
+          - state
+          - assumed_effect
+          tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+          icon_tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state: Refresh
+        card:
+          type: tile
+          entity: light.philips_skylight
+          name: Skylight
+          icon: mdi:ceiling-light
+          color: blue
+          state_content:
+          - state
+          - assumed_effect
+          tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+          icon_tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state: Energize
+        card:
+          type: tile
+          entity: light.philips_skylight
+          name: Skylight
+          icon: mdi:ceiling-light
+          color: light-blue
+          state_content:
+          - state
+          - assumed_effect
+          tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+          icon_tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state: Focus
+        card:
+          type: tile
+          entity: light.philips_skylight
+          name: Skylight
+          icon: mdi:ceiling-light
+          color: amber
+          state_content:
+          - state
+          - assumed_effect
+          tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+          icon_tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state: Relax
+        card:
+          type: tile
+          entity: light.philips_skylight
+          name: Skylight
+          icon: mdi:ceiling-light
+          color: orange
+          state_content:
+          - state
+          - assumed_effect
+          tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+          icon_tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state: Rest
+        card:
+          type: tile
+          entity: light.philips_skylight
+          name: Skylight
+          icon: mdi:ceiling-light
+          color: deep-orange
+          state_content:
+          - state
+          - assumed_effect
+          tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+          icon_tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+      - type: conditional
+        conditions:
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state_not: Auto rhythm
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state_not: Refresh
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state_not: Energize
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state_not: Focus
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state_not: Relax
+        - condition: state
+          entity: select.philips_skylight_recorded_scene
+          state_not: Rest
+        card:
+          type: tile
+          entity: light.philips_skylight
+          name: Skylight
+          icon: mdi:ceiling-light
+          color: amber
+          state_content:
+          - state
+          - assumed_effect
+          tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
+          icon_tap_action:
+            action: perform-action
+            perform_action: light.toggle
+            target:
+              entity_id: light.philips_skylight
     - type: grid
       columns: 3
       square: false
@@ -328,12 +488,12 @@ cards:
             icon: mdi:power-sleep
             vertical: true
     - type: grid
-      columns: 2
+      columns: 4
       square: false
       cards:
       - type: tile
         entity: button.philips_skylight_dim_down
-        name: Dim down
+        name: Dim −
         hide_state: true
         color: grey
         tap_action:
@@ -355,9 +515,10 @@ cards:
           data:
             direction: down
             hold: 3
+        vertical: true
       - type: tile
         entity: button.philips_skylight_dim_up
-        name: Dim up
+        name: Dim +
         hide_state: true
         color: grey
         tap_action:
@@ -379,13 +540,10 @@ cards:
           data:
             direction: up
             hold: 3
-    - type: grid
-      columns: 2
-      square: false
-      cards:
+        vertical: true
       - type: tile
         entity: button.philips_skylight_set_auto_rhythm_start
-        name: Rhythm start
+        name: Rhythm
         hide_state: true
         color: grey
         tap_action:
@@ -399,9 +557,10 @@ cards:
           target:
             entity_id: button.philips_skylight_set_auto_rhythm_start
         icon: mdi:clock-start
+        vertical: true
       - type: tile
         entity: switch.philips_skylight_state_correction
-        name: Correct state
+        name: Correct
         hide_state: true
         color: grey
         tap_action:
@@ -415,9 +574,7 @@ cards:
           target:
             entity_id: switch.philips_skylight_state_correction
         icon: mdi:pencil-outline
-    - type: markdown
-      content: Tap **Skylight** to switch the panel on or off. The shown state is
-        a best guess. If it is wrong, use **Correct state**.
+        vertical: true
 - type: conditional
   conditions:
   - condition: state

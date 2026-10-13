@@ -253,7 +253,7 @@ document.addEventListener("click", (event) => {
   if (button.dataset.hold && event.detail !== 0) return;
   if (button.id === "choose-dashboard") return chooseDashboard();
   if (button.id === "add-card") return action({action: "add_card", url_path: el("dashboard-choice").value,
-    view_index: Number(el("view-choice").value), revision: dashboardRevision, style: el("card-style").value});
+    view_index: Number(el("view-choice").value), revision: dashboardRevision});
   const kind = button.dataset.action;
   if (!kind) return;
   if (kind === "restart" && !confirm("Restart Home Assistant now?")) return;
@@ -266,15 +266,12 @@ document.addEventListener("click", (event) => {
   if (kind === "finish_setup") return action(button.dataset.effect ? {action: kind, effect: button.dataset.effect} : {action: kind});
   if (kind === "confirm_test") return action({action: kind, result: button.dataset.result});
   if (kind === "sync_power") return action({action: kind, is_on: button.dataset.on === "yes"});
-  action({action: kind, confirm: ["pair", "restart", "skip_sequence", "unpair_all"].includes(kind), style: el("card-style").value});
+  action({action: kind, confirm: ["pair", "restart", "skip_sequence", "unpair_all"].includes(kind)});
 });
 el("observed-mode").addEventListener("change", () => {
   action({action: "sync_mode", effect: el("observed-mode").value});
 });
 el("dashboard-choice").addEventListener("change", loadViews);
 el("view-choice").addEventListener("change", () => state && render(state));
-el("card-style").addEventListener("change", () => {
-  el("card-download").href = "api/dashboard-card?style=" + el("card-style").value;
-});
 refresh();
 setInterval(refresh, 2000);

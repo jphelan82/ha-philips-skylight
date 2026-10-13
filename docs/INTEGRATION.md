@@ -34,8 +34,10 @@ without an effect, synchronize power. Same-state requests do nothing.
 recorded power. `light.toggle` can send while power is unknown, but a toggle
 cannot establish actual power.
 
-Absolute brightness and color temperature are not exposed: dim step size is
-unverified. Normal controls send captured commands only, without provisioning
+You cannot set a brightness level. The panel takes only "dim down" and "dim
+up" commands and never reports its level, so the light has no brightness or
+color temperature control. Home Assistant ignores a brightness in
+`light.turn_on`. Normal controls send captured commands only, without provisioning
 or speculative power codes. Pairing is described below. Commands go to every panel in range, but a panel obeys only the
 senders it has paired with. Only one integration entry is allowed, and support
 for several panels is not built yet.

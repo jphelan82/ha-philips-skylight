@@ -366,7 +366,7 @@ class Panel:
         await self.ha.configure(name.strip(), service, proxy)
 
     async def _create_dashboard(self, entity, body):
-        return await dashboards.create_dashboard(self.ha, self.card_config(body.get("style")))
+        return await dashboards.create_dashboard(self.ha, self.card_config())
 
     async def _add_card(self, entity, body):
         return await dashboards.add_card(
@@ -374,7 +374,7 @@ class Panel:
             body.get("url_path"),
             body.get("view_index"),
             body.get("revision"),
-            self.card_config(body.get("style")),
+            self.card_config(),
         )
 
     async def _sync_state(self, entity, body):
@@ -526,16 +526,8 @@ class Panel:
             replacements[default] = entity
         return replacements
 
-    def card_style(self, style):
-        style = "compact" if style is None else style
-        if style not in ("compact", "full"):
-            raise ValueError("Choose a compact or full card")
-        return style
-
-    def card_config(self, style=None):
-        card = json.loads((self.root / "static/skylight-cards.json").read_text())[
-            self.card_style(style)
-        ]
+    def card_config(self):
+        card = json.loads((self.root / "static/skylight-cards.json").read_text())["card"]
         replacements = self.card_entities()
 
         def replace(value):
@@ -550,11 +542,10 @@ class Panel:
     async def dashboard_card(self, request):
         """Export standard cards using registry IDs, including renamed entities."""
         try:
-            style = self.card_style(request.query.get("style"))
             replacements = self.card_entities()
         except ValueError as err:
             raise web.HTTPBadRequest(text=str(err)) from err
-        filename = "skylight-card-compact.yaml" if style == "compact" else "skylight-card.yaml"
+        filename = "skylight-card.yaml"
         card = (self.root / "static" / filename).read_text()
         # Replace once so a renamed entity that matches another default is safe.
         pattern = re.compile(r"\b(?:" + "|".join(map(re.escape, replacements)) + r")\b")

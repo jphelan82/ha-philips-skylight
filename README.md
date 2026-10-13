@@ -43,8 +43,11 @@ This is an experimental project. Please read these limits before you install it.
 - **Setup needs the panel's power switched off and on once**, at its light switch
   or breaker. Use a phone or a portable computer for setup, so you can take it
   with you.
-- **Dimming is relative.** Each tap is one step darker or brighter. No
-  brightness slider or color temperature control exists.
+- **You cannot set a brightness level.** The panel takes only "dim down" and
+  "dim up" commands. It has no command for a level such as 40%, and it never
+  reports its level. So Home Assistant shows no brightness slider, and
+  Home Assistant ignores a brightness in `light.turn_on`. Color temperature
+  has no command either.
 - **It is tested on one setup.** One owner tested it with the NatureConnect/BioUp
   17.7 × 25.6 inch panel and an ESP32-C3 proxy. Other models are unknown.
 - **The add-on needs Home Assistant OS or Supervised.** For Container or Core
@@ -145,21 +148,21 @@ sends as Home Assistant's address.
 
 ## Everyday use
 
-The Skylight card follows the remote's layout and icons.
+The Skylight card uses the remote's icons and colors.
 
 | Control | What it does |
 |---|---|
-| **Skylight** (⏻) | Toggles the panel, like the remote's power button. It shows the recorded power and mode. |
+| **Skylight** | Toggles the panel, like the remote's power button. It shows the recorded power and mode, and glows in the mode's color while the panel is on. |
 | Mode buttons | Auto rhythm, Refresh, Energize, Focus, Relax and Rest. A mode button also switches the panel on. The recorded mode lights up in the remote's color. |
-| **Dim down** / **Dim up** | A tap is one step. On a dashboard, holding a button dims for about 3 seconds. On the add-on page, holding keeps dimming until you let go, like the remote. |
-| **Rhythm start** | Makes the current time the start of the Auto rhythm schedule. The panel blinks. Auto rhythm does nothing until a start is set. |
-| **Correct state** | Opens a view to fix Home Assistant's guess. |
+| **Dim −** / **Dim +** | A tap is one step. On a dashboard, holding a button dims for about 3 seconds. On the add-on page, holding keeps dimming until you let go, like the remote. |
+| **Rhythm** | Makes the current time the start of the Auto rhythm schedule. The panel blinks. Auto rhythm does nothing until a start is set. |
+| **Correct** | Opens a view to fix Home Assistant's guess. |
 
 ## Tell Home Assistant what you see
 
 Do this any time the card does not match the panel.
 
-1. On the card, select **Correct state**. On the add-on page, open **Settings
+1. On the card, select **Correct**. On the add-on page, open **Settings
    and fixes → Correct the shown state**.
 2. Select **Panel is on** or **Panel is off**.
 3. Select the mode you can see, or **Mode unknown**.
@@ -190,7 +193,7 @@ changed.
 | The add-on is not in the store | Check that you can open the repository, and that an add-on release exists. Otherwise, use the local installation. |
 | No proxy appears | The setup checklist lists the Bluetooth proxies in your ESPHome folder. If none is listed, set up a Bluetooth proxy in ESPHome Device Builder first. |
 | Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
-| The dashboard shows Unknown, or the wrong power or mode | Use **Correct state** and record what you see. |
+| The dashboard shows Unknown, or the wrong power or mode | Use **Correct** and record what you see. |
 | The card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
 | Commands do nothing | Check that the proxy is online. Then pair again. |
 | Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
@@ -198,6 +201,10 @@ changed.
 
 ## Ideas for later
 
+- **Maybe: a brightness level.** To reach a level, Home Assistant dims the
+  panel all the way down, then dims it up in timed steps. This needs a
+  measured step size and a known lowest level. It is slow, and the panel shows
+  every step. Only a maybe.
 - During setup, offer to link a smart wall switch to the recorded state with an
   automation.
 - Start the pairing burst by itself when the panel comes back on. The panel
@@ -231,8 +238,7 @@ changed.
 
 - [Add-on documentation](philips_skylight/DOCS.md): options, permissions,
   recovery and removal.
-- [Dashboard guide](docs/DASHBOARD.md): the compact and full cards, and manual
-  card setup.
+- [Dashboard guide](docs/DASHBOARD.md): the card, and manual card setup.
 - [Integration-only guide](docs/INTEGRATION.md): for installs without add-ons.
 - [Protocol notes](docs/PROTOCOL.md): how the panel's Bluetooth Mesh commands
   work, and developer instructions.

@@ -170,7 +170,7 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
         },
     ]
     client = await aiohttp_client(panel.app())
-    response = await client.get("/api/dashboard-card?style=full")
+    response = await client.get("/api/dashboard-card")
     assert response.status == 200
     content = await response.text()
     assert "light.renamed" in content
@@ -189,7 +189,7 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
             for child in value:
                 yield from walk(child)
 
-    normal, correction = card["cards"][1:]
+    normal, correction = card["cards"]
     assert normal["conditions"] == [
         {"condition": "state", "entity": "switch.edit_panel", "state_not": "on"}
     ]
@@ -219,6 +219,7 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
             item
             for item in walk(normal)
             if item.get("type") == "conditional"
+            and item["card"].get("entity", "").startswith("button.")
             and any(
                 condition.get("entity") == "select.observed_scene"
                 and effect in (condition.get("state"), condition.get("state_not"))
@@ -230,6 +231,15 @@ async def test_dashboard_download_resolves_renamed_entities_and_keeps_correction
             selected = "state" in choice["conditions"][0]
             # The selected choice lights up in its own color; the rest stay grey.
             assert (choice["card"]["color"] != "grey") is selected
+    # The light's tile has one variant per mode in that mode's color, plus amber.
+    hero = [
+        item
+        for item in walk(normal)
+        if item.get("type") == "conditional" and item["card"].get("entity") == "light.renamed"
+    ]
+    assert len(hero) == 7
+    assert [item["card"]["color"] for item in hero][-1] == "amber"
+    assert len({item["card"]["color"] for item in hero}) == 6  # Focus shares amber.
     assert not panel.ha.calls
     panel.ha.registry[-1]["disabled_by"] = "user"
     response = await client.get("/api/dashboard-card")
@@ -254,7 +264,7 @@ async def test_friendly_proxy_setup_requires_explicit_save_and_does_not_create_d
         await panel.perform({"action": "setup", "proxy": "sensor.missing"})
 
 
-async def test_compact_export_and_initial_matching_never_send_light_commands(panel, aiohttp_client):
+async def test_card_export_and_initial_matching_never_send_light_commands(panel, aiohttp_client):
     from skylight_addon.server import CARD_ENTITIES
 
     panel.ha.registry = [
@@ -265,9 +275,9 @@ async def test_compact_export_and_initial_matching_never_send_light_commands(pan
     client = await aiohttp_client(panel.app())
     response = await client.get("/api/dashboard-card")
     assert response.status == 200
-    compact = yaml.safe_load(await response.text())
-    assert len(compact["cards"]) == 2
-    assert compact == panel.card_config()
+    card = yaml.safe_load(await response.text())
+    assert len(card["cards"]) == 2
+    assert card == panel.card_config()
     await panel.perform({"action": "sync_state", "power": "off", "effect": "Unknown"})
     assert panel.ha.calls == [
         (("button", "press", "button.philips_skylight_record_panel_off"), {}),
@@ -279,8 +289,6 @@ async def test_compact_export_and_initial_matching_never_send_light_commands(pan
     with pytest.raises(ValueError, match="Record the power"):
         await panel.perform({"action": "sync_state", "power": "on", "effect": "invented"})
     assert len(panel.ha.calls) == 2
-    response = await client.get("/api/dashboard-card?style=custom")
-    assert response.status == 400
 
 
 async def test_first_setup_guidance_survives_restart_and_ends_after_state_matching(panel, tmp_path):

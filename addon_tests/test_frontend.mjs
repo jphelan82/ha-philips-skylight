@@ -186,7 +186,7 @@ test("corrections change only the record, and controls send commands", async () 
   assert.equal(posts.at(-1).action, "scene"); // Unpair all needs its tick box too.
   element("unpair-confirm").checked = true;
   await press({action: "unpair_all"});
-  assert.deepEqual(posts.at(-1), {action: "unpair_all", confirm: true, style: ""});
+  assert.deepEqual(posts.at(-1), {action: "unpair_all", confirm: true});
   await press({action: "start_over"});
   assert.equal(posts.at(-1).action, "start_over");
 });

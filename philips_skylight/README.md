@@ -37,22 +37,23 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
 
 ## Use the card
 
-The card follows the remote's layout and icons.
+The card uses the remote's icons and colors.
 
-- **Skylight** (⏻) toggles the power.
+- The large **Skylight** tile toggles the power. While the panel is on, it
+  glows in the color of the recorded mode.
 - A mode button selects that mode and switches the panel on. The recorded mode
   lights up in the remote's color.
-- **Dim down** and **Dim up** dim by one step. Hold one to dim for about 3
-  seconds. On the add-on page, holding keeps dimming until you let go.
-- **Rhythm start** makes the current time the start of the Auto rhythm schedule.
-- **Correct state** fixes Home Assistant's record when it does not match the
-  panel.
+- **Dim −** and **Dim +** dim by one step. Hold one to dim for about 3 seconds.
+  On the add-on page, holding keeps dimming until you let go. You cannot set a
+  brightness level, because the panel takes only these two commands.
+- **Rhythm** makes the current time the start of the Auto rhythm schedule.
+- **Correct** fixes Home Assistant's record when it does not match the panel.
 
 ## The shown state is a best guess
 
 The panel never reports its state. Home Assistant guesses it from its own
 commands and the remote presses it hears. A missed press, a power cut or a wall
-switch puts the guess out of step. Then use **Correct state**.
+switch puts the guess out of step. Then use **Correct**.
 
 Leave the panel's wall switch on, and control the panel with its remotes or Home
 Assistant. Use the wall switch or breaker only for pairing.
