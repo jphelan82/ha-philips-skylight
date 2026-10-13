@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0
+
+- The add-on page has an **Updates** section. It shows only the steps that an
+  update needs: new firmware files, a firmware install on the proxy, or a newer
+  dashboard card.
+- The firmware package has a version number, 1. The proxy reports it as the
+  **Skylight firmware** diagnostic sensor. Firmware from before this version
+  reports no number, so the page asks for one install in ESPHome Device
+  Builder after this update.
+- **Update the firmware files** copies the new firmware files into the ESPHome
+  folder and keeps backups of the old ones. It does not change the proxy's own
+  YAML.
+- **Update the card** replaces older Skylight cards on every editable
+  dashboard, the default one included. It changes nothing else on a dashboard.
+- The integration is unchanged, so this update needs no Home Assistant restart.
+
 ## 0.3.3
 
 - Native integration 0.3.2: **Configure → Pair this transmitter** and the

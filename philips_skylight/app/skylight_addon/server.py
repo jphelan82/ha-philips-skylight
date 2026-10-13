@@ -23,13 +23,17 @@ TRACKING_OPTION = "allow_service_calls"
 # The remote's button order. EFFECTS keeps the protocol's order.
 REMOTE_ORDER = ("Auto rhythm", "Refresh", "Energize", "Focus", "Relax", "Rest")
 CHECK_INTERVAL = 30
+# Finding older cards reads every dashboard, so it runs less often.
+CARD_CHECK_INTERVAL = 300
+SWITCH = "switch.philips_skylight_state_correction"
+FIRMWARE_SENSOR = re.compile(r"sensor\.\w*skylight_firmware(?:_\d+)?")
 
 LIGHT_ID = unique_id("light")
 SCENE_ID = unique_id("recorded_scene")
 CARD_ENTITIES = {
     "light.philips_skylight": LIGHT_ID,
     "select.philips_skylight_recorded_scene": SCENE_ID,
-    "switch.philips_skylight_state_correction": unique_id("state_correction"),
+    SWITCH: unique_id("state_correction"),
     **{
         f"button.philips_skylight_{slug(name)}": unique_id(name)
         for name in ("dim_down", "dim_up", *EFFECTS, "record_panel_on", "record_panel_off")
@@ -61,7 +65,10 @@ class Panel:
         # Read-only checks run in the background and are cached between status polls.
         self.tracking = None
         self.device_builder = None
+        self.firmware_files_current = None
+        self.outdated_cards = []
         self._checked = 0.0
+        self._cards_checked = 0.0
         self._check_task = None
         self._auto_setup_tried = False
         self.allowed_ips = {"172.30.32.2"} if allowed_ips is None else set(allowed_ips)
@@ -86,6 +93,7 @@ class Panel:
             "setup": self._setup,
             "prepare_firmware": self._prepare_firmware,
             "allow_tracking": self._allow_tracking,
+            "update_firmware": self._update_firmware,
         }
         # Actions that need a loaded, current integration. Each takes (entity, body).
         self.light_actions = {
@@ -109,6 +117,7 @@ class Panel:
             "confirm_test": self._confirm_test,
             "finish_setup": self._finish_setup,
             "rhythm_start": self._rhythm_start,
+            "update_card": self._update_card,
         }
 
     async def set_first_setup(self, in_progress):
@@ -210,6 +219,63 @@ class Panel:
             )
         except (HAError, aiohttp.ClientError, TimeoutError, KeyError, TypeError):
             pass  # Read-only; the next poll tries again.
+        if self.esphome_dir:
+            try:
+                self.firmware_files_current = await asyncio.to_thread(
+                    esphome_files.files_current, self.esphome_dir, self.root / "firmware"
+                )
+            except OSError:
+                self.firmware_files_current = None
+        if (
+            self.light()
+            and not self.restart_required()
+            and time.monotonic() - self._cards_checked >= CARD_CHECK_INTERVAL
+        ):
+            self._cards_checked = time.monotonic()
+            try:
+                found = await dashboards.outdated_cards(
+                    self.ha, self.card_entities()[SWITCH], self.card_config()
+                )
+                self.outdated_cards = [item["title"] for item in found]
+            except (ValueError, HAError, aiohttp.ClientError, TimeoutError):
+                self.outdated_cards = []
+
+    def firmware_status(self):
+        """Whether the proxy firmware is current, needs new files, or needs an install."""
+        nodes = [node for node in self.esphome_nodes() if node["uses_package"]]
+        if not nodes:
+            return None  # Setup adds the firmware, or the proxy is managed elsewhere.
+        try:
+            bundled = esphome_files.firmware_version(
+                (self.root / "firmware" / esphome_files.PACKAGE).read_text()
+            )
+        except OSError:
+            return None
+        reported = sorted(
+            {
+                item.get("state")
+                for name, item in self.ha.states.items()
+                if FIRMWARE_SENSOR.fullmatch(name)
+                and item.get("state") not in (None, "unknown", "unavailable")
+            }
+        )
+        online = any(
+            self.ha.states.get(item["entity_id"], {}).get("state") not in (None, "unavailable")
+            for item in self.proxies()
+        )
+        if self.firmware_files_current is False:
+            status = "files"
+        elif self.firmware_files_current and online and reported != [bundled]:
+            # Firmware older than version 1 reports no number at all.
+            status = "install"
+        else:
+            status = "current"
+        return {
+            "status": status,
+            "version": bundled,
+            "reported": reported,
+            "nodes": [node["node"] for node in nodes],
+        }
 
     def schedule_checks(self):
         if not self.ha.ready or (self._check_task and not self._check_task.done()):
@@ -267,6 +333,8 @@ class Panel:
             "tracking": self.tracking,
             "esphome_nodes": self.esphome_nodes(),
             "device_builder": self.device_builder,
+            "firmware": self.firmware_status(),
+            "outdated_cards": self.outdated_cards,
             "pairing_remaining": _remaining(attributes.get("pairing_until")),
         }
 
@@ -366,9 +434,19 @@ class Panel:
         await self.ha.configure(name.strip(), service, proxy)
 
     async def _create_dashboard(self, entity, body):
+        self._cards_checked = 0
         return await dashboards.create_dashboard(self.ha, self.card_config())
 
+    async def _update_card(self, entity, body):
+        result = await dashboards.update_cards(
+            self.ha, self.card_entities()[SWITCH], self.card_config()
+        )
+        self.outdated_cards = []
+        self._cards_checked = 0
+        return result
+
     async def _add_card(self, entity, body):
+        self._cards_checked = 0
         return await dashboards.add_card(
             self.ha,
             body.get("url_path"),
@@ -459,6 +537,16 @@ class Panel:
             esphome_files.install_package, self.esphome_dir, firmware, body.get("file")
         )
         self._checked = 0  # Look for the Device Builder link again.
+        return result
+
+    async def _update_firmware(self, body):
+        if not self.esphome_dir:
+            raise ValueError("The ESPHome folder is not available to this add-on")
+        result = await asyncio.to_thread(
+            esphome_files.update_files, self.esphome_dir, self.root / "firmware"
+        )
+        self.firmware_files_current = None
+        self._checked = 0  # Compare the files again on the next poll.
         return result
 
     async def _allow_tracking(self, body):

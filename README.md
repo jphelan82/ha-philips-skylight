@@ -110,6 +110,35 @@ If the add-on is not in the store yet, use the
 Already using the Philips Skylight integration? The add-on keeps your light,
 settings and pairing. You do not need to pair again.
 
+## Update
+
+1. **Update the add-on.** Home Assistant offers the update under **Settings →
+   Apps**. Select **Update**. The add-on restarts by itself.
+2. **Restart Home Assistant, if the page asks.** The add-on installs its copy of
+   the integration when it starts. If that copy is new, the page shows
+   **Restart Home Assistant**. The add-on never restarts Home Assistant by
+   itself.
+3. **Update the proxy firmware, if the page asks.** The page compares three
+   things: the add-on's firmware files, the copies in your ESPHome folder, and
+   the firmware number that the proxy reports.
+   - If the copies are older, the page shows **Update the firmware files**. It
+     keeps a backup of the old files.
+   - Then, or if the proxy reports an older number, the page asks you to
+     install: in ESPHome Device Builder, open the proxy, then **⋮ → Install →
+     Wirelessly**. The proxy is offline for a minute or two, and Home Assistant
+     misses remote presses in that time.
+   - If the firmware did not change, the page shows nothing.
+4. **Update the card, if the page asks.** A card on a dashboard never changes
+   by itself. If a dashboard holds an older Skylight card, the page shows
+   **Update the card**. It replaces only the Skylight card and leaves the rest
+   of the dashboard as it is.
+
+The page shows a step only when its part changed. An update never needs a new
+pairing, and it keeps your settings and the command counter.
+
+After a restart that takes longer than 60 seconds, the recorded power and mode
+are unknown. A remote press, a mode button, or **Correct** sets them again.
+
 ## Pairing
 
 The panel ignores Home Assistant until you pair it. Pairing is a one-time step.

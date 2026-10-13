@@ -52,9 +52,67 @@ def list_nodes(folder: Path):
                 "file": path.name,
                 "node": _node_name(text, path.stem),
                 "has_skylight": has_skylight(text),
+                # Only nodes that include the package get firmware updates from the add-on.
+                "uses_package": PACKAGE in text,
             }
         )
     return nodes
+
+
+def firmware_version(text):
+    """The skylight_firmware number in a package's text, or None."""
+    match = re.search(r'^[ \t]+skylight_firmware:[ \t]*["\']?(\d+)["\']?', text, re.M)
+    return match[1] if match else None
+
+
+def _differs(folder: Path, firmware: Path):
+    """Whether the copies in the ESPHome folder differ from the add-on's firmware files."""
+    package = folder / PACKAGE
+    if not package.is_file() or package.read_bytes() != (firmware / PACKAGE).read_bytes():
+        return True
+    component = folder / COMPONENT
+    return any(
+        not (component / item.name).is_file()
+        or (component / item.name).read_bytes() != item.read_bytes()
+        for item in (firmware / COMPONENT).iterdir()
+        if item.is_file()
+    )
+
+
+def files_current(folder: Path, firmware: Path):
+    return not _differs(folder, firmware)
+
+
+def _copy_files(folder: Path, firmware: Path, stamp: str):
+    """Copy the package and the component into the ESPHome folder, keeping backups."""
+    package, component = folder / PACKAGE, folder / COMPONENT
+    if folder.is_symlink() or package.is_symlink() or component.is_symlink():
+        raise ValueError("Refusing to change files through a symbolic link")
+    backups = []
+    if package.is_file() and package.read_bytes() != (firmware / PACKAGE).read_bytes():
+        backups.append(f"{PACKAGE}.bak-{stamp}")
+        shutil.copy2(package, folder / backups[-1])
+    shutil.copyfile(firmware / PACKAGE, package)
+    source = firmware / COMPONENT
+    if component.exists() and any(
+        not (component / item.name).is_file()
+        or (component / item.name).read_bytes() != item.read_bytes()
+        for item in source.iterdir()
+    ):
+        backups.append(f"ble_adv_proxy.bak-{stamp}")
+        shutil.copytree(component, folder / backups[-1])
+    component.parent.mkdir(exist_ok=True)
+    shutil.copytree(source, component, dirs_exist_ok=True)
+    return backups
+
+
+def update_files(folder: Path, firmware: Path):
+    """Bring the shared firmware files up to date. The node YAML files stay as they are."""
+    if not any(node["uses_package"] for node in list_nodes(folder)):
+        raise ValueError("No Bluetooth proxy uses the Skylight firmware package")
+    if files_current(folder, firmware):
+        return {"changed": False, "backups": []}
+    return {"changed": True, "backups": _copy_files(folder, firmware, _stamp())}
 
 
 def add_package_line(text):
@@ -97,18 +155,7 @@ def install_package(folder: Path, firmware: Path, file: str):
     if folder.is_symlink() or node.is_symlink():
         raise ValueError("Refusing to change files through a symbolic link")
     stamp = _stamp()
-    shutil.copyfile(firmware / PACKAGE, folder / PACKAGE)
-    component, source = folder / COMPONENT, firmware / COMPONENT
-    if component.is_symlink():
-        raise ValueError("Refusing to change files through a symbolic link")
-    if component.exists() and any(
-        not (component / item.name).is_file()
-        or (component / item.name).read_bytes() != item.read_bytes()
-        for item in source.iterdir()
-    ):
-        shutil.copytree(component, folder / f"ble_adv_proxy.bak-{stamp}")
-    component.parent.mkdir(exist_ok=True)
-    shutil.copytree(source, component, dirs_exist_ok=True)
+    _copy_files(folder, firmware, stamp)
     text = node.read_text()
     updated = add_package_line(text)
     backup = None

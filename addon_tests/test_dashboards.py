@@ -1,6 +1,7 @@
 import copy
 
 import pytest
+from skylight_addon import dashboards
 from skylight_addon.dashboards import (
     add_card,
     create_dashboard,
@@ -98,3 +99,91 @@ async def test_stale_strategy_panel_yaml_and_invalid_targets_never_save():
     with pytest.raises(ValueError, match="dashboard from"):
         await add_card(ha, "//evil.example", 0, revision(ha.config), {})
     assert not any(kind.endswith("/save") for kind, _ in ha.calls)
+
+
+SWITCH = "switch.skylight_correction"
+
+
+def skylight_card(label, heading=False):
+    """A Skylight card in its outer shape. The label stands in for the controls."""
+    cards = [
+        {
+            "type": "conditional",
+            "conditions": [{"condition": "state", "entity": SWITCH, "state_not": "on"}],
+            "card": {"type": "markdown", "content": label},
+        },
+        {
+            "type": "conditional",
+            "conditions": [{"condition": "state", "entity": SWITCH, "state": "on"}],
+            "card": {"type": "markdown", "content": "correct"},
+        },
+    ]
+    if heading:
+        cards.insert(0, {"type": "heading", "heading": "Skylight"})
+    return {"type": "vertical-stack", "cards": cards}
+
+
+class ManyDashboardsHA:
+    """Several dashboards: the default one, two storage ones, and a YAML one."""
+
+    ready = True
+
+    def __init__(self, configs):
+        self.configs = configs
+        self.saved = []
+
+    async def request(self, kind, **data):
+        if kind == "lovelace/dashboards/list":
+            return [
+                {"url_path": "kitchen", "title": "Kitchen", "mode": "storage"},
+                {"url_path": "skylight-control", "title": "Skylight", "mode": "storage"},
+                {"url_path": "yaml-one", "title": "YAML", "mode": "yaml"},
+            ]
+        path = data.get("url_path")
+        if kind == "lovelace/config":
+            if path not in self.configs:
+                raise HAError("config_not_found")
+            return copy.deepcopy(self.configs[path])
+        if kind == "lovelace/config/save":
+            self.saved.append(path)
+            self.configs[path] = copy.deepcopy(data["config"])
+            return None
+        raise AssertionError(kind)
+
+
+async def test_older_cards_are_found_and_replaced_in_place():
+    new = skylight_card("new")
+    other = {"type": "tile", "entity": "light.kitchen"}
+    configs = {
+        None: {"views": [{"cards": [other, skylight_card("old", heading=True)]}]},
+        "kitchen": {"views": [{"sections": [{"cards": [skylight_card("old"), other]}]}]},
+        "skylight-control": {"views": [{"sections": [{"cards": [new]}]}]},
+    }
+    ha = ManyDashboardsHA(configs)
+    found = await dashboards.outdated_cards(ha, SWITCH, new)
+    assert [item["title"] for item in found] == ["Overview", "Kitchen"]
+    assert ha.saved == []
+
+    result = await dashboards.update_cards(ha, SWITCH, new)
+    assert result == {"updated": ["Overview", "Kitchen"]}
+    # The default dashboard is saved without a url_path, and the current card is left alone.
+    assert ha.saved == [None, "kitchen"]
+    assert configs[None]["views"][0]["cards"] == [other, new]
+    assert configs["kitchen"]["views"][0]["sections"][0]["cards"] == [new, other]
+    assert await dashboards.outdated_cards(ha, SWITCH, new) == []
+
+
+async def test_only_the_skylight_card_shape_matches():
+    card = skylight_card("old")
+    assert dashboards.is_skylight_card(card, SWITCH)
+    assert dashboards.is_skylight_card(skylight_card("old", heading=True), SWITCH)
+    assert not dashboards.is_skylight_card(card, "switch.other")
+    tile_first = copy.deepcopy(card)
+    tile_first["cards"].insert(0, {"type": "tile", "entity": "light.kitchen"})
+    assert not dashboards.is_skylight_card(tile_first, SWITCH)
+    assert not dashboards.is_skylight_card({"type": "vertical-stack", "cards": []}, SWITCH)
+
+
+async def test_automatic_dashboards_are_skipped():
+    ha = ManyDashboardsHA({None: {"strategy": {"type": "original-states"}}})
+    assert await dashboards.outdated_cards(ha, SWITCH, skylight_card("new")) == []

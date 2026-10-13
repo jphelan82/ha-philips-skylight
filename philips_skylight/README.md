@@ -35,6 +35,10 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
       mode.
 4. Optional: add the Skylight card to a dashboard.
 
+To update, update the add-on in **Settings → Apps**, then open its page. An
+**Updates** section lists any step left: a Home Assistant restart, new proxy
+firmware, or a newer card. It shows only the steps that apply.
+
 ## Use the card
 
 The card uses the remote's icons and colors.

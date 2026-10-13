@@ -214,3 +214,44 @@ test("holding a dim button repeats the hold command until release", async () => 
   await press({action: "dim_up", hold: "up"});
   assert.equal(posts.length, 3);
 });
+
+test("updates show only the firmware and card steps that apply", async () => {
+  const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
+    proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}],
+    firmware: {status: "current", version: "2", reported: ["2"], nodes: ["proxy-1"]},
+    outdated_cards: []};
+  const {element, posts, press, poll} = await page(source);
+  assert.equal(element("updates").hidden, true);
+
+  source.firmware = {...source.firmware, status: "files", reported: ["1"]};
+  await poll();
+  await setImmediate();
+  assert.equal(element("updates").hidden, false);
+  assert.equal(element("firmware-files").hidden, false);
+  assert.equal(element("firmware-install").hidden, true);
+  assert.equal(element("firmware-nodes").textContent, "proxy-1");
+  await press({action: "update_firmware"});
+  assert.equal(posts.at(-1).action, "update_firmware");
+
+  source.firmware = {...source.firmware, status: "install"};
+  await poll();
+  await setImmediate();
+  assert.equal(element("firmware-files").hidden, true);
+  assert.equal(element("firmware-install").hidden, false);
+  assert.equal(element("update-builder").href, "/esphome_ingress");
+
+  source.firmware = {...source.firmware, status: "current", reported: ["2"]};
+  source.outdated_cards = ["Skylight", "Kitchen"];
+  await poll();
+  await setImmediate();
+  assert.equal(element("firmware-install").hidden, true);
+  assert.equal(element("card-update").hidden, false);
+  assert.equal(element("card-dashboards").textContent, "Skylight, Kitchen");
+  await press({action: "update_card"});
+  assert.equal(posts.at(-1).action, "update_card");
+
+  source.outdated_cards = [];
+  await poll();
+  await setImmediate();
+  assert.equal(element("updates").hidden, true);
+});

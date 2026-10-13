@@ -478,11 +478,50 @@ async def test_firmware_is_added_to_the_chosen_proxy(setup_panel, tmp_path):
     setup_panel.root = root
     (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
     snapshot = setup_panel.snapshot()
-    node = {"file": "proxy.yaml", "node": "proxy", "has_skylight": False}
+    node = {"file": "proxy.yaml", "node": "proxy", "has_skylight": False, "uses_package": False}
     assert snapshot["esphome_nodes"] == [node]
+    assert snapshot["firmware"] is None  # The setup checklist handles a new proxy.
     result = await setup_panel.perform({"action": "prepare_firmware", "file": "proxy.yaml"})
     assert result["changed"] is True
     assert setup_panel.snapshot()["esphome_nodes"][0]["has_skylight"] is True
+
+
+async def test_firmware_updates_cover_new_files_and_an_install(setup_panel, tmp_path):
+    ha = setup_panel.ha
+    ha.states = {name: dict(item) for name, item in ha.states.items()}  # Keep changes local.
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
+    await setup_panel.perform({"action": "prepare_firmware", "file": "proxy.yaml"})
+    await setup_panel.check()
+    firmware = setup_panel.snapshot()["firmware"]
+    bundled = firmware["version"]
+    assert bundled.isdigit()
+    # The proxy reports no number: it runs firmware from before the number existed.
+    assert firmware == {"status": "install", "version": bundled, "reported": [], "nodes": ["proxy"]}
+
+    ha.states["sensor.proxy_skylight_firmware"] = {"state": bundled}
+    assert setup_panel.snapshot()["firmware"]["status"] == "current"
+
+    # An add-on update brings newer files than the ESPHome folder holds.
+    (tmp_path / "skylight-transmitter.yaml").write_text("# older package\n")
+    await setup_panel.check()
+    assert setup_panel.snapshot()["firmware"]["status"] == "files"
+    result = await setup_panel.perform({"action": "update_firmware"})
+    assert result["changed"] is True
+    await setup_panel.check()
+    # The new files need an install when the proxy still reports the old number.
+    ha.states["sensor.proxy_skylight_firmware"] = {"state": "0"}
+    assert setup_panel.snapshot()["firmware"]["status"] == "install"
+    ha.states["sensor.proxy_skylight_firmware"] = {"state": bundled}
+    assert setup_panel.snapshot()["firmware"]["status"] == "current"
+
+    # No message while the proxy is offline: it cannot take an install then.
+    ha.states["sensor.proxy_skylight_firmware"] = {"state": "unavailable"}
+    ha.states["sensor.proxy_ble_adv_proxy_name"]["state"] = "unavailable"
+    assert setup_panel.snapshot()["firmware"]["status"] == "current"
 
 
 async def test_pairing_burst_reports_seconds_left(setup_panel):

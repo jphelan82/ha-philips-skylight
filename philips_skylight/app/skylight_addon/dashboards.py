@@ -112,3 +112,90 @@ async def add_card(ha, path, index, expected_revision, card):
         view.setdefault("cards", []).append(card)
     await ha.request("lovelace/config/save", url_path=path, config=updated)
     return {"url": f"/{path}/{view.get('path', index)}", "added": True}
+
+
+def is_skylight_card(value, switch):
+    """Whether a card is the add-on's card, in any version.
+
+    Every version is a vertical stack that ends with two conditional cards. They
+    show the controls or the correction view from the state correction switch.
+    The older Full card has a heading before them.
+    """
+    if not isinstance(value, dict) or value.get("type") != "vertical-stack":
+        return False
+    cards = value.get("cards")
+    if not isinstance(cards, list) or len(cards) < 2:
+        return False
+    if any(not isinstance(child, dict) or child.get("type") != "heading" for child in cards[:-2]):
+        return False
+    for child in cards[-2:]:
+        if not isinstance(child, dict) or child.get("type") != "conditional":
+            return False
+        conditions = child.get("conditions")
+        if not isinstance(conditions, list) or len(conditions) != 1:
+            return False
+        if not isinstance(conditions[0], dict) or conditions[0].get("entity") != switch:
+            return False
+    return True
+
+
+def replace_cards(config, switch, card):
+    """Return the config with every older Skylight card replaced, and the count replaced."""
+    replaced = 0
+
+    def walk(value):
+        nonlocal replaced
+        if is_skylight_card(value, switch):
+            if value != card:
+                replaced += 1
+                return copy.deepcopy(card)
+            return value
+        if isinstance(value, dict):
+            return {key: walk(child) for key, child in value.items()}
+        if isinstance(value, list):
+            return [walk(child) for child in value]
+        return value
+
+    return walk(config), replaced
+
+
+def _target(path):
+    # The default dashboard is addressed by leaving url_path out.
+    return {} if path is None else {"url_path": path}
+
+
+async def _dashboards_with_cards(ha):
+    """Each editable dashboard's path, title and config. The default one has path None."""
+    if not ha.ready:
+        raise HAError("Wait for Home Assistant to reconnect")
+    found = [{"url_path": None, "title": "Overview"}] + await list_dashboards(ha)
+    result = []
+    for item in found:
+        try:
+            config = await ha.request("lovelace/config", **_target(item["url_path"]), force=True)
+        except HAError:
+            continue  # An automatic dashboard has no saved config.
+        if isinstance(config, dict) and not config.get("strategy"):
+            result.append({**item, "config": config})
+    return result
+
+
+async def outdated_cards(ha, switch, card):
+    """Dashboards that hold an older Skylight card."""
+    result = []
+    for item in await _dashboards_with_cards(ha):
+        _, replaced = replace_cards(item["config"], switch, card)
+        if replaced:
+            result.append({"url_path": item["url_path"], "title": item["title"]})
+    return result
+
+
+async def update_cards(ha, switch, card):
+    """Replace every older Skylight card with the current one. Nothing else changes."""
+    updated = []
+    for item in await _dashboards_with_cards(ha):
+        config, replaced = replace_cards(item["config"], switch, card)
+        if replaced:
+            await ha.request("lovelace/config/save", **_target(item["url_path"]), config=config)
+            updated.append(item["title"])
+    return {"updated": updated}

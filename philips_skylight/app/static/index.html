@@ -84,6 +84,22 @@
     </ol>
   </section>
 
+  <section id="updates" hidden>
+    <h2>Updates</h2>
+    <div id="firmware-files" hidden>
+      <p>New Skylight firmware is ready for <strong id="firmware-nodes"></strong>. First update the firmware files. The add-on keeps a copy of the old ones.</p>
+      <button data-action="update_firmware" class="primary">Update the firmware files</button>
+    </div>
+    <div id="firmware-install" hidden>
+      <p>Install the new Skylight firmware: in ESPHome Device Builder, open <strong id="install-nodes"></strong>, then choose <strong>⋮ → Install → Wirelessly</strong>. The proxy is offline for a minute or two. This message goes away when the proxy is back.</p>
+      <p><a id="update-builder" target="_top" hidden>Open ESPHome Device Builder</a></p>
+    </div>
+    <div id="card-update" hidden>
+      <p>The Skylight card on <strong id="card-dashboards"></strong> is an older version. Updating it changes only the Skylight card.</p>
+      <button data-action="update_card" class="primary">Update the card</button>
+    </div>
+  </section>
+
   <section id="control" hidden>
     <p class="state"><span id="state-text">Unknown</span><span class="hint" id="state-note">Shown state is a best guess</span></p>
     <button data-action="toggle" class="wide">Power on/off</button>

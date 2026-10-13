@@ -23,6 +23,13 @@ GitHub account or network fetch is needed for the package itself.
 6. In its Home Assistant ESPHome integration options, enable **Allow the device
    to perform Home Assistant actions** to receive remote presses.
 
+The package reports its version as the **Skylight firmware** diagnostic
+sensor. The add-on compares that number with its own copy and asks for an
+install when they differ. Raise `skylight_firmware` in
+`skylight-transmitter.yaml` with every change to the package or to
+`components/ble_adv_proxy`. `tools/sync_addon.py` refuses a change without a
+new number.
+
 This uses ESPHome's standard [local package merging](https://esphome.io/components/packages/).
 Settings in the node YAML can override package settings. Remove conflicting
 `api.custom_services: false` and `api.homeassistant_services: false`, and let

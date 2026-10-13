@@ -100,6 +100,18 @@ function render(data) {
   show("control", ready);
   show("dashboard", ready);
   show("fixes", ready);
+  const firmware = data.firmware?.status;
+  const cards = data.outdated_cards || [];
+  const nodeNames = (data.firmware?.nodes || []).join(", ");
+  show("updates", ready && (firmware === "files" || firmware === "install" || cards.length > 0));
+  show("firmware-files", firmware === "files");
+  show("firmware-install", firmware === "install");
+  el("firmware-nodes").textContent = nodeNames || "your proxy";
+  el("install-nodes").textContent = nodeNames || "your proxy";
+  if (data.device_builder) el("update-builder").href = data.device_builder;
+  show("update-builder", Boolean(data.device_builder));
+  show("card-update", cards.length > 0);
+  el("card-dashboards").textContent = cards.join(", ");
   el("state-text").textContent = data.state === "on" ? "On" + (data.effect ? " · " + data.effect : "")
     : data.state === "off" ? "Off" : "State unknown";
   modeButtons("modes", "scene", data.effects);
@@ -143,6 +155,8 @@ const results = {
   unpair_all: () => "Unpairing for 10 seconds. When the panel blinks, pair your remote, then select Continue.",
   start_over: () => "",
   rhythm_start: () => "Schedule started. The panel blinks.",
+  update_firmware: () => "Firmware files updated. Now install them on the proxy.",
+  update_card: (body, result) => result.updated?.length ? "Card updated on " + result.updated.join(", ") + "." : "The card is already current.",
 };
 async function action(body) {
   if (busy) return;

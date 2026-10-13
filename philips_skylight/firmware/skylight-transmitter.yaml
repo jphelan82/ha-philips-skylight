@@ -4,6 +4,21 @@
 esphome:
   min_version: 2026.4.5
 
+# Raise this number with every change to this package or to
+# components/ble_adv_proxy. tools/sync_addon.py refuses a change without it.
+# The proxy reports the number, and the add-on compares it with its own copy to
+# tell when the proxy needs an install.
+substitutions:
+  skylight_firmware: "1"
+
+text_sensor:
+  - platform: template
+    name: Skylight firmware
+    id: skylight_firmware_version
+    icon: mdi:chip
+    entity_category: diagnostic
+    lambda: return {"${skylight_firmware}"};
+
 api:
   custom_services: true
   homeassistant_services: true
