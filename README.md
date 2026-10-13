@@ -61,14 +61,23 @@ This is an experimental project. Please read these limits before you install it.
   power cut, or a restart of Home Assistant or the proxy all put it out of step.
   When that happens, you look at the panel and tell Home Assistant what you see. **You can always use the power toggle and modes without relying on accurate state information.**
 - **Power is a toggle.** The panel has one power command. It switches the panel
-  off if it is on, and on if it is off. The remote's power button, the card's
-  **Skylight** tile and `light.toggle` send it, and they always work. Home
-  Assistant's separate **turn on** and **turn off** actions are different:
-  they decide from the shown state. **Turn on** sends the command only if
-  the shown state is off. So if Home Assistant shows on while the panel is off,
-  **turn on** sends nothing, and **turn off** sends the command, which switches
-  the panel on. Voice assistants, scenes and many automations use these
-  actions. A mode button always leaves the panel on, in that mode.
+  off if it is on, and on if it is off. Everything this project gives you uses
+  it: the remote's power button, the card's **Skylight** tile and the add-on
+  page. Those always work.
+
+  Home Assistant also adds separate "turn on" and "turn off" commands to every
+  light. You get them without asking, in these places:
+  - the on/off switch in the light's own dialog and in entity lists,
+  - voice assistants, such as "turn off the Skylight",
+  - room and "all lights" commands, such as a bedtime automation that turns off
+    every light,
+  - scenes, and Apple Home through HomeKit.
+
+  The panel has no separate on and off, so Home Assistant decides from the shown
+  state. If the shown state is wrong, these commands do the wrong thing. For
+  example, if Home Assistant shows the panel as on while it is off, "turn off
+  all lights" switches the Skylight **on**. A mode button always leaves the
+  panel on, in that mode.
 - **It supports one Skylight.** It was built and tested with one panel.
   Support for several panels is not built yet. A panel obeys only the senders
   it has paired with. So any panel that paired with Home Assistant responds to
