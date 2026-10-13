@@ -1,0 +1,26 @@
+10:24:43 FF:FF:FF:FF:FF:FF src=0x7fff seq=172 ttl=5 dst=0xffff payload=c91102a304ff0641 known=Auto rhythm
+10:24:43 4C:3C:8F:EA:96:76 src=0x7fff seq=172 ttl=4 dst=0xffff payload=c91102a304ff0641 known=Auto rhythm
+10:24:53 FF:FF:FF:FF:FF:FF src=0x7fff seq=173 ttl=5 dst=0xffff payload=e01102a400 known=None
+10:24:53 4C:3C:8F:EA:96:76 src=0x7fff seq=173 ttl=4 dst=0xffff payload=e01102a400 known=None
+10:24:54 FF:FF:FF:FF:FF:FF src=0x7fff seq=174 ttl=5 dst=0xffff payload=e01102a500 known=None
+10:24:54 4C:3C:8F:EA:96:76 src=0x7fff seq=174 ttl=4 dst=0xffff payload=e01102a500 known=None
+10:24:54 4C:3C:8F:EA:96:76 src=0x7fff seq=175 ttl=4 dst=0xffff payload=e01102a600 known=None
+10:24:54 FF:FF:FF:FF:FF:FF src=0x7fff seq=175 ttl=5 dst=0xffff payload=e01102a600 known=None
+10:25:04 4C:3C:8F:EA:96:76 src=0x7fff seq=176 ttl=4 dst=0xffff payload=c91102a704ff0441 known=Relax
+10:25:04 FF:FF:FF:FF:FF:FF src=0x7fff seq=176 ttl=5 dst=0xffff payload=c91102a704ff0441 known=Relax
+10:26:05 FF:FF:FF:FF:FF:FF src=0x7fff seq=177 ttl=5 dst=0xffff payload=c91102a804ff0241 known=Energize
+10:26:05 4C:3C:8F:EA:96:76 src=0x7fff seq=177 ttl=4 dst=0xffff payload=c91102a804ff0241 known=Energize
+10:26:07 4C:3C:8F:EA:96:76 src=0x7fff seq=178 ttl=4 dst=0xffff payload=c91102a904ff0441 known=Relax
+10:26:07 FF:FF:FF:FF:FF:FF src=0x7fff seq=178 ttl=5 dst=0xffff payload=c91102a904ff0441 known=Relax
+10:26:09 4C:3C:8F:EA:96:76 src=0x7fff seq=179 ttl=4 dst=0xffff payload=c91102aa04ff0141 known=Refresh
+10:26:09 FF:FF:FF:FF:FF:FF src=0x7fff seq=179 ttl=5 dst=0xffff payload=c91102aa04ff0141 known=Refresh
+10:26:12 4C:3C:8F:EA:96:76 src=0x7fff seq=180 ttl=4 dst=0xffff payload=c91102ab04ff0541 known=Rest
+10:26:12 FF:FF:FF:FF:FF:FF src=0x7fff seq=180 ttl=5 dst=0xffff payload=c91102ab04ff0541 known=Rest
+10:26:15 4C:3C:8F:EA:96:76 src=0x7fff seq=181 ttl=4 dst=0xffff payload=c91102ac04ff0241 known=Energize
+10:26:15 FF:FF:FF:FF:FF:FF src=0x7fff seq=181 ttl=5 dst=0xffff payload=c91102ac04ff0241 known=Energize
+10:26:20 4C:3C:8F:EA:96:76 src=0x7fff seq=182 ttl=4 dst=0xffff payload=c91102ad04ff0641 known=Auto rhythm
+10:26:20 FF:FF:FF:FF:FF:FF src=0x7fff seq=182 ttl=5 dst=0xffff payload=c91102ad04ff0641 known=Auto rhythm
+10:26:22 FF:FF:FF:FF:FF:FF src=0x7fff seq=183 ttl=5 dst=0xffff payload=c91102ae04ff0241 known=Energize
+10:26:24 FF:FF:FF:FF:FF:FF src=0x7fff seq=184 ttl=5 dst=0xffff payload=c91102af04ff0641 known=Auto rhythm
+10:26:24 4C:3C:8F:EA:96:76 src=0x7fff seq=184 ttl=4 dst=0xffff payload=c91102af04ff0641 known=Auto rhythm
+esphome-web-ece638 @ 192.168.50.19: Connection error occurred: [Errno 54] Connection reset by peer

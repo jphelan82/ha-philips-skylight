@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="csrf" content="__CSRF__">
+  <base href="__BASE__">
+  <title>Skylight</title>
+  <link rel="stylesheet" href="static/style.css">
+  <script defer src="static/app.js"></script>
+</head>
+<body>
+<main>
+  <header><h1 id="title">Skylight</h1><span id="connection" class="badge">Connecting</span></header>
+  <div id="notice" role="status" aria-live="polite" hidden></div>
+
+  <section id="pair-wait" hidden>
+    <h2 id="pair-countdown">Pairing…</h2>
+    <p>The panel blinks when it pairs.</p>
+  </section>
+
+  <section id="installation" hidden>
+    <h2>Finish installing</h2>
+    <p id="install-message"></p>
+    <button data-action="install" id="install" class="primary">Install the Skylight integration</button>
+    <button data-action="restart" id="restart" class="primary">Restart Home Assistant</button>
+  </section>
+
+  <section id="setup" hidden>
+    <h2>Set up</h2>
+    <p class="hint">One step needs you to switch the Skylight's power off and on at its light switch or breaker. Use a phone or a portable computer for setup, so you can take it with you.</p>
+    <ol class="steps">
+      <li id="step-proxy">
+        <h3>Prepare your Bluetooth proxy <span class="status" id="step-proxy-status"></span></h3>
+        <div id="proxy-firmware" hidden>
+          <p>Add the Skylight firmware to the ESPHome Bluetooth proxy nearest the panel.</p>
+          <label>Proxy<select id="node-choice"></select></label>
+          <button data-action="prepare_firmware" class="primary">Add Skylight firmware</button>
+        </div>
+        <div id="proxy-install" hidden>
+          <p>Now install it: in ESPHome Device Builder, open <strong id="proxy-node"></strong>, then choose <strong>⋮ → Install → Wirelessly</strong>. This page continues by itself when the proxy is back.</p>
+          <p><a id="device-builder" target="_top" hidden>Open ESPHome Device Builder</a></p>
+        </div>
+        <p id="proxy-none" hidden>No ESPHome Bluetooth proxy found. Set one up near the panel in ESPHome Device Builder first.</p>
+      </li>
+      <li id="step-connect">
+        <h3>Connect Home Assistant to the proxy <span class="status" id="step-connect-status"></span></h3>
+        <div id="connect-choice" hidden>
+          <label>Proxy<select id="proxy-choice"></select></label>
+          <button data-action="connect" class="primary">Connect</button>
+        </div>
+      </li>
+      <li id="step-tracking">
+        <h3>Let Home Assistant hear your remote <span class="status" id="step-tracking-status"></span></h3>
+        <div id="tracking-off" hidden>
+          <p>This lets Home Assistant follow the presses on your own remote.</p>
+          <button data-action="allow_tracking" class="primary">Allow</button>
+        </div>
+      </li>
+      <li id="step-pair">
+        <h3>Pair Home Assistant with the panel <span class="status" id="step-pair-status"></span></h3>
+        <div id="pair-steps" hidden>
+          <ol>
+            <li>Switch the panel's power off at its light switch or breaker, then on again. The remote's power button does not work for this.</li>
+            <li>Wait until the panel is back on. That can take up to 30 seconds.</li>
+            <li>Select <strong>Pair</strong> straight away. The panel blinks.</li>
+          </ol>
+          <button data-action="pair" class="primary">Pair</button>
+        </div>
+        <div id="pair-test" hidden>
+          <p>Now test it.</p>
+          <button data-action="test" class="primary">Switch the panel on or off</button>
+        </div>
+        <div id="pair-ask" hidden>
+          <p>What did the panel do?</p>
+          <div class="row"><button data-action="confirm_test" data-result="off">It switched off</button><button data-action="confirm_test" data-result="on">It switched on</button><button data-action="confirm_test" data-result="none">Nothing changed</button></div>
+        </div>
+        <div id="pair-mode" hidden>
+          <p>It works. Now choose a mode. The panel switches on in that mode.</p>
+          <div class="modes" id="setup-modes"></div>
+          <button data-action="finish_setup" class="link">Skip</button>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section id="control" hidden>
+    <p class="state"><span id="state-text">Unknown</span><span class="hint" id="state-note">Shown state is a best guess</span></p>
+    <button data-action="toggle" class="wide">Power on/off</button>
+    <div class="modes" id="modes"></div>
+    <div class="row"><button id="dim-down" data-action="dim_down" data-hold="down">Dim −</button><button id="dim-up" data-action="dim_up" data-hold="up">Dim +</button></div>
+    <p class="hint">Hold a dim button to keep dimming, like on the remote.</p>
+    <details class="plain"><summary>Auto rhythm schedule</summary>
+      <p>Auto rhythm follows a daily schedule. The schedule starts at the time you set it.</p>
+      <button data-action="rhythm_start">Start the schedule now</button>
+    </details>
+  </section>
+
+  <section id="dashboard" hidden>
+    <h2>Add to a dashboard</h2>
+    <div class="row"><button data-action="create_dashboard">Create a Skylight dashboard</button><button id="choose-dashboard">Add to a dashboard</button></div>
+    <div id="dashboard-target" hidden>
+      <label>Dashboard<select id="dashboard-choice"></select></label>
+      <label>View<select id="view-choice"></select></label>
+      <button id="add-card" class="primary">Add the card</button>
+    </div>
+    <p><a id="dashboard-link" target="_top" hidden>Open the dashboard</a></p>
+    <p><a id="card-download" href="api/dashboard-card" download>Download the card instead</a></p>
+  </section>
+
+  <section id="fixes" hidden>
+    <h2>Settings and fixes</h2>
+    <details class="plain" id="fix-state"><summary>Correct the shown state</summary>
+      <p>Look at the panel. This changes only what Home Assistant shows.</p>
+      <div class="row"><button data-action="sync_power" data-on="yes">Panel is on</button><button data-action="sync_power" data-on="no">Panel is off</button></div>
+      <label>Mode<select id="observed-mode"></select></label>
+    </details>
+    <details class="plain" id="fix-pair"><summary>Start over</summary>
+      <p>Home Assistant is paired. Pairing it again can make the panel drop your remote, so start over instead. This removes every remote, Home Assistant included, and then pairs them again in the right order.</p>
+      <ol>
+        <li>Switch the panel's power off at its light switch or breaker, then on again.</li>
+        <li>Wait until the panel is back on. Then select <strong>Unpair all</strong> straight away. The panel blinks. If it only switches off, the request came too late. Try again.</li>
+        <li>Pair your remote: switch the power off and on, wait until the panel is back on, then hold the remote's power button for 10 seconds until the panel blinks.</li>
+        <li>Select <strong>Continue</strong>. The setup checklist pairs Home Assistant.</li>
+      </ol>
+      <label class="check"><input id="unpair-confirm" type="checkbox">Remove every remote. I will pair my remote again.</label>
+      <div class="row"><button data-action="unpair_all">Unpair all</button><button data-action="start_over">Continue</button></div>
+    </details>
+    <details class="plain" id="fix-proxy"><summary>Change the Bluetooth proxy</summary>
+      <label>Proxy<select id="proxy-change"></select></label>
+      <button data-action="connect" data-from="proxy-change">Save</button>
+      <details class="plain" id="advanced"><summary>The proxy is not listed</summary>
+        <p>Choose the advertising action and the name sensor of the same proxy.</p>
+        <label>Advertising action<select id="service"></select></label>
+        <label>Name sensor<select id="proxy"></select></label>
+        <button data-action="connect" data-from="advanced">Save</button>
+      </details>
+    </details>
+    <details class="plain"><summary>Unpair all remotes</summary>
+      <p>This makes the panel forget every remote, Home Assistant included. Use <strong>Start over</strong> above. It unpairs everything and pairs your remote and Home Assistant again.</p>
+    </details>
+    <details class="plain"><summary>The panel ignores Home Assistant after a backup restore</summary>
+      <p>An older backup has an older command counter, and the panel ignores old numbers. Moving the counter forward fixes this. It sends nothing to the panel.</p>
+      <label class="check"><input id="skip-confirm" type="checkbox">Home Assistant worked before the restore, and the remote still works.</label>
+      <button data-action="skip_sequence">Move the counter forward</button>
+    </details>
+    <details class="plain"><summary>Install the firmware by hand</summary>
+      <p><a href="api/firmware" download>Download the Skylight firmware package</a>. Put <code>skylight-transmitter.yaml</code> and the <code>components</code> folder next to your proxy's YAML, then add:</p>
+      <pre>packages:
+  skylight: !include skylight-transmitter.yaml</pre>
+    </details>
+  </section>
+
+  <footer><a id="entity" href="/config/integrations/integration/philips_skylight" target="_top">Open the Skylight integration</a><span id="version"></span></footer>
+</main>
+</body>
+</html>

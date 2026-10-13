@@ -1,0 +1,82 @@
+set_assumed_power:
+  name: Set assumed power
+  description: Tell Home Assistant the physical light's current power state without sending a command. Required after restart or a proxy outage before using turn_off, or turn_on without an effect.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
+  fields:
+    is_on:
+      name: Currently on
+      description: Whether the physical Skylight is currently illuminated.
+      required: true
+      selector:
+        boolean:
+skip_sequence:
+  name: Skip sequence forward (recovery)
+  description: Jump the transmitter's mesh sequence counter forward by about one million. Use only when the panel ignores this transmitter after Home Assistant was rebuilt without a backup or restored from an older backup. Each skip uses one sixteenth of the counter's total range. Sends no light command.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
+  fields:
+    confirm:
+      name: Confirm recovery
+      description: Confirm that the panel ignores this transmitter after a rebuild or restore.
+      required: true
+      selector:
+        boolean:
+pair_transmitter:
+  name: Pair transmitter
+  description: Sends the pairing request for 10 seconds. First switch the panel's power off and on at its light switch or breaker, then run this as soon as the panel is back on. The panel blinks when it pairs. The panel sends no confirmation, so test a command afterward. Pair Home Assistant only once, for example after Unpair all remotes. Pairing it again can make the panel drop your other remote.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
+  fields:
+    confirm:
+      name: Start pairing
+      description: Confirm that the panel just came back on after a power cycle.
+      required: true
+      selector:
+        boolean:
+unpair_all_remotes:
+  name: Unpair all remotes
+  description: Makes the panel forget every paired sender, the original remote and this transmitter included. Run it as soon as the panel is back on after a power cycle at its light switch or breaker. Afterward, pair every remote again, and pair this transmitter again with Pair transmitter.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
+  fields:
+    confirm:
+      name: Accept removing every remote
+      description: Confirm that you will pair every remote again afterward.
+      required: true
+      selector:
+        boolean:
+dim:
+  name: Dim
+  description: Dims the panel up or down. Without a hold time, it sends one step, like a tap on the remote. With a hold time, it sends the remote's hold command about every 0.6 seconds for that long.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
+  fields:
+    direction:
+      name: Direction
+      required: true
+      selector:
+        select:
+          options:
+            - down
+            - up
+    hold:
+      name: Hold time
+      description: Seconds to hold, from 0 to 10. 0 sends one step.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.6
+          unit_of_measurement: s

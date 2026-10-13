@@ -1,0 +1,20 @@
+[project]
+name = "ha-philips-skylight"
+version = "0.3.2"
+requires-python = ">=3.12"
+dependencies = ["cryptography>=46.0.7"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-asyncio>=0.24", "ruff", "PyYAML>=6"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "addon_tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+include = ["custom_components/**/*.py", "tests/**/*.py", "addon_tests/**/*.py", "philips_skylight/app/**/*.py", "tools/sync_addon.py", "tools/dashboard_card.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

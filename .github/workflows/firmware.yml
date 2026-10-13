@@ -1,0 +1,26 @@
+name: Firmware
+on:
+  push:
+    paths: ['esphome/**', '.github/esphome/**', '.github/workflows/firmware.yml']
+  pull_request:
+    paths: ['esphome/**', '.github/esphome/**', '.github/workflows/firmware.yml']
+  workflow_dispatch:
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@v6
+        with:
+          path: ~/.platformio
+          key: platformio-esphome-2026.4.5
+      - run: python -m pip install esphome==2026.4.5
+      # Build the package the way users do: the node YAML sits beside the package.
+      - run: |
+          mkdir build
+          cp -R esphome/. build/
+          cp .github/esphome/ci-node.yaml build/
+          esphome compile build/ci-node.yaml

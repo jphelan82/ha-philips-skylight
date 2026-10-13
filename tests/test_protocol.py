@@ -1,0 +1,136 @@
+"""Compare mesh crypto against real remote captures, not just self-round-trips."""
+
+import re
+from pathlib import Path
+
+import pytest
+
+from custom_components.philips_skylight.const import (
+    APPLICATION_KEY,
+    EFFECTS,
+    NETWORK_KEY,
+    RHYTHM_START,
+)
+from custom_components.philips_skylight.protocol import (
+    MeshCodec,
+    command_payload,
+    identify_command,
+    k3,
+    k4,
+    pairing_payload,
+    unpair_all_payload,
+)
+
+CAPTURE = Path(__file__).resolve().parents[1] / "tools/capture-2026-10-12.log"
+FIRST_TOGGLE = bytes.fromhex("1a2a1bc5e03c8aceab4468d9d8e76f77efbb889cd1530fa6955cac")
+
+
+def test_factory_keys_and_captured_toggle():
+    assert k3(NETWORK_KEY).hex() == "c7cd5342d1544cd5"
+    assert k4(APPLICATION_KEY) == 0x38
+    (message,) = MeshCodec().decode(FIRST_TOGGLE)
+    assert (message.source, message.destination, message.sequence, message.ttl) == (
+        0x7FFF,
+        0xFFFF,
+        17,
+        5,
+    )
+    assert message.payload.hex() == "c8110288030141"
+
+
+def test_encoder_reproduces_real_remote_packet(monkeypatch):
+    monkeypatch.setattr("custom_components.philips_skylight.protocol.SOURCE", 0x7FFF)
+    assert MeshCodec().encode(bytes.fromhex("c8110288030141"), 17) == FIRST_TOGGLE
+
+
+def test_pairing_payload_matches_capture_and_fits_advertising_bearer():
+    codec = MeshCodec()
+    paired = []
+    for line in CAPTURE.read_text().splitlines():
+        raw = bytes.fromhex(re.search(r"raw=(\w+)", line)[1])
+        for message in codec.decode(raw):
+            if message.payload[0] == 0xCF:
+                assert message.payload == pairing_payload(message.payload[3])
+                paired.append(message)
+    assert len(paired) == 13
+    raw = codec.encode(pairing_payload(0x80), 100)
+    assert len(raw) == 31
+    (message,) = codec.decode(raw)
+    assert message.source == 0x7FFE
+    assert message.payload == pairing_payload(0x80)
+    assert identify_command(message.payload) is None
+
+
+def test_rhythm_start_matches_the_captured_combo_press():
+    # Captured 2026-10-13 while Auto rhythm and Relax were held together.
+    for captured in ("e01102a400", "e01102a500", "e01102a600"):
+        payload = bytes.fromhex(captured)
+        assert identify_command(payload) == RHYTHM_START
+        assert command_payload(RHYTHM_START, payload[3]) == payload
+
+
+def test_unpair_all_changes_only_the_sub_command_byte():
+    payload = unpair_all_payload(0x80)
+    assert payload == pairing_payload(0x80)[:4] + b"\x02" + b"\x11" * 6
+    assert identify_command(payload) is None
+    with pytest.raises(ValueError):
+        unpair_all_payload(0x7F)
+
+
+def test_all_capture_mesh_pdus_authenticate():
+    codec = MeshCodec()
+    decoded = []
+    for line in CAPTURE.read_text().splitlines():
+        raw = bytes.fromhex(re.search(r"raw=(\w+)", line)[1])
+        if raw[1] != 0x2A:
+            continue
+        messages = codec.decode(raw)
+        assert len(messages) == 1, line
+        assert messages[0].source == 0x7FFF
+        decoded.extend(messages)
+    assert len(decoded) > 40
+    commands = {identify_command(message.payload) for message in decoded}
+    assert {"toggle", "dim_down", "dim_up", *EFFECTS} <= commands
+
+
+@pytest.mark.parametrize("command", ["toggle", "dim_up", "dim_down", *EFFECTS, RHYTHM_START])
+def test_transmitted_packets_have_own_sender_and_fit_legacy_advertisements(command):
+    codec = MeshCodec()
+    packet = codec.encode(command_payload(command, 0x80), 0x123456)
+    assert len(packet) <= 31
+    (message,) = codec.decode(packet)
+    assert message.source == 0x7FFE
+    assert message.sequence == 0x123456
+    assert identify_command(message.payload) == command
+
+
+def test_tampered_truncated_and_unrelated_advertisements_are_ignored():
+    codec = MeshCodec()
+    for index in range(2, len(FIRST_TOGGLE)):
+        packet = bytearray(FIRST_TOGGLE)
+        packet[index] ^= 1
+        assert codec.decode(bytes(packet)) == []
+    for length in range(len(FIRST_TOGGLE)):
+        assert codec.decode(FIRST_TOGGLE[:length]) == []
+    assert len(codec.decode(b"\x02\x01\x06" + FIRST_TOGGLE)) == 1
+    assert codec.decode(bytes.fromhex("03032718")) == []
+
+
+def test_encoder_rejects_sequence_wrap_segmentation_and_unsupported_commands():
+    codec = MeshCodec()
+    for seq in (-1, 0x1000000):
+        with pytest.raises(ValueError):
+            codec.encode(command_payload("toggle", 0x80), seq)
+    with pytest.raises(ValueError):
+        codec.encode(bytes(12), 1)
+    for command in ("on", "off", "pair", "brightness"):
+        with pytest.raises(ValueError):
+            command_payload(command, 0x80)
+
+
+def test_hold_commands_match_the_documented_remote_bytes():
+    assert command_payload("dim_down_hold", 0x80).hex() == "c811028001021441"
+    assert command_payload("dim_up_hold", 0x80).hex() == "c811028001031441"
+    # Received holds from a remote are tracked as ordinary dim commands.
+    assert identify_command(command_payload("dim_down_hold", 0x81)) == "dim_down"
+    assert identify_command(command_payload("dim_up_hold", 0x81)) == "dim_up"

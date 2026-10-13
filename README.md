@@ -1,67 +1,245 @@
-# Philips Skylight: Bluetooth Mesh protocol
+# Philips Skylight for Home Assistant
 
-The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7 x 25.6 in). Philips sells it as remote-only: no app, no Hue, no Matter, no Wi-Fi. Inside, it runs standard Bluetooth Mesh, and its remote uses factory-default keys. This file records what we decoded on 2026-10-12, so Home Assistant can send the same commands as the remote.
+> [!WARNING]
+> **Work in progress.** If you found this project by chance: I am still
+> developing and testing it. You are welcome to try it. Expect parts that do not
+> work fully yet, and expect bugs and errors.
+>
+> **One Skylight only.** I have tested this with one Skylight panel. Support for
+> several Skylights is not built and not tested.
 
-## The hardware
+The Philips LED Skylight panel comes with a remote and nothing else. It has no
+app, no Wi-Fi and no Hue support. This project lets Home Assistant act as a
+second remote. You get a power toggle, the six modes and dim buttons on your
+dashboard and in automations. Your original remote keeps working.
 
-| Part | What we found |
+Home Assistant talks to the panel through an ESPHome Bluetooth proxy. You do not
+need a cloud account, an MQTT broker or a custom dashboard card.
+
+## Read this first: what it cannot do
+
+This is an experimental project. Please read these limits before you install it.
+
+- **The panel never reports what it is doing.** Home Assistant guesses the power
+  and mode from the commands it sends and the remote presses it hears. The guess
+  is often right, but it is still a guess.
+- **The guess goes wrong sometimes.** A missed remote press, a wall switch, a
+  power cut, or a restart of Home Assistant or the proxy all put it out of step.
+  When that happens, you look at the panel and tell Home Assistant what you see.
+- **Power is a toggle.** The panel has one on/off command, not separate on and
+  off commands. If Home Assistant thinks the light is on when it is off, then
+  "turn on" does nothing, and "turn off" turns it on. A mode button always
+  leaves the panel on, in that mode.
+- **It supports one Skylight.** It was built and tested with one panel.
+  Support for several panels is not built yet. A panel obeys only the senders
+  it has paired with. So any panel that paired with Home Assistant responds to
+  its commands, and a second panel paired the same way responds too. Home
+  Assistant also tracks every compatible remote it hears, so a second panel's
+  remote changes the recorded state.
+- **The panel accepts at most two remotes, and Home Assistant counts as one.**
+  If two remotes already control your Skylight, this does not work unless you
+  give one of them up. If you set this up before on another Home Assistant, use
+  **Unpair all remotes** first, then pair your remote again.
+- **Setup needs the panel's power switched off and on once**, at its light switch
+  or breaker. Use a phone or a portable computer for setup, so you can take it
+  with you.
+- **You cannot set a brightness level.** The panel takes only "dim down" and
+  "dim up" commands. It has no command for a level such as 40%, and it never
+  reports its level. So Home Assistant shows no brightness slider, and
+  Home Assistant ignores a brightness in `light.turn_on`. Color temperature
+  has no command either.
+- **It is tested on one setup.** One owner tested it with the NatureConnect/BioUp
+  17.7 × 25.6 inch panel and an ESP32-C3 proxy. Other models are unknown.
+- **The add-on needs Home Assistant OS or Supervised.** For Container or Core
+  installs, use the [integration-only guide](docs/INTEGRATION.md).
+
+If you want a dependable on/off status for automations, this project cannot
+give you one. If you want a remote on your phone and in your dashboard, it
+does that well.
+
+## Wall switches
+
+Leave the panel's wall switch on. Control the panel with its remote, its wall
+remote, or Home Assistant. A wall switch cuts the power without telling Home
+Assistant, so the recorded state goes wrong. You need the wall switch or the
+breaker only for pairing.
+
+If the panel's power runs through a **smart** wall switch in Home Assistant, you
+can keep the record in step with an automation. When the switch turns off,
+press **Record panel off**. When the switch turns back on, record what the panel
+does when its power returns.
+
+## What you need
+
+- Home Assistant OS or Supervised, version 2026.6 or newer.
+- A Philips Skylight panel.
+- An ESPHome Bluetooth proxy near the panel, set up in ESPHome Device Builder.
+  ESPHome 2026.4.5 or newer.
+
+## Install
+
+1. In Home Assistant, open **Settings → Apps → App store → Repositories**. On
+   older versions, this menu is called **Add-ons**. Add
+   `https://github.com/jphelan82/ha-philips-skylight`.
+2. Install **Philips Skylight**. Turn on **Start on boot**, start it, and open
+   its web page.
+3. If the page asks you to restart Home Assistant, select **Restart Home
+   Assistant**.
+4. Follow the setup checklist on the page. Each step gets a ✓ when it is done.
+   1. **Prepare your Bluetooth proxy.** Choose your proxy and select **Add
+      Skylight firmware**. The add-on copies the firmware files into your
+      ESPHome folder and adds one line to the proxy's YAML. It keeps a backup.
+      Then install it in ESPHome Device Builder: open the proxy, then **⋮ →
+      Install → Wirelessly**. The page continues by itself when the proxy is
+      back. A proxy that already has the firmware skips this step.
+   2. **Connect Home Assistant to the proxy.** With one compatible proxy, the
+      add-on does this by itself. With several, choose one.
+   3. **Let Home Assistant hear your remote.** Select **Allow**. This turns on
+      the proxy's setting **Allow the device to perform Home Assistant actions**.
+   4. **Pair Home Assistant with the panel.** See [Pairing](#pairing). The page
+      shows "Pairing…" for 10 seconds. Then select **Switch the panel on or
+      off**, and say what the panel did.
+      Finally, choose a mode. The panel switches on in that mode, so Home
+      Assistant knows its state.
+5. Optional: create a Skylight dashboard, or add the Skylight card to one of
+   your dashboards. You can also use the entities in your own cards.
+
+If the add-on is not in the store yet, use the
+[local installation](docs/PROTOCOL.md#development-installation).
+
+Already using the Philips Skylight integration? The add-on keeps your light,
+settings and pairing. You do not need to pair again.
+
+## Pairing
+
+The panel ignores Home Assistant until you pair it. Pairing is a one-time step.
+Updates do not need it. Your remote stays paired.
+
+1. Switch the panel's power off at its light switch or breaker, then on again.
+   The remote's power button does not work for this.
+2. Wait until the panel is back on. That can take up to 30 seconds.
+3. Select **Pair** straight away. Home Assistant sends the pairing request for
+   10 seconds, and the panel blinks.
+
+The panel listens for pairing only for a short time after it comes back on, so
+do not wait long before you select **Pair**. Home Assistant sends a short burst,
+like the remote's own 10-second hold. A long stream of requests makes the panel
+drop your remote.
+
+You can also pair from **Settings → Devices & services → Philips Skylight →
+Configure → Pair this transmitter**, or with the `philips_skylight.pair_transmitter`
+action.
+
+Pair Home Assistant only once. Pairing it again can make the panel drop your
+remote, so the add-on page refuses it after setup. To pair again, use **Settings
+and fixes → Start over** on the add-on page. It unpairs every remote, has you
+pair your remote first, and then pairs Home Assistant through the setup
+checklist.
+
+To make the panel forget **every** remote, use **Configure → Unpair all
+remotes**, with the same steps. It removes your remote and Home Assistant.
+Afterward, pair your remote again with its own steps, and pair Home Assistant
+again. No command removes only one remote. If the request reaches the panel too
+late, the panel only switches off. Then try again.
+
+Removing or reinstalling the add-on does not unpair the panel, because the panel
+stores the pairing itself. That leftover pairing does no harm: nothing else
+sends as Home Assistant's address.
+
+## Everyday use
+
+The Skylight card uses the remote's icons and colors.
+
+| Control | What it does |
 |---|---|
-| Panel radio | Bluetooth Low Energy (BLE) Mesh module, address `4C:3C:8F:EA:96:76`. The address prefix belongs to Shenzhen Jingxun Technology. The panel advertises the name `BK_MESH_light`, which points to a Beken chip. |
-| Panel beacon | The panel always sends the "unprovisioned device" beacon (service `0x1827`), even after pairing. Ignore it. The panel is on the default network from the start, and it relays the remote's packets. |
-| Remote | A battery mesh node. It sends from mesh address `0x7FFF` to `0xFFFF` (all nodes). Its BLE address for the proxy advert is `F6:E2:99:FE:DE:B1`. The ESPHome proxy reports its command packets under `FF:FF:FF:FF:FF:FF`. |
-| FCC ID | `2AGBW929004709X`, 2402 to 2480 MHz. |
+| **Skylight** | Toggles the panel, like the remote's power button. It shows the recorded power and mode, and glows in the mode's color while the panel is on. |
+| Mode buttons | Auto rhythm, Refresh, Energize, Focus, Relax and Rest. A mode button also switches the panel on. The recorded mode lights up in the remote's color. |
+| **Dim −** / **Dim +** | A tap is one step. On a dashboard, holding a button dims for about 3 seconds. On the add-on page, holding keeps dimming until you let go, like the remote. |
+| **Rhythm** | Makes the current time the start of the Auto rhythm schedule. The panel blinks. Auto rhythm does nothing until a start is set. |
+| **Correct** | Opens a view to fix Home Assistant's guess. |
 
-## The keys
+## Tell Home Assistant what you see
 
-Both keys are factory defaults. Every unit of this model very likely uses the same pair.
+Do this any time the card does not match the panel.
 
-| Key | Value | How we know |
-|---|---|---|
-| Network key (NetKey) | `11111111111111111111111111111111` | The remote's 64-bit network ID is `c7cd5342d1544cd5`. The mesh function k3 of this key gives exactly that ID. |
-| Application key (AppKey) | `00000000000000000000000000000000` | Its 6-bit key ID matches (`0x38`), and it decrypts every captured command with a valid message check. |
-| IV index | `0` | From the remote's secure network beacon. |
+1. On the card, select **Correct**. On the add-on page, open **Settings
+   and fixes → Correct the shown state**.
+2. Select **Panel is on** or **Panel is off**.
+3. Select the mode you can see, or **Mode unknown**.
+4. On the card, select **Done**.
 
-## The commands
+This changes only Home Assistant's record. It does not send anything to the
+light. A mode press on your remote also updates the record by itself.
 
-Each command is a vendor message with company ID `0x0211` (Telink Semiconductor). The bytes below are the decrypted access payload. `TT` is a transaction number. The remote counts it up by one per press, from `0x80` to `0xFF`, and then wraps back to `0x80`.
+## Automations: use commands, not the guess
 
-| Button | Payload | Notes |
-|---|---|---|
-| On/off | `C8 11 02 TT 03 01 41` | A toggle. We have not found separate on and off codes yet. |
-| Dim down, tap | `C8 11 02 TT 01 00 14 41` | `0x14` is 20, likely a 20 percent step. |
-| Dim up, tap | `C8 11 02 TT 01 01 14 41` | |
-| Dim down, hold | `C8 11 02 TT 01 02 14 41` | The remote repeats it about every 0.6 s while held. |
-| Dim up, hold | `C8 11 02 TT 01 03 14 41` | Same repeat as dim down. |
-| Refresh | `C9 11 02 TT 04 FF 01 41` | `C9` is the scene command. |
-| Energize | `C9 11 02 TT 04 FF 02 41` | |
-| Focus | `C9 11 02 TT 04 FF 03 41` | |
-| Relax | `C9 11 02 TT 04 FF 04 41` | |
-| Rest | `C9 11 02 TT 04 FF 05 41` | |
-| Auto rhythm | `C9 11 02 TT 04 FF 06 41` | |
-| Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11 11` | Sent about three times a second for the whole hold. |
+The safest automations send a command and do not depend on the recorded state:
 
-Every command ends in `0x41`. Its meaning is unknown.
+- `light.toggle` toggles the power.
+- `button.press` on a mode button selects that mode, and switches the panel on.
+- `philips_skylight.dim` with `direction: down` or `up` dims by one step. Add
+  `hold: 3` to dim like a 3-second hold on the remote.
 
-## Rules for sending from Home Assistant
+`light.turn_on` and `light.turn_off` decide whether to toggle from the recorded
+power. If the record is wrong, they do the wrong thing. `light.turn_on` with an
+effect is the exception: it always sends that mode. Do not use the recorded
+state as a trigger or a condition. Do not treat it as proof that the panel
+changed.
 
-- **Never send as the remote's address `0x7FFF`.**
-  A mesh node drops any packet whose sequence number is not higher than the last one from the same sender. If Home Assistant sends as `0x7FFF` with a high sequence number, the panel ignores the real remote until the remote catches up. Use a separate unicast address, such as `0x7FFE`, and keep its own sequence counter.
-- **Store the sequence counter.** It must only go up, across restarts.
-- **The panel sends no status.** Home Assistant has no way to read the light's state. It can track the remote's presses through the proxy, because it can decrypt them.
+## Troubleshooting
 
-## Open questions
+| Problem | What to try |
+|---|---|
+| The add-on is not in the store | Check that you can open the repository, and that an add-on release exists. Otherwise, use the local installation. |
+| No proxy appears | The setup checklist lists the Bluetooth proxies in your ESPHome folder. If none is listed, set up a Bluetooth proxy in ESPHome Device Builder first. |
+| Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
+| The dashboard shows Unknown, or the wrong power or mode | Use **Correct** and record what you see. |
+| The card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
+| Commands do nothing | Check that the proxy is online. Then pair again. |
+| Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
+| An update asks for a restart | Restart Home Assistant from the add-on page. |
 
-- Does the panel accept commands from a sender address other than `0x7FFF`? Not tested. This is the first test once a transmitter exists.
-- Do separate on and off codes exist? Candidates to try: `03 00 41` and `03 02 41`.
-- What does a dim step value other than `0x14` do?
+## Ideas for later
 
-## Capture setup
+- **Maybe: a brightness level.** To reach a level, Home Assistant dims the
+  panel all the way down, then dims it up in timed steps. This needs a
+  measured step size and a known lowest level. It is slow, and the panel shows
+  every step. Only a maybe.
+- During setup, offer to link a smart wall switch to the recorded state with an
+  automation.
+- Start the pairing burst by itself when the panel comes back on. The panel
+  sends a Bluetooth beacon all the time, so the proxy can tell when its power
+  goes off and comes back. Then nobody needs to select **Pair** at the right
+  moment.
+- **Several Skylights.** Not built yet. Two parts are needed:
+  - **Control.** Give each panel its own Home Assistant sender address (`0x7FFE`,
+    `0x7FFD`, and so on), and pair each address only with its own panel. This
+    needs the panels on separate circuits, because one power cycle opens the
+    pairing window of every panel on that circuit. Each panel accepts at most
+    two senders, so each panel can have one remote besides Home Assistant.
+  - **State tracking per panel.** Home Assistant hears and decrypts every remote
+    press, paired or not. The preferred design is a table that maps each
+    remote's mesh address to its panel. The user fills it in during setup by
+    pressing each remote once. The remotes stay paired to their panels, so they
+    keep working without Home Assistant. A panel's relay of a press does not
+    help: on 2026-10-13 the panel relayed presses from a remote it had dropped.
+  - **This needs each remote to have its own mesh address.** The tested remote
+    sends as `0x7FFF`. Whether every remote of this model uses `0x7FFF` is
+    unknown. If two remotes share an address, Home Assistant cannot tell their
+    presses apart. A capture of a second remote's press answers this. A remote
+    paired to two panels controls both, so its presses update both records.
+  - **Fallback if remotes share an address:** unpair the remotes from the
+    panels, and let Home Assistant forward each press to the right panel from
+    that panel's sender address. Then the state is exact. The cost is that the
+    remotes stop working whenever Home Assistant, the proxy or Wi-Fi is down,
+    and each press has a little more delay.
 
-The proxy `bluetooth-proxy-1` (ESP32-C3, `esphome-web-ece638`) did the capture. At ESPHome's default scan settings it listens 30 ms of every 320 ms, and it missed most single presses. On 2026-10-12 its config got `esp32_ble_tracker` scan interval and window of 1100 ms each. After that it caught every press. It dropped off Wi-Fi once, for about 18 seconds, right after the change. It stayed up for the rest of the session. The backup of the old config is `/config/esphome/esphome-web-ece638.yaml.bak-20261012` on the server.
+## More detail
 
-Home Assistant's `bluetooth/subscribe_advertisements` feed does not help. It sends a device only when the device first appears or disappears, not on each advert. The capture polled the Bluetooth diagnostics instead, about twice a second.
-
-## Files
-
-- `tools/meshdec.py` decrypts a capture log. Run `uv run --with cryptography python meshdec.py 11111111111111111111111111111111 capture-2026-10-12.log`.
-- `tools/capture-2026-10-12.log` holds the raw mesh adverts from the session, with the panel's constant beacon removed.
+- [Add-on documentation](philips_skylight/DOCS.md): options, permissions,
+  recovery and removal.
+- [Dashboard guide](docs/DASHBOARD.md): the card, and manual card setup.
+- [Integration-only guide](docs/INTEGRATION.md): for installs without add-ons.
+- [Protocol notes](docs/PROTOCOL.md): how the panel's Bluetooth Mesh commands
+  work, and developer instructions.
+- [Validation record](docs/VALIDATION.md): what was tested on real hardware.
