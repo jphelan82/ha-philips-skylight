@@ -45,12 +45,13 @@ a release always publishes the images first and pushes `main` last.
 
 7. **Push `main`.** Users now see the update.
 
-## The first release only
+## Image visibility
 
-GitHub makes a new container package private. After the first publish, open
-each package on GitHub, **amd64-philips-skylight** and
-**aarch64-philips-skylight**, and choose **Package settings → Change
-visibility → Public**. Later versions stay public.
+The images come from a public repository, so GitHub makes them public. The
+first release, 0.4.5 on 2026-10-13, showed this: `tools/check_images.py`
+reported both images public with no change on GitHub. If the script ever
+reports `NOT downloadable` after a passing workflow, open each package on
+GitHub and choose **Package settings → Change visibility → Public**.
 
 ## If something goes wrong
 
