@@ -5,7 +5,7 @@
 - Native integration 0.2.8: a proxy reconnect within 60 seconds keeps the
   recorded power and mode. Before, every reconnect reset them to unknown, even
   one that lasted a fraction of a second. A longer outage still resets them,
-  because remote presses during it could have changed the panel. This update
+  because nobody hears a remote press during it. This update
   needs a Core restart.
 - Firmware package: `wifi: post_connect_roaming: false`. ESPHome's roaming
   scan every five minutes switched the tested proxy between access points all
