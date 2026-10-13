@@ -40,7 +40,10 @@ picker. Once added, customize them in Home Assistant or copy them elsewhere.
 After an entity rename, download the card again or update its references.
 
 **Before first use**, record the panel's observed power and mode in the add-on,
-or use **Correct recorded state** on the card. Choose **Mode unknown** if unsure.
+or use **Correct recorded state** on the card. In the add-on's **Record initial
+state** form, optionally press a mode button on the existing control panel;
+the mode dropdown always follows received presses. Choosing
+a mode manually records it immediately without operating the light. Choose **Mode unknown** if unsure.
 Repeat after pairing. Dashboard creation does not operate the light or set an
 observed baseline for you.
 

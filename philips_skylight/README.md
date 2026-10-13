@@ -25,8 +25,12 @@ panel has been tested with an ESP32-C3 proxy.
    remote. Skip this step if the HA transmitter already works; updates do not
    require re-pairing.
 6. **Before first use, match the recorded state to the physical panel.** In
-   **Match recorded state**, record the power and mode you can see, or
-   **Unknown** for the mode. This records observations without operating the light.
+   **Record initial state**, observe and select the power. Optionally press a
+   mode button on the existing control panel: the mode dropdown always follows
+   received presses. Choosing a mode manually records it immediately; choose
+   **Unknown** if unsure. Saving sends no light command
+   and keeps the latest received mode. Power still needs an
+   observation because its button only toggles.
 7. **Optional:** choose Compact or Full, then **Create Skylight dashboard** or
    **Add card to an existing dashboard**. Existing dashboards are preserved.
    No dashboard is required to use the native entities.

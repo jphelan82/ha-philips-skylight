@@ -279,10 +279,20 @@ class Panel:
             await self.ha.call("button", "press", self.button(effect))
         elif action in ("dim_up", "dim_down"):
             await self.ha.call("button", "press", self.button(action))
+        elif action == "sync_mode":
+            effect = body.get("effect")
+            if effect not in (*EFFECTS, "Unknown"):
+                raise ValueError("Choose a mode or Unknown")
+            entities = self.card_entities()
+            await self.ha.call(
+                "select", "select_option", entities["select.philips_skylight_recorded_scene"],
+                option=effect,
+            )
         elif action == "sync_power":
             if type(body.get("is_on")) is not bool:
                 raise ValueError("Specify whether the panel is currently on")
             await self.ha.call(DOMAIN, "set_assumed_power", entity, is_on=body["is_on"])
+            await self.set_first_setup(False)
         elif action == "pair":
             if body.get("confirm") is not True:
                 raise ValueError("Confirm the possible change to the original remote's pairing")

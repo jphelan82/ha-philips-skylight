@@ -54,13 +54,15 @@
     <p class="hint">Check the physical panel and original remote afterward. Pairing completion is not an acknowledgment; record the starting state again.</p>
   </details>
   </details>
-  <details id="matching" hidden><summary>Match recorded state</summary>
-    <p>Look at the physical panel and record what you see. These choices only update Home Assistant's record; they do not operate the light.</p>
+  <details id="matching" hidden><summary>Record initial state</summary>
+    <p>Look at the panel to record whether it is on or off. Choose its mode below, or leave it Unknown.</p>
     <form id="match-form">
       <label>Panel power<select id="observed-power" required><option value="">Choose what you can see</option><option value="on">Panel is on</option><option value="off">Panel is off</option></select></label>
-      <label>Mode I can see<select id="observed-mode"></select></label>
-      <button type="submit" class="primary">Record starting state</button>
+      <label>Mode<select id="observed-mode"></select></label>
+      <p class="hint">Press a button on your remote control panel to update in real time.</p>
+      <button type="submit" class="primary">Record initial state</button>
     </form>
+    <p class="hint">These choices only update Home Assistant's record. Power still needs an observation because the remote's power button only toggles.</p>
     <p id="recorded-state" class="hint"></p>
     <p class="hint">Repeat after a restart, outage, mains power change or missed BLE press. State is estimated from commands and received remote presses. If unreliable, use direct toggle, mode and dim commands and ignore the estimates.</p>
   </details>

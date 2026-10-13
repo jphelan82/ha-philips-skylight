@@ -45,7 +45,7 @@ function render(data) {
   const initial = presentation !== "ready";
   el("title").textContent = initial ? "Set up Skylight" : "Skylight";
   el("first-setup").hidden = !initial;
-  el("next-step").textContent = data.configured ? "Pair, then match the starting state" : "Connect your proxy";
+  el("next-step").textContent = data.configured ? "Pair, then record initial state" : "Connect your proxy";
   el("setup-guidance").textContent = data.configured
     ? "Enable the proxy's remote-tracking permission, pair this new transmitter, then record the panel's power and mode below. Already paired transmitters can skip pairing."
     : data.proxies.length ? "Choose your Bluetooth proxy below and save. A single compatible proxy is selected for you."
@@ -73,6 +73,7 @@ function render(data) {
   options("proxy", data.proxy_sensors, "Choose a sensor");
   options("proxy-choice", data.proxies.map((item) => ({...item, name: item.name + " · " + item.node})), "Choose a proxy");
   options("observed-mode", ["Unknown", ...data.effects]);
+  if (!busy && data.connected) el("observed-mode").value = data.effects.includes(data.effect) ? data.effect : "Unknown";
   el("proxy-hint").textContent = data.proxies.length === 1
     ? "One compatible proxy found and selected. Save to use it."
     : data.proxies.length ? "Choose the proxy near your panel." : "No matched proxy found. Prepare the firmware, or use advanced selection.";
@@ -80,6 +81,7 @@ function render(data) {
     ? "Compatible transmitter firmware found. You can skip the firmware update."
     : "No compatible transmitter has been matched yet. Install the package if your proxy needs it.";
   el("recorded-state").textContent = "Current record: " + data.state + " · " + (data.effect || "mode unknown") + ". This is an estimate.";
+  el("observed-mode").disabled = busy || !data.connected || data.restart_required;
   for (const button of document.querySelectorAll("button")) {
     const install = button.dataset.action === "install";
     button.disabled = busy || (!install && (!data.connected || data.restart_required));
@@ -115,7 +117,8 @@ async function action(body) {
     notice(body.action === "pair" ? "Request finished. Check the panel and original remote, then record the starting state."
       : body.action === "restart" ? "Home Assistant is restarting. This page will reconnect."
       : body.action === "setup" ? "Transmitter saved. Enable remote tracking, pair on first setup, and record the starting state."
-      : body.action === "sync_state" ? "Starting state recorded. No light command was sent. Dashboard setup is optional."
+      : ["sync_state", "sync_power"].includes(body.action) ? "Initial state recorded. No light command was sent. Dashboard setup is optional."
+      : body.action === "sync_mode" ? "Mode recorded. No light command was sent."
       : body.action === "create_dashboard" ? (result.created ? "Dashboard created. Use Open dashboard below." : "Existing dashboard preserved. Use Open dashboard below.")
       : body.action === "add_card" ? (result.added ? "Card added. Use Open dashboard below." : "This card is already in that view. No changes made.") : "");
     if (body.action === "pair") el("pair-confirm").checked = false;
@@ -173,7 +176,11 @@ el("setup-form").addEventListener("submit", (event) => {
 });
 el("match-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  action({action: "sync_state", power: el("observed-power").value, effect: el("observed-mode").value});
+  // The integration already has the latest mode; never overwrite a newer remote press.
+  action({action: "sync_power", is_on: el("observed-power").value === "on"});
+});
+el("observed-mode").addEventListener("change", () => {
+  action({action: "sync_mode", effect: el("observed-mode").value});
 });
 el("dashboard-choice").addEventListener("change", loadViews);
 el("view-choice").addEventListener("change", () => state && render(state));

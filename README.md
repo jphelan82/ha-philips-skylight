@@ -45,7 +45,7 @@ control of individual nearby panels is not supported.
 7. **Pair the HA transmitter on first setup**, following the explicit pairing
    step below. An already paired, working installation can skip this; updating
    the add-on does not require re-pairing.
-8. **Match the state before first use** using the add-on's **Record starting
+8. **Record initial state before first use** using the add-on's **Record initial
    state** form. Observe the panel and record its power and mode, or choose
    **Unknown** for the mode. This works without a dashboard.
 9. **Optional:** create a Skylight dashboard or add its card to an existing one.
@@ -57,7 +57,7 @@ store, use the [local development installation](docs/PROTOCOL.md#development-ins
 
 After first setup, firmware, transmitter settings, permission guidance and
 pairing are collapsed under **Setup and recovery**. If the recorded power is
-unknown, **Match recorded state** opens so you can record a fresh baseline.
+unknown, **Record initial state** opens so you can record a fresh baseline.
 Dashboard setup remains optional.
 
 If you already use the Philips Skylight integration, the add-on keeps your
@@ -91,14 +91,23 @@ through **Add card**. See the [dashboard guide](docs/DASHBOARD.md).
 observed starting state; listening for a power toggle cannot tell whether the
 panel started on or off.
 
-1. Look at the physical Skylight. Use **Match recorded state** in the add-on,
+1. Look at the physical Skylight. Use **Record initial state** in the add-on,
    or select **Correct recorded state** at the bottom of the optional card.
 2. Select **Panel is on** or **Panel is off** to match what you can see.
-3. Select its current mode, or **Mode unknown** if you cannot identify it.
-4. In the add-on, select **Record starting state**. On the card, select **Done**
+3. Optionally press a mode button on the existing control panel. The add-on's
+   mode dropdown always follows the recorded mode
+   as remote presses arrive (normally within a few seconds). This avoids having
+   to identify a mode visually. Alternatively, choose a mode manually to record
+   it immediately without operating the light. Leave it **Unknown** if unsure.
+4. In the add-on, select **Record initial state**. On the card, select **Done**
    to return to normal controls.
 
-This records your observation without operating the light. If you pair the
+Saving records your observation without operating the light; a physical mode
+press does operate it. Saving records only power and keeps the
+integration's latest mode. A received press is not proof that the panel acted
+on it. If the dropdown does not respond, check the proxy's remote-tracking
+permission and reception range. Power still needs an observed baseline:
+receiving its toggle cannot establish an unknown on/off state. If you pair the
 transmitter afterward, repeat state matching after pairing completes.
 
 ## Everyday controls

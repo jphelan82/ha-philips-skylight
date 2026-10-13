@@ -5,6 +5,9 @@
 - Guided setup shows relevant steps, with completed installation settings
   collapsed under Setup and recovery. One matched proxy selector, an advanced fallback, explicit
   first-time pairing, remote-tracking permission instructions and initial state matching.
+- Record initial state's mode dropdown follows received control-panel presses.
+  Manual mode choices record immediately without sending a light command.
+  Power still requires an observed baseline.
 - Downloadable ESPHome local package, added with one packages/include entry.
 - Optional dashboard creation or additive card installation into an existing
   editable dashboard view through Home Assistant's native API.

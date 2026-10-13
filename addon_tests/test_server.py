@@ -283,3 +283,47 @@ async def test_first_setup_guidance_survives_restart_and_ends_after_state_matchi
     final = Panel(restarted.ha, panel.installer, ROOT, allowed_ips={"127.0.0.1"})
     assert not final.snapshot()["first_setup"]
     assert [args[0] for args, _ in final.ha.calls] == ["Philips Skylight", "button", "select"]
+
+
+async def test_remote_assisted_matching_records_only_power_and_finishes_setup(panel, tmp_path):
+    panel.installer.data = tmp_path
+    fresh = Panel(panel.ha, panel.installer, ROOT, allowed_ips={"127.0.0.1"})
+    fresh.ha.states = {
+        "light.renamed": {
+            "state": "unknown",
+            "attributes": {"integration_version": "0.2.0", "assumed_effect": "Focus"},
+        }
+    }
+    await fresh.set_first_setup(True)
+    await fresh.perform({"action": "sync_power", "is_on": True})
+    assert fresh.ha.calls == [
+        (("philips_skylight", "set_assumed_power", "light.renamed"), {"is_on": True})
+    ]
+    assert fresh.snapshot()["effect"] == "Focus"
+    assert not Panel(fresh.ha, panel.installer, ROOT).first_setup
+
+
+async def test_manual_mode_records_without_operating_light_or_establishing_power(panel):
+    from skylight_addon.server import CARD_ENTITIES
+
+    panel.ha.registry = [
+        {"entity_id": entity, "unique_id": unique, "platform": "philips_skylight"}
+        for entity, unique in CARD_ENTITIES.items()
+    ]
+    panel.ha.states = {
+        "light.philips_skylight": {
+            "state": "unknown", "attributes": {"integration_version": "0.2.0"}
+        }
+    }
+    panel.first_setup = True
+    for effect in ("Focus", "Unknown"):
+        await panel.perform({"action": "sync_mode", "effect": effect})
+    assert panel.ha.calls == [
+        (("select", "select_option", "select.philips_skylight_recorded_scene"), {"option": effect})
+        for effect in ("Focus", "Unknown")
+    ]
+    assert panel.first_setup
+    assert not panel.snapshot()["power_synchronized"]
+    with pytest.raises(ValueError, match="Choose a mode"):
+        await panel.perform({"action": "sync_mode", "effect": "invalid"})
+    assert len(panel.ha.calls) == 2
