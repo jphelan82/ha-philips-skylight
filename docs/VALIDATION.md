@@ -245,9 +245,11 @@ Deployed on 2026-10-13 with integration 0.2.6.
 - The proxy's connection to Home Assistant dropped about every five minutes
   since at least 12 October, about 90 times in a day. Most drops lasted about
   0.1 seconds, some up to 40 seconds. Each drop resets recorded power and mode
-  to unknown, and a command sent during a drop is lost. The continuous Bluetooth
-  scan set on 12 October, on an ESP32-C3 with one shared radio, is the likely
-  cause. This is not fixed yet.
+  to unknown, and a command sent during a drop is lost. The proxy's own log
+  showed the cause: ESPHome's Wi-Fi roaming switched access points at 11:07:22,
+  and Home Assistant's connection stayed dead until 11:08:07. Home Assistant
+  recorded only a 0.1-second gap at the end. Add-on 0.2.9 turns roaming off in
+  the firmware package and keeps the recorded state through short reconnects.
 
 ### Physical observations
 

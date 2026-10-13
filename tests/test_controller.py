@@ -8,6 +8,7 @@ from homeassistant.exceptions import HomeAssistantError
 from custom_components.philips_skylight.const import (
     CONF_PROXY_ENTITY,
     CONF_TRANSMIT_SERVICE,
+    OUTAGE_GRACE,
     RECEIVE_EVENT,
 )
 from custom_components.philips_skylight.controller import SkylightController
@@ -115,6 +116,32 @@ async def test_remote_event_and_proxy_outage(hass):
     light._proxy_changed(Event("state_changed", {"old_state": old, "new_state": None}))
     assert light.is_on is None
     assert light.effect is None
+
+
+async def test_short_proxy_drop_keeps_state_but_long_outage_forgets_it(hass, monkeypatch):
+    controller = await make_controller(hass)
+    controller.async_setup_receiver = lambda: asyncio.sleep(0)
+    light = SkylightLight(controller, SimpleNamespace(data=DATA, title="Skylight"))
+    light.hass = hass
+    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "ready")
+    online = hass.states.get(DATA[CONF_PROXY_ENTITY])
+    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
+    offline = hass.states.get(DATA[CONF_PROXY_ENTITY])
+    clock = [1000.0]
+    monkeypatch.setattr("custom_components.philips_skylight.entity.monotonic", lambda: clock[0])
+
+    def drop_for(seconds):
+        light._proxy_changed(Event("state_changed", {"old_state": online, "new_state": offline}))
+        assert controller.state.is_on is True  # Kept while the proxy is away.
+        clock[0] += seconds
+        light._proxy_changed(Event("state_changed", {"old_state": offline, "new_state": online}))
+
+    controller.state.is_on, controller.state.effect = True, "Relax"
+    drop_for(0.1)
+    assert (controller.state.is_on, controller.state.effect) == (True, "Relax")
+    drop_for(OUTAGE_GRACE + 1)
+    assert (controller.state.is_on, controller.state.effect) == (None, None)
+    await hass.async_block_till_done()
 
 
 async def test_light_refuses_unknown_effect_and_synchronizes_without_transmitting(hass):

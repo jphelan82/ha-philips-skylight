@@ -28,6 +28,13 @@ class SkylightController:
         self.sequence = SequenceAllocator(Store(hass, 1, STORAGE_KEY))
         self.lock = asyncio.Lock()
         self.listeners: set[Callable[[], None]] = set()
+        self.outage_started: float | None = None
+
+    @callback
+    def forget_state(self) -> None:
+        """Remote presses that nobody heard could have changed the panel."""
+        self.state.is_on = None
+        self.state.effect = None
 
     @callback
     def notify(self) -> None:

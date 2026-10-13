@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.9
+
+- Native integration 0.2.8: a proxy reconnect within 60 seconds keeps the
+  recorded power and mode. Before, every reconnect reset them to unknown, even
+  one that lasted a fraction of a second. A longer outage still resets them,
+  because remote presses during it could have changed the panel. This update
+  needs a Core restart.
+- Firmware package: `wifi: post_connect_roaming: false`. ESPHome's roaming
+  scan every five minutes switched the tested proxy between access points all
+  day. Each switch broke the Home Assistant connection for up to about 45
+  seconds without Home Assistant noticing, and commands sent then were lost.
+  Install the updated package on the proxy to get this.
+
 ## 0.2.8
 
 - Native integration 0.2.7: **Configure** on the integration offers **Pair

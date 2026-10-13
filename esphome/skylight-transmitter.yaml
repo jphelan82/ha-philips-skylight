@@ -8,6 +8,14 @@ api:
   custom_services: true
   homeassistant_services: true
 
+# A wall-mounted proxy does not need to hunt for a stronger access point. With
+# roaming on, ESPHome scans every five minutes and may switch access points.
+# Each switch silently breaks the Home Assistant connection for up to about
+# 45 seconds, and commands sent in that time are lost. ESPHome still reconnects
+# if the access point goes away.
+wifi:
+  post_connect_roaming: false
+
 ble_adv_proxy:
   use_max_tx_power: true
 

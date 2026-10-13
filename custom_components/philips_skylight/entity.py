@@ -1,12 +1,14 @@
 """Shared proxy availability and device identity."""
 
+from time import monotonic
+
 from homeassistant.const import EVENT_SERVICE_REGISTERED, EVENT_SERVICE_REMOVED
 from homeassistant.core import Event, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_state_change_event
 
-from .const import CONF_PROXY_ENTITY, DOMAIN
+from .const import CONF_PROXY_ENTITY, DOMAIN, OUTAGE_GRACE
 from .controller import SkylightConfigEntry, SkylightController
 
 
@@ -37,16 +39,24 @@ class SkylightEntity(Entity):
     def _proxy_changed(self, event: Event) -> None:
         old = event.data.get("old_state")
         new = event.data.get("new_state")
-        if old is None or old.state in ("unavailable", "unknown") or new is None:
-            # Remote presses during downtime could have changed the physical power.
-            self.controller.state.is_on = None
-            self.controller.state.effect = None
-            if new is not None and new.state not in ("unavailable", "unknown"):
-                self.hass.async_create_task(self.controller.async_setup_receiver())
-        if new is None or new.state in ("unavailable", "unknown"):
-            self.controller.state.is_on = None
-            self.controller.state.effect = None
-        self.controller.notify()
+        controller = self.controller
+        offline = new is None or new.state in ("unavailable", "unknown")
+        was_offline = old is None or old.state in ("unavailable", "unknown")
+        if new is None:
+            # The proxy sensor was removed, not just disconnected.
+            controller.outage_started = None
+            controller.forget_state()
+        elif offline and not was_offline:
+            controller.outage_started = monotonic()
+        elif not offline and was_offline:
+            started = controller.outage_started
+            controller.outage_started = None
+            # The proxy drops for a fraction of a second now and then. Keep the
+            # recorded state then, but not after an outage long enough to miss presses.
+            if started is None or monotonic() - started > OUTAGE_GRACE:
+                controller.forget_state()
+            self.hass.async_create_task(controller.async_setup_receiver())
+        controller.notify()
 
     @callback
     def _service_changed(self, event: Event) -> None:

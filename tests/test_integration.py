@@ -231,7 +231,8 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert len(calls) == 31
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "esphome-web-ece638")
     await hass.async_block_till_done()
-    assert hass.states.get(entity_id).state == "unknown"
+    # A short drop keeps the recorded power.
+    assert hass.states.get(entity_id).state == "off"
     flow = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "reconfigure", "entry_id": entry.entry_id}
     )
