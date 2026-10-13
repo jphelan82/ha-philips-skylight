@@ -164,7 +164,9 @@ def build_card():
                 )
                 for dim, name in (("dim_down", "Dim −"), ("dim_up", "Dim +"))
             ),
-            small(RHYTHM_START, "Rhythm", action("button.press", RHYTHM_START), "mdi:clock-start"),
+            small(
+                RHYTHM_START, "Rhythm set", action("button.press", RHYTHM_START), "mdi:clock-start"
+            ),
             small(EDIT, "Correct", action("switch.turn_on", EDIT), "mdi:pencil-outline"),
         ],
         columns=4,

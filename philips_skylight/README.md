@@ -46,7 +46,7 @@ The card uses the remote's icons and colors.
 - **Dim −** and **Dim +** dim by one step. Hold one to dim for about 3 seconds.
   On the add-on page, holding keeps dimming until you let go. You cannot set a
   brightness level, because the panel takes only these two commands.
-- **Rhythm** makes the current time the start of the Auto rhythm schedule.
+- **Rhythm set** makes the current time the start of the Auto rhythm schedule.
 - **Correct** fixes Home Assistant's record when it does not match the panel.
 
 ## The shown state is a best guess

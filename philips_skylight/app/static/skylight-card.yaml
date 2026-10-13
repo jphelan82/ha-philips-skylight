@@ -543,7 +543,7 @@ cards:
         vertical: true
       - type: tile
         entity: button.philips_skylight_set_auto_rhythm_start
-        name: Rhythm
+        name: Rhythm set
         hide_state: true
         color: grey
         tap_action:

@@ -19,7 +19,7 @@ The card uses the remote's icons and colors. It has three parts: a large
 | Relax | `mdi:sofa-outline` | Orange when recorded. |
 | Rest | `mdi:power-sleep` | Deep orange when recorded. |
 | **Dim −** / **Dim +** | `mdi:brightness-4` / `mdi:brightness-7` | A tap is one step. A hold dims for about 3 seconds. |
-| **Rhythm** | `mdi:clock-start` | Sets the current time as the Auto rhythm start. The panel blinks. |
+| **Rhythm set** | `mdi:clock-start` | Sets the current time as the Auto rhythm start. The panel blinks. |
 | **Correct** | `mdi:pencil-outline` | Opens the correction view. |
 
 The colors match the dots on the remote. A mode button also switches the panel
