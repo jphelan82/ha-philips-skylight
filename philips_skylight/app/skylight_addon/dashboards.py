@@ -60,7 +60,7 @@ async def create_dashboard(ha, card):
         "lovelace/dashboards/create",
         url_path=PATH,
         title="Skylight",
-        icon="mdi:ceiling-light",
+        icon="mdi:wall-sconce-flat",
         show_in_sidebar=True,
         require_admin=False,
     )

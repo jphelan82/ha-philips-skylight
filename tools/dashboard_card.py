@@ -122,7 +122,7 @@ def hero():
             "type": "tile",
             "entity": LIGHT,
             "name": "Skylight",
-            "icon": "mdi:ceiling-light",
+            "icon": "mdi:wall-sconce-flat",
             "color": color,
             "state_content": ["state", "assumed_effect"],
             "tap_action": tap,

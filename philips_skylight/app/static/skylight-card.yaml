@@ -21,7 +21,7 @@ cards:
           type: tile
           entity: light.philips_skylight
           name: Skylight
-          icon: mdi:ceiling-light
+          icon: mdi:wall-sconce-flat
           color: purple
           state_content:
           - state
@@ -45,7 +45,7 @@ cards:
           type: tile
           entity: light.philips_skylight
           name: Skylight
-          icon: mdi:ceiling-light
+          icon: mdi:wall-sconce-flat
           color: blue
           state_content:
           - state
@@ -69,7 +69,7 @@ cards:
           type: tile
           entity: light.philips_skylight
           name: Skylight
-          icon: mdi:ceiling-light
+          icon: mdi:wall-sconce-flat
           color: light-blue
           state_content:
           - state
@@ -93,7 +93,7 @@ cards:
           type: tile
           entity: light.philips_skylight
           name: Skylight
-          icon: mdi:ceiling-light
+          icon: mdi:wall-sconce-flat
           color: amber
           state_content:
           - state
@@ -117,7 +117,7 @@ cards:
           type: tile
           entity: light.philips_skylight
           name: Skylight
-          icon: mdi:ceiling-light
+          icon: mdi:wall-sconce-flat
           color: orange
           state_content:
           - state
@@ -141,7 +141,7 @@ cards:
           type: tile
           entity: light.philips_skylight
           name: Skylight
-          icon: mdi:ceiling-light
+          icon: mdi:wall-sconce-flat
           color: deep-orange
           state_content:
           - state
@@ -180,7 +180,7 @@ cards:
           type: tile
           entity: light.philips_skylight
           name: Skylight
-          icon: mdi:ceiling-light
+          icon: mdi:wall-sconce-flat
           color: amber
           state_content:
           - state

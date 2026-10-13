@@ -7,9 +7,12 @@
   once, and explain why: a second pairing can make the panel drop your remote.
   This update needs a Home Assistant restart.
 - A new look for the Skylight card. The large **Skylight** tile at the top
-  glows in the recorded mode's color while the panel is on. **Dim −**,
+  glows in the recorded mode's color while the panel is on. A mode tile lights
+  up only while the panel is on. **Dim −**,
   **Dim +**, **Rhythm set** and **Correct** share one row of small icon tiles. The
   help line is gone.
+- The Skylight light, its card tile and the Skylight dashboard use the flat
+  ceiling light icon, `mdi:wall-sconce-flat`.
 - The card has one size. The **Compact** and **Full** choice is gone, and so is
   `skylight-card-compact.yaml`. A card you added before keeps working. To get
   the new look, delete the old card and add it again.

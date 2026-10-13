@@ -64,6 +64,7 @@ async def async_setup_entry(
 
 class SkylightLight(SkylightEntity, LightEntity):
     _attr_name = None
+    _attr_icon = "mdi:wall-sconce-flat"
     _attr_unique_id = "factory_mesh_7ffe_light"
     _attr_assumed_state = True
     _attr_color_mode = ColorMode.ONOFF

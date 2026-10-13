@@ -11,7 +11,7 @@ The card uses the remote's icons and colors. It has three parts: a large
 
 | Control | Icon | What it does |
 |---|---|---|
-| **Skylight** | `mdi:ceiling-light` | Toggles the power. Shows the recorded power and mode. While the panel is on, it glows in the recorded mode's color, or amber when the mode is unknown. |
+| **Skylight** | `mdi:wall-sconce-flat` | Toggles the power. Shows the recorded power and mode. While the panel is on, it glows in the recorded mode's color, or amber when the mode is unknown. |
 | Auto rhythm | `mdi:sun-clock-outline` | Follows the daily schedule. Purple when recorded. |
 | Refresh | `mdi:weather-sunset-up` | Blue when recorded. |
 | Energize | `mdi:lightning-bolt` | Light blue when recorded. |
