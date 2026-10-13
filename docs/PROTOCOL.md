@@ -51,6 +51,10 @@ Auto rhythm (`C9 … 06`) is a mode: it makes the panel follow its daily
 schedule. It does nothing until a schedule start is set. Any other mode button
 takes the panel off the schedule until Auto rhythm is pressed again.
 
+A mode command (`C9`) also turns an off panel on, in that mode. On 2026-10-13,
+with the panel off, one Relax command from `0x7FFE` turned it on in Relax. The
+other five modes were not tested from off.
+
 ## Rules for sending from Home Assistant
 
 - **Never send as the remote's address `0x7FFF`.**
@@ -63,9 +67,10 @@ takes the panel off the schedule until Auto rhythm is pressed again.
 The integration accepts recognized, authenticated access commands addressed to
 `0xFFFF` from external unicast senders (`0x0001` through `0x7FFF`). It excludes
 its own `0x7FFE` sender even when those packets return through a panel relay.
-Power toggles change a known baseline; scene buttons update the stored effect;
-dim taps and holds update the last command. Unknown power remains unknown until
-explicitly synchronized. No receive event sends an additional command.
+A power toggle flips a known power state. A scene command records the mode and
+records power as on. A dim tap or hold and the rhythm start (`E0`) update only
+the last command. A toggle or dim command leaves unknown power unknown. No
+receive event sends an additional command.
 
 Duplicate identities use sender and Mesh sequence; rapid repeats with new Mesh
 sequences use sender and complete access payload, including transaction byte.
@@ -96,6 +101,8 @@ Home Assistant's `bluetooth/subscribe_advertisements` feed does not help. It sen
 
 - `tools/meshdec.py` decrypts a capture log. Run `uv run --with cryptography python meshdec.py 11111111111111111111111111111111 capture-2026-10-12.log`.
 - `tools/capture-2026-10-12.log` holds the raw mesh adverts from the session, with the panel's constant beacon removed.
+- `tools/capture.py` connects to the proxy's ESPHome API as a second client, reads its `recv raw` log lines and prints each decoded mesh command. It only listens. Run `.venv/bin/python tools/capture.py . 192.168.50.19 240` for a four-minute capture. It needs `aioesphomeapi` and works because the proxy's API has no encryption key.
+- `tools/capture-2026-10-13-rhythm.log` holds the decoded commands from the Auto rhythm session: Auto rhythm alone, the Auto rhythm and Relax combination (`E0`), then single mode presses.
 
 ## Implementation and packaging
 
