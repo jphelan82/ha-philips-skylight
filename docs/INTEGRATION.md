@@ -59,9 +59,13 @@ Requires Home Assistant 2026.6 or newer. Firmware was compiled with ESPHome
 2. Confirm the proxy reconnects and exposes
    `esphome.skylight_proxy_adv_svc_v1` (prefix depends on node name), plus
    a **BLE Adv Proxy Name** sensor.
-3. Copy `custom_components/philips_skylight` into HA's
-   `/config/custom_components/` and restart HA. Once published, this repository
-   can also be added as a custom **Integration** repository in HACS.
+3. Install the integration, then restart Home Assistant. Choose one way:
+   - **HACS:** open HACS, then **⋮ → Custom repositories**. Add
+     `https://github.com/jphelan82/ha-philips-skylight` with the type
+     **Integration**. Then download **Philips Skylight**. HACS shows the
+     release tag, which is the add-on's version number.
+   - **By hand:** copy `custom_components/philips_skylight` into
+     `/config/custom_components/`.
 4. Settings → Devices & services → Add integration → Philips Skylight.
    Choose the advertising action and name sensor from the same proxy.
 5. Enable **Allow the device to perform Home Assistant actions** in that proxy's

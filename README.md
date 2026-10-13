@@ -132,8 +132,15 @@ does when its power returns.
 
 ## Install
 
-1. In Home Assistant, open **Settings → Apps → App store → Repositories**. On
-   older versions, this menu is called **Add-ons**. Add
+Install the add-on from Home Assistant's own app store, not from HACS (the Home
+Assistant Community Store). HACS cannot install add-ons. The add-on installs the
+integration for you.
+
+[![Add the repository to your Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjphelan82%2Fha-philips-skylight)
+
+1. Select the button above. It opens your Home Assistant and offers to add this
+   repository. Or add it by hand: open the app store in **Settings → Apps**
+   (called **Add-ons** on older versions), then **⋮ → Repositories**, and add
    `https://github.com/jphelan82/ha-philips-skylight`.
 2. Install **Philips Skylight**. Turn on **Start on boot**, start it, and open
    its web page.
@@ -158,8 +165,9 @@ does when its power returns.
 5. Optional: create a Skylight dashboard, or add the Skylight card to one of
    your dashboards. You can also use the entities in your own cards.
 
-If the add-on is not in the store yet, use the
-[local installation](docs/PROTOCOL.md#development-installation).
+No app store? Home Assistant Container and Core have none. Use the
+[integration-only guide](docs/INTEGRATION.md). It installs the integration
+through HACS or by hand.
 
 Already using the Philips Skylight integration? The add-on keeps your light,
 settings and pairing. You do not need to pair again.
