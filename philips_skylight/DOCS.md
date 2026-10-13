@@ -176,7 +176,10 @@ record. A longer outage clears it. Then use **Correct** on the card.
 
 Leave the wall switch on. Control the panel with its remotes or Home Assistant.
 If the panel's power runs through a smart switch in Home Assistant, an
-automation can record the panel as off when the switch turns off.
+automation can follow it with the `philips_skylight.set_assumed_power` action.
+That action sets the shown power and sends nothing to the panel. When power
+returns, the panel switches on by itself, so the switch's state is the panel's
+power. The README has an example.
 
 You cannot set a brightness level. The panel takes only "dim down" and "dim
 up" commands and never reports its level. Home Assistant ignores a brightness

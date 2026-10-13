@@ -113,15 +113,32 @@ This is an experimental project. Please read these limits before you install it.
 
 
 
-I do not advise using the Skylight with a light switch. If you use the Skylight with an ordinary light switch, this automation will not be able to preserve the state, such as the on/off state or the currently selected scene. If you do have such a switch leave the panel's wall switch on. Control the panel with its remote, its wall
-remote, or Home Assistant. A wall switch cuts the power without telling Home
+I do not advise using the Skylight with a light switch. If you use the Skylight with an ordinary light switch, this automation will not be able to preserve the state, such as the on/off state or the currently selected scene. If you do have such a switch leave the panel's wall switch on. Control the panel with its wall
+remote or Home Assistant. A wall switch cuts the power without telling Home
 Assistant, so the recorded state goes wrong. You need the wall switch or the
 breaker only for pairing.
 
-If the panel's power runs through a **smart** light switch in Home Assistant, you
-can keep the record in step with an automation. When the switch turns off,
-press **Record panel off**. When the switch turns back on, record what the panel
-does when its power returns.
+If the panel's power runs through a **smart** light switch in Home Assistant, an
+automation can keep the record in step. Home Assistant records the power with
+the **Philips Skylight: Set assumed power** action. It sets the shown power and
+sends nothing to the panel. This example follows a switch named
+`switch.skylight_wall`:
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: switch.skylight_wall
+    to: ["on", "off"]
+actions:
+  - action: philips_skylight.set_assumed_power
+    target:
+      entity_id: light.philips_skylight
+    data:
+      is_on: "{{ trigger.to_state.state == 'on' }}"
+```
+
+When power returns, the panel switches on by itself, so the switch's state is
+the panel's power. The mode stays as Home Assistant last recorded it.
 
 ## What you need
 
