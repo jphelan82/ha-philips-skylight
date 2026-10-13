@@ -18,6 +18,8 @@ class AssumedState:
         if command == "toggle" and self.is_on is not None:
             self.is_on = not self.is_on
         if command in EFFECTS:
+            # A mode command also turns an off panel on, in that mode.
+            self.is_on = True
             self.effect = command
         self.last_command = command
 

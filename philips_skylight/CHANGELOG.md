@@ -11,6 +11,10 @@
   an unknown effect and an unknown scene are reported as input errors. The
   REST API now answers HTTP 400 for these, not HTTP 500, and Home Assistant no
   longer logs a traceback. This update needs a Core restart.
+- Native integration 0.2.5: a mode command turns an off panel on, in that
+  mode. After any mode command, sent from Home Assistant or received from a
+  remote, the integration records power as on. `light.turn_on` with an effect
+  sends only the mode command, and it works while power is unknown.
 
 ## 0.2.5
 

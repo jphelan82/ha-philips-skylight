@@ -34,7 +34,8 @@ panel has been tested with an ESP32-C3 proxy.
    received presses. Choosing a mode manually records it immediately; choose
    **Unknown** if unsure. Saving sends no light command
    and keeps the latest received mode. Power still needs an
-   observation because its button only toggles.
+   observation because its button only toggles. A mode press on the remote
+   also records power as on, because a mode turns the panel on.
 7. **Optional:** choose Compact or Full, then **Create Skylight dashboard** or
    **Add card to an existing dashboard**. Existing dashboards are preserved.
    No dashboard is required to use the native entities.
@@ -78,7 +79,8 @@ states. For automations, use `light.toggle` or `button.press` for the desired
 mode/dim button. Avoid state-dependent decisions and `light.turn_on`/`light.turn_off`
 when the baseline is unreliable: those on/off actions decide whether to toggle
 using the recorded state. A direct toggle cannot guarantee a final on/off state;
-observe the physical result.
+observe the physical result. A mode button always leaves the panel on, in that
+mode, even if it was off.
 
 ## Pairing and recovery
 

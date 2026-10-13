@@ -110,16 +110,18 @@ class SkylightController:
 
     async def async_power(self, on: bool, effect: str | None = None) -> None:
         async with self.lock:
+            if on and effect is not None:
+                # A mode command turns the panel on in that mode, whatever its power.
+                await self.async_send_locked(effect)
+                return
             if self.state.is_on is None:
                 raise HomeAssistantError(
                     "Skylight power is unknown. Check the physical light, then call "
-                    f"{DOMAIN}.set_assumed_power with its current power state. "
-                    "Only a toggle command has been verified."
+                    f"{DOMAIN}.set_assumed_power with its current power state, "
+                    "or turn it on with an effect."
                 )
             if self.state.is_on != on:
                 await self.async_send_locked("toggle")
-            if effect is not None:
-                await self.async_send_locked(effect)
 
     async def async_setup_receiver(self) -> None:
         """Initialize filtering after HA reconnects to the proxy."""

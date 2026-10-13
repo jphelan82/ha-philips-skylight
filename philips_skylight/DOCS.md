@@ -153,7 +153,9 @@ condition or as confirmation that the physical light responded. Standard
 `light.turn_on`/`light.turn_off` choose whether to toggle based on the recorded
 power; a wrong baseline can cause a no-op or an unwanted toggle. Direct commands
 avoid that decision, but still need physical verification when the final state
-matters. A toggle cannot guarantee on or off with an unknown baseline.
+matters. A toggle cannot guarantee on or off with an unknown baseline. A mode
+button, or `light.turn_on` with an effect, always leaves the panel on in that
+mode, even if it was off.
 
 Scenes: Refresh, Energize, Focus, Relax, Rest and Auto rhythm. Dimming is relative;
 the exact increment has not been measured, so no absolute slider or color

@@ -12,7 +12,7 @@ from custom_components.philips_skylight.const import (
 )
 from custom_components.philips_skylight.controller import SkylightController
 from custom_components.philips_skylight.light import SkylightLight
-from custom_components.philips_skylight.protocol import pairing_payload
+from custom_components.philips_skylight.protocol import identify_command, pairing_payload
 
 DATA = {
     CONF_TRANSMIT_SERVICE: "esphome_web_ece638_adv_svc_v1",
@@ -43,6 +43,23 @@ async def test_unknown_power_requires_sync_and_same_power_is_noop(hass):
     assert controller.state.is_on is False
     raw = bytes.fromhex(calls[0].data["raw"])
     assert controller.codec.decode(raw)[0].source == 0x7FFE
+
+
+async def test_turn_on_with_effect_sends_only_the_mode_even_when_power_is_unknown(hass):
+    calls = []
+    hass.services.async_register(
+        "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
+    )
+    controller = await make_controller(hass)
+    for power in (None, False, True):
+        controller.state.is_on = power
+        calls.clear()
+        await controller.async_power(True, "Relax")
+        assert len(calls) == 1
+        message = controller.codec.decode(bytes.fromhex(calls[0].data["raw"]))[0]
+        assert identify_command(message.payload) == "Relax"
+        assert controller.state.is_on is True
+        assert controller.state.effect == "Relax"
 
 
 async def test_concurrent_turn_on_calls_toggle_only_once(hass):

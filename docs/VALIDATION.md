@@ -187,7 +187,10 @@ The owner watched the panel. Home Assistant kept power as unknown throughout.
 - One Dim down press visibly dimmed the panel. The step size is still unmeasured.
 - Nobody paired the transmitter again. The pairing of sender `0x7FFE` survived
   the add-on change and the Core restart.
-- A mode command sent while the panel is off was not tested.
+- Later the same day, with the panel off, one Relax press from Home Assistant
+  turned the panel on in Relax, as the owner confirmed. A mode command
+  therefore also turns the panel on. The other five modes were not tested
+  from off. They use the same command with a different mode byte.
 
 ### Removing the old add-on
 

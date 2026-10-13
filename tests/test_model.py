@@ -7,16 +7,20 @@ from custom_components.philips_skylight.model import AssumedState, RemoteTracker
 from custom_components.philips_skylight.protocol import MeshMessage, command_payload
 
 
-def test_toggle_does_not_invent_initial_state_or_scene_power():
+def test_toggle_does_not_invent_initial_state_but_a_scene_turns_the_panel_on():
     state = AssumedState()
     state.apply("toggle")
     assert state.is_on is None
+    state.apply("dim_down")
+    assert state.is_on is None
     state.apply("Focus")
     assert state.effect == "Focus"
-    assert state.is_on is None
-    state.is_on = True
+    assert state.is_on is True
     state.apply("toggle")
     assert state.is_on is False
+    state.apply("Relax")
+    assert state.is_on is True
+    assert state.effect == "Relax"
 
 
 def test_relay_and_transaction_duplicates_do_not_double_toggle():

@@ -1,6 +1,6 @@
 set_assumed_power:
   name: Set assumed power
-  description: Tell Home Assistant the physical light's current power state without sending a command. Required after restart or a proxy outage before using turn_on or turn_off.
+  description: Tell Home Assistant the physical light's current power state without sending a command. Required after restart or a proxy outage before using turn_off, or turn_on without an effect.
   target:
     entity:
       integration: philips_skylight

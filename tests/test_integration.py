@@ -121,8 +121,8 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert hass.states.get(entity_id).state == "on"
     assert hass.states.get(entity_id).attributes["effect"] == "Focus"
     assert hass.states.get(recorded_scene).state == "Focus"
-    assert len(calls) == 2
-    # Own packets relayed by the panel must not toggle an already updated entity.
+    assert len(calls) == 1
+    # Own packets relayed by the panel must not change an already updated entity.
     hass.bus.async_fire(RECEIVE_EVENT, {"raw": calls[0].data["raw"]})
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "on"
@@ -147,12 +147,12 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             hass.bus.async_fire(RECEIVE_EVENT, {"raw": raw})
             await hass.async_block_till_done()
             assert hass.states.get(entity_id) == state
-    assert len(calls) == 2
+    assert len(calls) == 1
     with pytest.raises(ServiceValidationError, match="may replace"):
         await hass.services.async_call(
             DOMAIN, "pair_transmitter", {"entity_id": entity_id, "confirm": False}, blocking=True
         )
-    assert len(calls) == 2
+    assert len(calls) == 1
 
     async def no_wait(seconds):
         pass
@@ -162,7 +162,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         await hass.services.async_call(
             DOMAIN, "pair_transmitter", {"entity_id": entity_id, "confirm": True}, blocking=True
         )
-    assert len(calls) == 32
+    assert len(calls) == 31
     assert hass.states.get(entity_id).state == "unknown"
     assert hass.states.get(recorded_scene).state == "Unknown"
     # Native dashboard correction entities update only the recorded state.
@@ -191,7 +191,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         )
         assert hass.states.get(recorded_scene).state == "Unknown"
         assert hass.states.get(entity_id).attributes["assumed_effect"] is None
-        assert len(calls) == 32
+        assert len(calls) == 31
     with pytest.raises(HomeAssistantError, match="not valid"):
         await hass.services.async_call(
             "select",
@@ -200,7 +200,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             blocking=True,
         )
     assert hass.states.get(recorded_scene).state == "Unknown"
-    assert len(calls) == 32
+    assert len(calls) == 31
     correction_mode = registry.async_get_entity_id(
         "switch", DOMAIN, "factory_mesh_7ffe_state_correction"
     )
@@ -212,7 +212,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert hass.states.get(correction_mode).state == "on"
     assert hass.states.get(entity_id).state == "off"
     assert hass.states.get(recorded_scene).state == "Unknown"
-    assert len(calls) == 32
+    assert len(calls) == 31
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"
@@ -222,7 +222,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         "switch", "turn_off", {"entity_id": correction_mode}, blocking=True
     )
     assert hass.states.get(correction_mode).state == "off"
-    assert len(calls) == 32
+    assert len(calls) == 31
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "esphome-web-ece638")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unknown"
@@ -248,7 +248,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         DOMAIN, "skip_sequence", {"entity_id": entity_id, "confirm": True}, blocking=True
     )
     assert await controller.sequence.async_next() == 512 + 0x100000
-    assert len(calls) == 32
+    assert len(calls) == 31
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"

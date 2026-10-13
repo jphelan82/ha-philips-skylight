@@ -89,7 +89,8 @@ unreliable, use the normal panel's power toggle, mode buttons and dim steps as
 direct commands and observe the physical result. Avoid state-dependent
 automations or relying on entity states as confirmation. In automations, use
 `light.toggle` and the appropriate `button.press`; standard on/off actions rely
-on the recorded baseline to decide whether to toggle.
+on the recorded baseline to decide whether to toggle. A mode button always
+leaves the panel on in that mode, even if it was off.
 
 The correction entities appear in the device's Configuration section. Keep them
 enabled to use the complete card; the card download reports a missing or disabled

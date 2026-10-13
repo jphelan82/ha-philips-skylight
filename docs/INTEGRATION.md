@@ -19,9 +19,15 @@ control. See [validation notes](VALIDATION.md) for checks and remaining limits.
 - Separate sender address `0x7FFE`, with durable sequence reservations.
 
 The only confirmed power message is **toggle**. The panel reports no state.
-Power starts unknown: synchronize it before using `light.turn_on` or
-`light.turn_off`. Same-state requests do nothing. `light.toggle` and scene buttons
-can send while power is unknown, but cannot establish actual power.
+A scene command also turns an off panel on, in that scene. The owner confirmed
+this for Relax on 2026-10-13. After any scene command, sent from HA or received
+from a remote, the integration records power as on.
+
+Power starts unknown. Before you use `light.turn_off`, or `light.turn_on`
+without an effect, synchronize power. Same-state requests do nothing.
+`light.turn_on` with an effect sends only that scene command, whatever the
+recorded power. `light.toggle` can send while power is unknown, but a toggle
+cannot establish actual power.
 
 Absolute brightness and color temperature are not exposed: dim step size is
 unverified. Normal controls send captured commands only, without provisioning
@@ -67,9 +73,9 @@ data:
   is_on: true
 ```
 
-This records power without transmitting. Standard on/off and effect actions
-then use that assumed state. Scene buttons select a scene without making a power
-assumption. Synchronize again after an HA restart, proxy outage, panel power
+This records power without transmitting. Standard on/off actions then use
+that assumed state. Scene buttons and `light.turn_on` with an effect send the
+scene command and record power as on. Synchronize again after an HA restart, proxy outage, panel power
 cycle, or missed remote press. A proxy outage invalidates assumed power/effect.
 A successful HA action means the proxy accepted the transmission request; the
 panel does not acknowledge it.
