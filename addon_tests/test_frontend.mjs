@@ -88,6 +88,7 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   source.proxy_online = true;
   await poll();
   assert.equal(element("step-proxy").className, "done");
+  assert.equal(element("notice").textContent, "The proxy is back with the Skylight firmware. The install is complete.");
   assert.equal(element("step-connect-status").textContent, "Connecting…");
   assert.equal(element("connect-choice").hidden, true);
 
@@ -291,6 +292,8 @@ test("updates show only the firmware and card steps that apply", async () => {
   await poll();
   await setImmediate();
   assert.equal(element("firmware-install").hidden, true);
+  // The page says plainly that the install finished.
+  assert.equal(element("notice").textContent, "The proxy runs the new Skylight firmware 2. The install is complete.");
   assert.equal(element("card-update").hidden, false);
   assert.equal(element("card-dashboards").textContent, "Skylight, Kitchen");
   await press({action: "update_card"});

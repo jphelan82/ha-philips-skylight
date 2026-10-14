@@ -45,6 +45,7 @@
         </div>
         <div id="proxy-install" hidden>
           <p>Now install it: in ESPHome Device Builder, open <strong id="proxy-node"></strong>, then choose <strong>⋮ → Install → Wirelessly</strong>. This page continues by itself when the proxy is back.</p>
+          <p class="hint">It builds the firmware first. The first build takes several minutes, and longer on a small device such as a Raspberry Pi. The install is done when the log shows <code>OTA successful</code>, then the proxy's own log starts. That log keeps scrolling, so the window never closes by itself. You can close it then.</p>
           <p><a id="device-builder" target="_top" hidden>Open ESPHome Device Builder</a></p>
         </div>
       </li>
@@ -100,7 +101,8 @@
       <button data-action="update_firmware" class="primary">Update the firmware files</button>
     </div>
     <div id="firmware-install" hidden>
-      <p>Install the new Skylight firmware: in ESPHome Device Builder, open <strong id="install-nodes"></strong>, then choose <strong>⋮ → Install → Wirelessly</strong>. The proxy is offline for a minute or two. This message goes away when the proxy is back.</p>
+      <p>Install the new Skylight firmware: in ESPHome Device Builder, open <strong id="install-nodes"></strong>, then choose <strong>⋮ → Install → Wirelessly</strong>. The proxy is offline for a minute or two. This page says so when the proxy is back with the new firmware.</p>
+      <p class="hint">It builds the firmware first. The first build takes several minutes, and longer on a small device such as a Raspberry Pi. The install is done when the log shows <code>OTA successful</code>, then the proxy's own log starts. That log keeps scrolling, so the window never closes by itself. You can close it then.</p>
       <p><a id="update-builder" target="_top" hidden>Open ESPHome Device Builder</a></p>
     </div>
     <div id="card-update" hidden>

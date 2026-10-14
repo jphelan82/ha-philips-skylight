@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.8
+
+- The page explains how to tell that a firmware install in ESPHome Device
+  Builder is done. The log shows `OTA successful`, then the proxy's own log,
+  which keeps scrolling. The first build takes several minutes.
+- The page says when the proxy is back with the new firmware: "The install is
+  complete."
+
 ## 0.4.7
 
 - Without ESPHome Device Builder, the first setup step also offers the firmware

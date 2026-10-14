@@ -185,7 +185,8 @@ integration for you.
       ESPHome folder and adds one line to the proxy's YAML. It keeps a backup.
       Then install it in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/): open the proxy, then **⋮ →
       Install → Wirelessly**. The page continues by itself when the proxy is
-      back. A proxy that already has the firmware skips this step.
+      back. See [When is the install done?](#when-is-the-install-done) A proxy
+      that already has the firmware skips this step.
    2. **Connect Home Assistant to the proxy.** With one compatible proxy, the
       add-on does this by itself. With several, choose one.
    3. **Let Home Assistant hear your remote.** Select **Allow**. This turns on
@@ -210,6 +211,14 @@ through HACS or by hand.
 Already using the Philips Skylight integration? The add-on keeps your light,
 settings and pairing. You do not need to pair again.
 
+### When is the install done?
+
+Device Builder builds the firmware first. The first build takes several
+minutes, and longer on a small device such as a Raspberry Pi. The install is
+done when the log shows `OTA successful`, followed by the proxy's own log. That
+log keeps scrolling, so the window never closes by itself. Close it then. The
+add-on page also says when the proxy is back with the new firmware.
+
 ## Bluetooth Proxy
 
 If you don't already have a Bluetooth proxy, creating one is relatively simple. I used an [inexpensive board + antenna from AliExpress](https://www.aliexpress.us/item/3256806898073871.html), which arrived shipped for $9. I 3D printed [this enclosure](https://makerworld.com/en/models/2145189-seeed-studio-antenna-case-esp32-c3-esp32-c6-s3#profileId-2324071), and I plug it directly into the wall with a USB adapter. These can also run other concurrent tasks. For example, I use my proxy to control my subwoofer volume levels. 
@@ -230,7 +239,8 @@ If you don't already have a Bluetooth proxy, creating one is relatively simple. 
    - Then, or if the proxy reports an older number, the page asks you to
      install: in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/), open the proxy, then **⋮ → Install →
      Wirelessly**. The proxy is offline for a minute or two, and Home Assistant
-     misses remote presses in that time.
+     misses remote presses in that time. See
+     [When is the install done?](#when-is-the-install-done)
    - If the firmware did not change, the page shows nothing.
 4. **Update the card, if the page asks.** A card on a dashboard never changes
    by itself. If a dashboard holds an older Skylight card, the page shows

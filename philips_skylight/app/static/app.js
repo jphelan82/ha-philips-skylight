@@ -6,6 +6,9 @@ let state = null;
 let pairStage = "pair";
 let lastRemaining = 0;
 let preparedNode = null;
+// What the last status showed, so the page can say when an install has finished.
+let lastProxyReady = null;
+let lastFirmware = null;
 let dashboardRevision = null;
 let dashboardRead = 0;
 const el = (id) => document.getElementById(id);
@@ -149,6 +152,10 @@ function render(data) {
   const nodes = data.esphome_nodes || [];
   const waiting = nodes.filter((node) => node.has_skylight);
   step("step-proxy", proxyReady, proxyReady ? "✓" : "");
+  if (lastProxyReady === false && proxyReady && preparedNode) {
+    notice("The proxy is back with the Skylight firmware. The install is complete.");
+  }
+  lastProxyReady = proxyReady;
   show("proxy-firmware", !proxyReady && nodes.some((node) => !node.has_skylight) && !preparedNode);
   options("node-choice", nodes.filter((node) => !node.has_skylight).map((node) => ({value: node.file, name: node.node})), "Choose a proxy");
   const installNode = preparedNode || (waiting.length === 1 ? waiting[0].node : null);
@@ -196,6 +203,10 @@ function render(data) {
   el("keyless-nodes").textContent = keyless.join(", ");
   show("firmware-files", firmware === "files");
   show("firmware-install", firmware === "install");
+  if (lastFirmware === "install" && firmware === "current") {
+    notice("The proxy runs the new Skylight firmware " + data.firmware.version + ". The install is complete.");
+  }
+  lastFirmware = firmware;
   el("firmware-nodes").textContent = nodeNames || "your proxy";
   el("install-nodes").textContent = nodeNames || "your proxy";
   if (data.device_builder) el("update-builder").href = data.device_builder;

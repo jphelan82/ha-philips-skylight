@@ -54,6 +54,12 @@ is done.
    Then install the firmware in ESPHome Device Builder: open the proxy, then
    **⋮ → Install → Wirelessly**. The page continues when the proxy is back.
 
+   Device Builder builds the firmware first. The first build takes several
+   minutes, and longer on a small device such as a Raspberry Pi. The install is
+   done when the log shows `OTA successful`, followed by the proxy's own log. That
+   log keeps scrolling, so the window never closes by itself. Close it then. The
+   add-on page also says when the proxy is back with the new firmware.
+
    The package turns on the proxy's API actions, scans for Bluetooth all the
    time so that no remote press is missed, and turns off Wi-Fi roaming. A proxy
    on a wall does not need roaming, and each roam breaks the connection to Home
