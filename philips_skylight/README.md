@@ -30,8 +30,8 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
       Builder, a Bluetooth proxy in it, and Home Assistant's connection to that
       proxy, and says how to fix anything missing. Select **Add Skylight firmware**, then
       install it in ESPHome Device Builder: **⋮ → Install → Wirelessly**. The
-      install is done when the log shows `OTA successful` and then the proxy's
-      own log, which keeps scrolling. Close the window then.
+      Device Builder window never says that it has finished. Come back to the
+      add-on page, which says "The install is complete".
    2. **Connect Home Assistant to the proxy.** With one proxy, this happens by
       itself.
    3. **Let Home Assistant hear your remote.** Select **Allow**.

@@ -55,10 +55,12 @@ is done.
    **⋮ → Install → Wirelessly**. The page continues when the proxy is back.
 
    Device Builder builds the firmware first. The first build takes several
-   minutes, and longer on a small device such as a Raspberry Pi. The install is
-   done when the log shows `OTA successful`, followed by the proxy's own log. That
-   log keeps scrolling, so the window never closes by itself. Close it then. The
-   add-on page also says when the proxy is back with the new firmware.
+   minutes, and longer on a small device such as a Raspberry Pi. Its window never
+   says that it has finished. Check the add-on page instead: it says "The install
+   is complete" when the proxy is back with the new firmware. In the Device Builder
+   log, the install is done when the build messages stop and the proxy's own
+   messages scroll by. Each of those starts with the time and a letter, such as
+   `[12:00:01][D]`. You can close the window then.
 
    The package turns on the proxy's API actions, scans for Bluetooth all the
    time so that no remote press is missed, and turns off Wi-Fi roaming. A proxy

@@ -1,10 +1,17 @@
 # Changelog
 
+## 0.4.9
+
+- Clearer guidance on when a firmware install is done. The add-on page is the
+  main sign. `OTA successful` scrolls out of view in seconds, so the page no
+  longer points to it.
+
 ## 0.4.8
 
 - The page explains how to tell that a firmware install in ESPHome Device
-  Builder is done. The log shows `OTA successful`, then the proxy's own log,
-  which keeps scrolling. The first build takes several minutes.
+  Builder is done. Device Builder's window never says so. The page does, and in
+  the log, the build messages stop and the proxy's own messages scroll by. The
+  first build takes several minutes.
 - The page says when the proxy is back with the new firmware: "The install is
   complete."
 
