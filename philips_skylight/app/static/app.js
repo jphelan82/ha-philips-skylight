@@ -97,6 +97,8 @@ function checkLine(id, state, text, link) {
 }
 function renderChecks(checks, visible) {
   show("prereq", Boolean(checks) && visible);
+  // The recommended path is Device Builder. Building it yourself stays a quiet second choice.
+  show("manual-firmware", Boolean(checks) && visible && !checks.builder);
   if (!checks) return;
   checkLine("check-builder", checks.builder ? "ok" : "todo", checks.builder
     ? "ESPHome Device Builder is installed."

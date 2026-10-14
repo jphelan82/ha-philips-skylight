@@ -160,12 +160,14 @@ test("several proxies need a choice, and the setup checks say what is missing", 
   assert.match(line("check-proxy"), /no Bluetooth proxy yet/);
   assert.equal(link("check-proxy"), "https://esphome.io/projects/");
   assert.equal(element("check-connected").hidden, true); // Nothing to report yet.
+  assert.equal(element("manual-firmware").hidden, false); // The secondary route, without Device Builder.
 
   // Device Builder is there, and Home Assistant sees a proxy that is not adopted.
   source.prerequisites = {builder: true, proxy: "adopt", unadopted: ["Kitchen Proxy"], connections: {}};
   await poll();
   await setImmediate();
   assert.equal(element("check-builder").className, "ok");
+  assert.equal(element("manual-firmware").hidden, true);
   assert.match(line("check-proxy"), /Home Assistant sees Kitchen Proxy, but Device Builder does not manage it yet/);
 
   // Adopted, but Home Assistant has not added it.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.7
+
+- Without ESPHome Device Builder, the first setup step also offers the firmware
+  package as a download, for building it with your own ESPHome. Device Builder
+  stays the recommended way.
+
 ## 0.4.6
 
 - The first setup step starts with three checks: ESPHome Device Builder is
