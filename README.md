@@ -18,7 +18,7 @@ Home Assistant talks to the panel through an [ESPHome Bluetooth proxy](https://e
 
 I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) and will guide you through all the requisite steps necessary to get the add-on set up.
 
->AI Disclosure: This repository was created primarily with the assistance of agentic coding. The Bluetooth protocol for the Philips Skylight remote was captured using Claude Opus 5.5, using the [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) via Home Assistant to inspect BLE messages during the pairing and signaling process. Further development was done in Codex, and then additional refactoring and final implementation were done in Opus. I am a software developer by trade and created specifications for this code and reviewed and vetted it, however, probably not with the level of scrutiny I would apply to a high-stakes, production-level project (aka, you decide and use at your own risk).
+> **AI disclosure:** I built this project with AI coding agents. Claude Opus 5.5 decoded the remote's Bluetooth protocol, using the [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) to capture its messages during pairing and button presses. Codex did further development, and Opus did the refactoring and final implementation. I'm a software developer. I wrote the specifications and reviewed the code, but not with the scrutiny I'd give a high-stakes production project. Use it at your own risk.
 
 ## What it does
 
