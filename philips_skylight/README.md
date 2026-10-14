@@ -19,6 +19,9 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
   breaker. Use a phone or a portable computer for setup.
 - Optional: give the Bluetooth proxy's ESPHome API an encryption key. Without
   one, any device on your home network can make the proxy control the panel.
+- Keep at least 2 GB free on the Home Assistant device. Home Assistant refuses
+  to install or update any app with less. The add-on itself is a 46 MB
+  download.
 
 ## Get started
 
