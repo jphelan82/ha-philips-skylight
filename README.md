@@ -154,6 +154,11 @@ the panel's power. The mode stays as Home Assistant last recorded it.
 - [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/), ESPHome's app for Home Assistant, with the proxy's
   configuration in it. The add-on adds the Skylight firmware to that
   configuration, and you install it on the proxy from Device Builder.
+- **Free disk space: at least 2 GB.** Home Assistant refuses to install or
+  update any app when free space is low. On the test system, it refused with
+  1.8 GB free. The add-on itself is only a 46 MB download. Old local backups
+  and old database copies (`home-assistant_v2.db.corrupt.*`) are the usual
+  things to clear.
 
 ## Install
 
@@ -330,6 +335,7 @@ changed.
 | The panel ignores every command | Check that the proxy is online. If the panel still ignores Home Assistant, use **Settings and fixes → Start over** on the add-on page. Do not pair Home Assistant a second time: the panel can drop your remote. |
 | Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
 | An update asks for a restart | Restart Home Assistant from the add-on page. |
+| An install or update fails with "not enough free space" | Free at least 2 GB on the Home Assistant device. Delete old local backups in **Settings → System → Backups**, after checking that copies exist elsewhere. |
 
 ## Ideas for later
 
