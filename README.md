@@ -151,11 +151,12 @@ the panel's power. The mode stays as Home Assistant last recorded it.
   [ready-made projects](https://esphome.io/projects/) page sets one up from your
   browser. Then select **Adopt** on it in ESPHome Device Builder, so that its
   configuration is there.
-- [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/), ESPHome's app for Home Assistant, with the proxy's
-  configuration in it. The add-on adds the Skylight firmware to that
-  configuration, and you install it on the proxy from Device Builder. This is
-  the recommended way. You can also build the firmware with your own ESPHome
-  install, from the [`esphome`](esphome/) folder.
+- [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/)
+  (or install the firmware yourself). Device Builder is ESPHome's app for Home
+  Assistant, and the recommended way. The add-on adds the Skylight firmware to
+  the proxy's configuration there, and you install it from Device Builder. To
+  install the firmware yourself, build the [`esphome`](esphome/) folder's
+  package with your own ESPHome.
 
 ## Install
 
