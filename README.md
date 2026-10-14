@@ -207,6 +207,10 @@ through HACS or by hand.
 Already using the Philips Skylight integration? The add-on keeps your light,
 settings and pairing. You do not need to pair again.
 
+## Bluetooth Proxy
+
+If you don't already have a Bluetooth proxy, creating one is relatively simple. I used an [inexpensive board + antenna from AliExpress](https://www.aliexpress.us/item/3256806898073871.html), which arrived shipped for $9. I 3D printed [this enclosure](https://makerworld.com/en/models/2145189-seeed-studio-antenna-case-esp32-c3-esp32-c6-s3#profileId-2324071), and I plug it directly into the wall with a USB adapter. These can also run other concurrent tasks. For example, I use my proxy to control my subwoofer volume levels. 
+
 ## Update
 
 1. **Update the add-on.** Home Assistant offers the update under **Settings →
