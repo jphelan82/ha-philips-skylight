@@ -1,7 +1,7 @@
 # Philips Skylight for Home Assistant
 
 
-> **Work in progress.** Early stage alpha. Back up your Home Assistant and only install on a bluetooth-proxy you are willing to reset if necessary. Currently, I am the only person who has tried this. 
+> **Work in progress.** Early stage alpha. Back up your Home Assistant and only install on a [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) you are willing to reset if necessary. Currently, I am the only person who has tried this. 
 >
 > **One Skylight only.** I have tested this with one Skylight panel. Support for
 > several Skylights is not built and not tested. 
@@ -13,12 +13,12 @@ The Philips LED Skylight panel comes with a remote and (famously) no smart funct
 second remote. You get a power toggle, the six modes and dim buttons on your
 dashboard and in automations. Your original remote keeps working.
 This allows Home Assistant to treat the device as a light entity, enabling you to include your Skylight in your automations, scenes, and more. The add-on also does its best to mirror the current state of your light, including whether it's powered on and its current scene (see limitations below). 
-Home Assistant talks to the panel through an ESPHome Bluetooth proxy. 
+Home Assistant talks to the panel through an [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/). 
 
 
-I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your bluetooth-proxy and will guide you through all the requisite steps necessary to get the add-on set up.
+I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) and will guide you through all the requisite steps necessary to get the add-on set up.
 
->AI Disclosure: This repository was created primarily with the assistance of agentic coding. The Bluetooth protocol for the Philips Skylight remote was captured using Claude Opus 5.5, using the Bluetooth proxy via Home Assistant to inspect BLE messages during the pairing and signaling process. Further development was done in Codex, and then additional refactoring and final implementation were done in Opus. I am a software developer by trade and created specifications for this code and reviewed and vetted it, however, probably not with the level of scrutiny I would apply to a high-stakes, production-level project (aka, you decide and use at your own risk).
+>AI Disclosure: This repository was created primarily with the assistance of agentic coding. The Bluetooth protocol for the Philips Skylight remote was captured using Claude Opus 5.5, using the [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) via Home Assistant to inspect BLE messages during the pairing and signaling process. Further development was done in Codex, and then additional refactoring and final implementation were done in Opus. I am a software developer by trade and created specifications for this code and reviewed and vetted it, however, probably not with the level of scrutiny I would apply to a high-stakes, production-level project (aka, you decide and use at your own risk).
 
 ## What it does
 
@@ -49,8 +49,8 @@ I have tried to make the setup of this as easy as possible, although it required
   Assistant's own cards, so it needs no custom card or HACS (the Home Assistant
   Community Store). The add-on creates a Skylight dashboard or adds the card to
   one of yours.
-- **Guided setup.** A setup checklist adds the Skylight firmware to your ESPHome
-  Bluetooth proxy, with backups, connects it, pairs the panel and tests it.
+- **Guided setup.** A setup checklist adds the Skylight firmware to your [ESPHome
+  Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/), with backups, connects it, pairs the panel and tests it.
 - **Guided updates.** After an update, the add-on page lists any step left: a
   Home Assistant restart, new proxy firmware, or a newer card.
 - **Local only.** No cloud, no account, no app and no MQTT broker. Everything
@@ -144,10 +144,16 @@ the panel's power. The mode stays as Home Assistant last recorded it.
 
 - Home Assistant OS or Supervised, version 2026.6 or newer.
 - A Philips Skylight panel.
-- An ESPHome Bluetooth proxy near the panel, set up in ESPHome Device Builder.
-  ESPHome 2026.4.5 or newer. An encryption key for its API is optional.
-  Without one, any device on your home network can make the proxy control the
-  panel.
+- An [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) near the panel: an ESP32 board with ESPHome
+  2026.4.5 or newer. It was tested with an ESP32-C3. An encryption key for its
+  [API](https://esphome.io/components/api/) is optional. Without one, any device on your home network can make
+  the proxy control the panel. No proxy yet? ESPHome's
+  [ready-made projects](https://esphome.io/projects/) page sets one up from your
+  browser. Then select **Adopt** on it in ESPHome Device Builder, so that its
+  configuration is there.
+- [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/), ESPHome's app for Home Assistant, with the proxy's
+  configuration in it. The add-on adds the Skylight firmware to that
+  configuration, and you install it on the proxy from Device Builder.
 
 ## Install
 
@@ -168,10 +174,10 @@ integration for you.
 3. If the page asks you to restart Home Assistant, select **Restart Home
    Assistant**.
 4. Follow the setup checklist on the page. Each step gets a ✓ when it is done.
-   1. **Prepare your Bluetooth proxy.** Choose your proxy and select **Add
+   1. **Prepare your [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/).** Choose your proxy and select **Add
       Skylight firmware**. The add-on copies the firmware files into your
       ESPHome folder and adds one line to the proxy's YAML. It keeps a backup.
-      Then install it in ESPHome Device Builder: open the proxy, then **⋮ →
+      Then install it in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/): open the proxy, then **⋮ →
       Install → Wirelessly**. The page continues by itself when the proxy is
       back. A proxy that already has the firmware skips this step.
    2. **Connect Home Assistant to the proxy.** With one compatible proxy, the
@@ -212,7 +218,7 @@ settings and pairing. You do not need to pair again.
    - If the copies are older, the page shows **Update the firmware files**. It
      keeps a backup of the old files.
    - Then, or if the proxy reports an older number, the page asks you to
-     install: in ESPHome Device Builder, open the proxy, then **⋮ → Install →
+     install: in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/), open the proxy, then **⋮ → Install →
      Wirelessly**. The proxy is offline for a minute or two, and Home Assistant
      misses remote presses in that time.
    - If the firmware did not change, the page shows nothing.
@@ -310,7 +316,7 @@ changed.
 | Problem | What to try |
 |---|---|
 | The add-on is not in the store | Check that you can open the repository, and that an add-on release exists. Otherwise, use the local installation. |
-| No proxy appears | The setup checklist lists the Bluetooth proxies in your ESPHome folder. If none is listed, set up a Bluetooth proxy in ESPHome Device Builder first. |
+| No proxy appears | The setup checklist lists the [Bluetooth proxies](https://esphome.io/components/bluetooth_proxy/) in your ESPHome folder. If none is listed, set up a [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/) first. |
 | Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
 | The dashboard shows Unknown, or the wrong power or mode | Use **Correct** and record what you see. |
 | The card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
