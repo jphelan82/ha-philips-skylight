@@ -21,11 +21,42 @@ def _node_name(text, fallback):
     match = re.search(r"^esphome:[^\n]*\n((?:[ \t]+[^\n]*\n?|\n)*)", text, re.M)
     if match:
         name = re.search(
-            r"^[ \t]+name:[ \t]*['\"]?([A-Za-z0-9_-]+)['\"]?[ \t]*(?:#.*)?$", match[1], re.M
+            r"^[ \t]+name:[ \t]*['\"]?([A-Za-z0-9_${}-]+)['\"]?[ \t]*(?:#.*)?$", match[1], re.M
         )
         if name:
-            return name[1]
+            names = _substitutions(text)
+            value = re.sub(r"\$\{?(\w+)\}?", lambda m: names.get(m[1], m[0]), name[1])
+            if "$" not in value:
+                return value
     return fallback
+
+
+def _substitutions(text):
+    match = re.search(r"^substitutions:[^\n]*\n((?:[ \t]+[^\n]*\n?|\n)*)", text, re.M)
+    if not match:
+        return {}
+    return {
+        key: value
+        for key, value in re.findall(
+            r"^[ \t]+([A-Za-z0-9_]+):[ \t]*['\"]?([^'\"\n#]*?)['\"]?[ \t]*(?:#.*)?$", match[1], re.M
+        )
+    }
+
+
+def friendly_name(text):
+    """The node's friendly name, which Home Assistant shows as its title, or None."""
+    match = re.search(r"^esphome:[^\n]*\n((?:[ \t]+[^\n]*\n?|\n)*)", text, re.M)
+    if not match:
+        return None
+    found = re.search(
+        r"^[ \t]+friendly_name:[ \t]*['\"]?([^'\"\n#]+?)['\"]?[ \t]*(?:#.*)?$", match[1], re.M
+    )
+    if not found:
+        return None
+    value = found[1]
+    names = _substitutions(text)
+    value = re.sub(r"\$\{?(\w+)\}?", lambda m: names.get(m[1], m[0]), value)
+    return None if "$" in value else value
 
 
 def has_api_key(text):
@@ -57,6 +88,7 @@ def list_nodes(folder: Path):
             {
                 "file": path.name,
                 "node": _node_name(text, path.stem),
+                "friendly_name": friendly_name(text),
                 "has_skylight": has_skylight(text),
                 # Only nodes that include the package get firmware updates from the add-on.
                 "uses_package": PACKAGE in text,

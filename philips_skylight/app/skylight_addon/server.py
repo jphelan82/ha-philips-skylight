@@ -69,6 +69,9 @@ class Panel:
         self.device_builder = None
         self.firmware_files_current = None
         self.outdated_cards = []
+        # What Home Assistant knows about ESPHome devices, for the setup checks.
+        self.esphome_entries = None
+        self.proxy_devices = []
         self._checked = 0.0
         self._cards_checked = 0.0
         self._check_task = None
@@ -222,6 +225,26 @@ class Panel:
             )
         except (HAError, aiohttp.ClientError, TimeoutError, KeyError, TypeError):
             pass  # Read-only; the next poll tries again.
+        try:
+            entries = await self.ha.http("GET", "config/config_entries/entry?domain=esphome")
+            self.esphome_entries = [
+                {"title": item.get("title", ""), "state": item.get("state")}
+                for item in entries or []
+                if item.get("disabled_by") is None
+            ]
+            devices = await self.ha.request("config/device_registry/list")
+            # A ready-made ESPHome proxy reports the project esphome.bluetooth-proxy.
+            self.proxy_devices = sorted(
+                {
+                    item.get("name_by_user") or item.get("name") or ""
+                    for item in devices or []
+                    if "bluetooth" in str(item.get("model", "")).lower()
+                    and "proxy" in str(item.get("model", "")).lower()
+                }
+                - {""}
+            )
+        except (HAError, aiohttp.ClientError, TimeoutError, KeyError, TypeError):
+            pass  # Read-only; the next poll tries again.
         if self.esphome_dir:
             try:
                 self.firmware_files_current = await asyncio.to_thread(
@@ -242,6 +265,40 @@ class Panel:
                 self.outdated_cards = [item["title"] for item in found]
             except (ValueError, HAError, aiohttp.ClientError, TimeoutError):
                 self.outdated_cards = []
+
+    def prerequisites(self):
+        """What the first setup step needs: Device Builder, a proxy in it, and a connection."""
+
+        def key(text):
+            return re.sub(r"[^a-z0-9]", "", (text or "").lower())
+
+        nodes = self.esphome_nodes()
+        builder = bool(self.device_builder) or bool(
+            self.esphome_dir and self.esphome_dir.is_dir()
+        )
+        known = {key(node["node"]) for node in nodes} | {
+            key(node.get("friendly_name")) for node in nodes if node.get("friendly_name")
+        }
+        unadopted = [name for name in self.proxy_devices if key(name) not in known]
+        connections = {}
+        if self.esphome_entries is not None:
+            states = {key(item["title"]): item["state"] for item in self.esphome_entries}
+            for node in nodes:
+                names = [key(node.get("friendly_name")), key(node["node"])]
+                state = next((states[name] for name in names if name and name in states), None)
+                if state == "loaded":
+                    connections[node["node"]] = "ok"
+                elif state:
+                    connections[node["node"]] = "offline"
+                elif node.get("friendly_name"):
+                    # Only claim "not added" when the name Home Assistant uses is known.
+                    connections[node["node"]] = "missing"
+        return {
+            "builder": builder,
+            "proxy": "ok" if nodes else "adopt" if unadopted else "none",
+            "unadopted": unadopted,
+            "connections": connections,
+        }
 
     def firmware_status(self):
         """Whether the proxy firmware is current, needs new files, or needs an install."""
@@ -337,6 +394,7 @@ class Panel:
             "esphome_nodes": self.esphome_nodes(),
             "device_builder": self.device_builder,
             "firmware": self.firmware_status(),
+            "prerequisites": self.prerequisites(),
             "outdated_cards": self.outdated_cards,
             "pairing_remaining": _remaining(attributes.get("pairing_until")),
         }

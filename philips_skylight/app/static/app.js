@@ -67,6 +67,67 @@ function modeButtons(id, action, effects) {
   }));
   el(id).dataset.items = JSON.stringify(effects);
 }
+// The first setup step starts with what it needs: Device Builder, a proxy in it,
+// and Home Assistant's connection to that proxy. Each line says how to fix it.
+const LINKS = {
+  builder: "https://my.home-assistant.io/redirect/supervisor_addon/?addon=5c53de3b_esphome&repository_url=https%3A%2F%2Fgithub.com%2Fesphome%2Fhome-assistant-addon",
+  projects: "https://esphome.io/projects/",
+  devices: "/config/integrations/integration/esphome",
+};
+function checkLine(id, state, text, link) {
+  const parts = [];
+  const mark = document.createElement("span");
+  mark.className = "mark";
+  mark.textContent = state === "ok" ? "✓" : "!";
+  parts.push(mark);
+  const words = document.createElement("span");
+  words.textContent = text;
+  parts.push(words);
+  if (link) {
+    const anchor = document.createElement("a");
+    anchor.href = link.href;
+    anchor.textContent = link.label;
+    anchor.target = link.href.startsWith("/") ? "_top" : "_blank";
+    anchor.rel = "noopener";
+    parts.push(anchor);
+  }
+  el(id).className = state === "ok" ? "ok" : "todo";
+  el(id).replaceChildren(...parts);
+  show(id, Boolean(state));
+}
+function renderChecks(checks, visible) {
+  show("prereq", Boolean(checks) && visible);
+  if (!checks) return;
+  checkLine("check-builder", checks.builder ? "ok" : "todo", checks.builder
+    ? "ESPHome Device Builder is installed."
+    : "Install ESPHome Device Builder, ESPHome's app for Home Assistant, then start it. ",
+  checks.builder ? null : {href: LINKS.builder, label: "Open it in the app store"});
+  const nodes = (state.esphome_nodes || []).map((node) => node.node);
+  if (checks.proxy === "ok") {
+    checkLine("check-proxy", "ok", "Device Builder has a Bluetooth proxy: " + nodes.join(", ") + ".");
+  } else if (checks.proxy === "adopt") {
+    checkLine("check-proxy", "todo", "Home Assistant sees " + checks.unadopted.join(", ")
+      + ", but Device Builder does not manage it yet. In Device Builder, select Adopt on it.");
+  } else {
+    checkLine("check-proxy", "todo", "Device Builder has no Bluetooth proxy yet. Set one up near the panel, then select Adopt on it in Device Builder. ",
+      {href: LINKS.projects, label: "ESPHome's ready-made projects"});
+  }
+  const connections = Object.entries(checks.connections || {});
+  const missing = connections.filter(([, value]) => value === "missing").map(([node]) => node);
+  const offline = connections.filter(([, value]) => value === "offline").map(([node]) => node);
+  const connected = connections.filter(([, value]) => value === "ok").map(([node]) => node);
+  if (connected.length) {
+    checkLine("check-connected", "ok", "Home Assistant is connected to " + connected.join(", ") + ".");
+  } else if (offline.length) {
+    checkLine("check-connected", "todo", offline.join(", ") + " is offline. Check that it has power and Wi-Fi.");
+  } else if (missing.length) {
+    checkLine("check-connected", "todo", "Home Assistant has not added " + missing.join(", ")
+      + " yet. Add it where Home Assistant lists discovered ESPHome devices. ",
+    {href: LINKS.devices, label: "Open ESPHome devices"});
+  } else {
+    checkLine("check-connected", "", "");
+  }
+}
 function render(data) {
   state = data;
   el("connection").textContent = !data.connected ? "Connecting" : data.proxy_online ? "Proxy online" : "Proxy offline";
@@ -93,7 +154,7 @@ function render(data) {
   el("proxy-node").textContent = installNode || "";
   if (data.device_builder) el("device-builder").href = data.device_builder;
   show("device-builder", Boolean(data.device_builder));
-  show("proxy-none", !proxyReady && nodes.length === 0);
+  renderChecks(data.prerequisites, !proxyReady);
 
   step("step-connect", data.configured, data.configured ? "✓" : proxyReady && data.proxies.length === 1 ? "Connecting…" : "");
   show("connect-choice", proxyReady && !data.configured && data.proxies.length > 1);

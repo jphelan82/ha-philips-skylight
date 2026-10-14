@@ -148,17 +148,52 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   assert.equal(element("connection").textContent, "Proxy online");
 });
 
-test("several proxies need a choice, and no proxy shows a hint", async () => {
-  const source = base();
+test("several proxies need a choice, and the setup checks say what is missing", async () => {
+  const source = {...base(), prerequisites: {builder: false, proxy: "none", unadopted: [], connections: {}}};
   const {element, posts, press, poll} = await page(source);
-  assert.equal(element("proxy-none").hidden, false);
+  const line = (id) => element(id).options.map((part) => part.textContent).join("");
+  const link = (id) => element(id).options.find((part) => part.href)?.href || "";
+  assert.equal(element("prereq").hidden, false);
+  assert.equal(element("check-builder").className, "todo");
+  assert.match(line("check-builder"), /Install ESPHome Device Builder/);
+  assert.match(link("check-builder"), /my\.home-assistant\.io\/redirect\/supervisor_addon/);
+  assert.match(line("check-proxy"), /no Bluetooth proxy yet/);
+  assert.equal(link("check-proxy"), "https://esphome.io/projects/");
+  assert.equal(element("check-connected").hidden, true); // Nothing to report yet.
+
+  // Device Builder is there, and Home Assistant sees a proxy that is not adopted.
+  source.prerequisites = {builder: true, proxy: "adopt", unadopted: ["Kitchen Proxy"], connections: {}};
+  await poll();
+  await setImmediate();
+  assert.equal(element("check-builder").className, "ok");
+  assert.match(line("check-proxy"), /Home Assistant sees Kitchen Proxy, but Device Builder does not manage it yet/);
+
+  // Adopted, but Home Assistant has not added it.
+  source.esphome_nodes = [{file: "k.yaml", node: "kitchen-proxy", has_skylight: false}];
+  source.prerequisites = {builder: true, proxy: "ok", unadopted: [], connections: {"kitchen-proxy": "missing"}};
+  await poll();
+  await setImmediate();
+  assert.equal(element("check-proxy").className, "ok");
+  assert.match(line("check-connected"), /has not added kitchen-proxy/);
+  assert.equal(link("check-connected"), "/config/integrations/integration/esphome");
+  source.prerequisites.connections = {"kitchen-proxy": "offline"};
+  await poll();
+  await setImmediate();
+  assert.match(line("check-connected"), /kitchen-proxy is offline/);
+  source.prerequisites.connections = {"kitchen-proxy": "ok"};
+  await poll();
+  await setImmediate();
+  assert.equal(element("check-connected").className, "ok");
+
+  // Once a Skylight proxy is ready, the checks are done and hide.
   source.proxies = [
     {entity_id: "sensor.a", name: "A", node: "a", transmit_service: "a_adv_svc_v1"},
     {entity_id: "sensor.b", name: "B", node: "b", transmit_service: "b_adv_svc_v1"},
   ];
   source.esphome_nodes = [{file: "a.yaml", node: "a", has_skylight: true}];
   await poll();
-  assert.equal(element("proxy-none").hidden, true);
+  await setImmediate();
+  assert.equal(element("prereq").hidden, true);
   assert.equal(element("connect-choice").hidden, false);
   element("proxy-choice").value = "sensor.b";
   await press({action: "connect"});

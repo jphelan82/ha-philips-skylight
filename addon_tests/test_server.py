@@ -38,9 +38,20 @@ class FakeHA:
 
     def __init__(self):
         self.calls = []
+        # ESPHome config entries and devices, as Home Assistant reports them.
+        self.esphome_entries = []
+        self.devices = []
 
     async def call(self, *args, **kwargs):
         self.calls.append((args, kwargs))
+
+    async def http(self, method, path, body=None):
+        assert (method, path) == ("GET", "config/config_entries/entry?domain=esphome")
+        return self.esphome_entries
+
+    async def request(self, kind, **data):
+        assert kind == "config/device_registry/list"
+        return self.devices
 
     async def configure(self, *args):
         self.calls.append((args, {}))
@@ -488,6 +499,7 @@ async def test_firmware_is_added_to_the_chosen_proxy(setup_panel, tmp_path):
     node = {
         "file": "proxy.yaml",
         "node": "proxy",
+        "friendly_name": None,
         "has_skylight": False,
         "uses_package": False,
         "api_key": False,
@@ -602,3 +614,51 @@ async def test_start_over_unpairs_everything_then_reopens_pairing(panel):
     assert panel.first_setup is True
     await panel.perform({"action": "pair", "confirm": True})  # Allowed again.
     assert panel.ha.calls[-1][0][1] == "pair_transmitter"
+
+
+async def test_setup_checks_report_device_builder_proxy_and_connection(setup_panel, tmp_path):
+    ha = setup_panel.ha
+    setup_panel.esphome_dir = tmp_path / "esphome"
+    setup_panel.device_builder = None
+    # No Device Builder: no ESPHome folder and no panel.
+    assert setup_panel.prerequisites() == {
+        "builder": False, "proxy": "none", "unadopted": [], "connections": {}
+    }
+    setup_panel.esphome_dir.mkdir()
+    # Home Assistant sees a ready-made proxy that Device Builder does not manage yet.
+    ha.devices = [
+        {"name": "Kitchen Proxy", "model": "bluetooth-proxy"},
+        {"name": "Thermostat", "model": "esp32"},
+    ]
+    await setup_panel.check()
+    checks = setup_panel.prerequisites()
+    assert checks["builder"] is True
+    assert (checks["proxy"], checks["unadopted"]) == ("adopt", ["Kitchen Proxy"])
+    # After adoption, Device Builder has its YAML, but Home Assistant has no entry for it.
+    (setup_panel.esphome_dir / "kitchen-proxy.yaml").write_text(
+        "esphome:\n  name: kitchen-proxy\n  friendly_name: Kitchen Proxy\n\nbluetooth_proxy:\n"
+    )
+    await setup_panel.check()
+    checks = setup_panel.prerequisites()
+    assert (checks["proxy"], checks["unadopted"]) == ("ok", [])
+    assert checks["connections"] == {"kitchen-proxy": "missing"}
+    ha.esphome_entries = [{"title": "Kitchen Proxy", "state": "setup_retry", "disabled_by": None}]
+    await setup_panel.check()
+    assert setup_panel.prerequisites()["connections"] == {"kitchen-proxy": "offline"}
+    ha.esphome_entries[0]["state"] = "loaded"
+    await setup_panel.check()
+    assert setup_panel.prerequisites()["connections"] == {"kitchen-proxy": "ok"}
+    assert setup_panel.snapshot()["prerequisites"]["connections"] == {"kitchen-proxy": "ok"}
+
+
+async def test_setup_checks_never_guess_a_missing_connection(setup_panel, tmp_path):
+    setup_panel.esphome_dir = tmp_path
+    # The friendly name comes from a substitution the YAML does not define.
+    (tmp_path / "proxy.yaml").write_text(
+        "esphome:\n  name: proxy\n  friendly_name: ${room} proxy\n\nbluetooth_proxy:\n"
+    )
+    setup_panel.ha.esphome_entries = [
+        {"title": "Hall proxy", "state": "loaded", "disabled_by": None}
+    ]
+    await setup_panel.check()
+    assert setup_panel.prerequisites()["connections"] == {}

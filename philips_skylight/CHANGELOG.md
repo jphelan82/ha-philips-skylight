@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.6
+
+- The first setup step starts with three checks: ESPHome Device Builder is
+  installed, Device Builder has a Bluetooth proxy, and Home Assistant is
+  connected to that proxy. Each missing item says how to fix it, with a link:
+  the app store for Device Builder, ESPHome's ready-made projects for a new
+  proxy, or Home Assistant's ESPHome devices for one that is not added yet.
+- If Home Assistant sees a ready-made proxy that Device Builder does not manage
+  yet, the page asks you to adopt it in Device Builder.
+- Proxy names written with `${...}` substitutions now show their real names.
+
 ## 0.4.5
 
 - The add-on comes as a prebuilt image for amd64 and aarch64. Home Assistant

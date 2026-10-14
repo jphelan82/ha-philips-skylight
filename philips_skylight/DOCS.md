@@ -31,7 +31,18 @@ is done.
    integration into `custom_components/philips_skylight`. If Home Assistant
    needs a restart to load it, the page shows **Restart Home Assistant**. The
    add-on never restarts Home Assistant by itself.
-2. **Prepare your Bluetooth proxy.** The page lists the ESPHome Bluetooth
+2. **Prepare your Bluetooth proxy.** The step first checks three things, and
+   says how to fix each one that is missing:
+   - **ESPHome Device Builder is installed.** The add-on looks for its
+     `esphome` folder and its page in Home Assistant.
+   - **Device Builder has a Bluetooth proxy.** If Home Assistant sees a
+     ready-made proxy that Device Builder does not manage yet, the page asks you
+     to adopt it.
+   - **Home Assistant is connected to the proxy.** The add-on matches the
+     proxy's friendly name with Home Assistant's ESPHome devices. If it cannot
+     work out the name, it skips this check.
+
+   The page lists the ESPHome Bluetooth
    proxies in your `esphome` folder. **Add Skylight firmware** does three
    things:
    - It copies `skylight-transmitter.yaml` and `components/ble_adv_proxy` into

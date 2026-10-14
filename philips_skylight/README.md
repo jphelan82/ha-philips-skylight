@@ -26,7 +26,9 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
 2. If the page asks you to restart Home Assistant, select **Restart Home
    Assistant**.
 3. Follow the setup checklist. Each step gets a ✓ when it is done.
-   1. **Prepare your Bluetooth proxy.** Select **Add Skylight firmware**, then
+   1. **Prepare your Bluetooth proxy.** The step checks for ESPHome Device
+      Builder, a Bluetooth proxy in it, and Home Assistant's connection to that
+      proxy, and says how to fix anything missing. Select **Add Skylight firmware**, then
       install it in ESPHome Device Builder: **⋮ → Install → Wirelessly**.
    2. **Connect Home Assistant to the proxy.** With one proxy, this happens by
       itself.

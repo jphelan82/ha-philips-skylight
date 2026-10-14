@@ -174,7 +174,10 @@ integration for you.
 3. If the page asks you to restart Home Assistant, select **Restart Home
    Assistant**.
 4. Follow the setup checklist on the page. Each step gets a ✓ when it is done.
-   1. **Prepare your [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/).** Choose your proxy and select **Add
+   1. **Prepare your [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/).** The step first checks what it needs:
+      ESPHome Device Builder, a Bluetooth proxy in it, and Home Assistant's
+      connection to that proxy. Each missing item says how to fix it. Then
+      choose your proxy and select **Add
       Skylight firmware**. The add-on copies the firmware files into your
       ESPHome folder and adds one line to the proxy's YAML. It keeps a backup.
       Then install it in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/): open the proxy, then **⋮ →

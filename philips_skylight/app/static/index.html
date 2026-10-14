@@ -32,6 +32,11 @@
     <ol class="steps">
       <li id="step-proxy">
         <h3>Prepare your Bluetooth proxy <span class="status" id="step-proxy-status"></span></h3>
+        <ul class="checks" id="prereq" hidden>
+          <li id="check-builder"></li>
+          <li id="check-proxy"></li>
+          <li id="check-connected"></li>
+        </ul>
         <div id="proxy-firmware" hidden>
           <p>Add the Skylight firmware to the ESPHome Bluetooth proxy nearest the panel.</p>
           <label>Proxy<select id="node-choice"></select></label>
@@ -41,7 +46,6 @@
           <p>Now install it: in ESPHome Device Builder, open <strong id="proxy-node"></strong>, then choose <strong>⋮ → Install → Wirelessly</strong>. This page continues by itself when the proxy is back.</p>
           <p><a id="device-builder" target="_top" hidden>Open ESPHome Device Builder</a></p>
         </div>
-        <p id="proxy-none" hidden>No ESPHome Bluetooth proxy found. Set one up near the panel in ESPHome Device Builder first.</p>
       </li>
       <li id="step-connect">
         <h3>Connect Home Assistant to the proxy <span class="status" id="step-connect-status"></span></h3>

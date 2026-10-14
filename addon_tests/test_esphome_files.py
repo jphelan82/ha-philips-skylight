@@ -25,6 +25,7 @@ def test_lists_only_bluetooth_proxies(tmp_path):
         {
             "file": "manual.yaml",
             "node": "manual",
+            "friendly_name": "Proxy",
             "has_skylight": True,
             "uses_package": False,
             "api_key": False,
@@ -32,6 +33,7 @@ def test_lists_only_bluetooth_proxies(tmp_path):
         {
             "file": "proxy.yaml",
             "node": "proxy-1",
+            "friendly_name": "Proxy",
             "has_skylight": False,
             "uses_package": False,
             "api_key": False,
@@ -124,3 +126,15 @@ def test_api_key_is_found_only_under_api():
     assert not esphome_files.has_api_key(PROXY + "api:\n  reboot_timeout: 0s\n")
     assert not esphome_files.has_api_key(PROXY + "api:\n\nother:\n  encryption: x\n")
     assert not esphome_files.has_api_key(PROXY)
+
+
+def test_names_resolve_substitutions():
+    text = (
+        "substitutions:\n  name: kitchen-proxy\n  friendly_name: Kitchen Proxy\n"
+        "esphome:\n  name: ${name}\n  friendly_name: ${friendly_name}\n"
+    )
+    assert esphome_files.friendly_name(text) == "Kitchen Proxy"
+    assert esphome_files._node_name(text, "file") == "kitchen-proxy"
+    unknown = "esphome:\n  name: ${x}\n  friendly_name: ${y}\n"
+    assert esphome_files.friendly_name(unknown) is None
+    assert esphome_files._node_name(unknown, "file") == "file"

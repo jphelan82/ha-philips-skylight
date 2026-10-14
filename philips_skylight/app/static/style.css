@@ -59,6 +59,11 @@ select, input:not([type=checkbox]) {
 .check { display: flex; gap: 9px; align-items: flex-start; }
 .steps { padding-left: 22px; margin: 0; }
 .steps > li { padding: 12px 0; border-top: 1px solid var(--line); }
+.checks { list-style: none; padding: 0; margin: 0 0 12px; }
+.checks li { font-size: 14px; padding: 3px 0 3px 1.6em; text-indent: -1.6em; line-height: 1.5; }
+.checks .mark { display: inline-block; width: 1.6em; text-indent: 0; font-weight: 700; }
+.checks .ok .mark { color: var(--done); }
+.checks .todo .mark { color: var(--error); }
 .steps > li:first-child { border-top: 0; padding-top: 0; }
 .steps > li.done h3 { color: var(--done); }
 .steps > li.done > div, .steps > li.done > p { display: none; }
