@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.15
+
+- **Open ESPHome Device Builder** is larger and sits right under the install
+  instruction, above the longer guidance about build times.
+
 ## 0.4.14
 
 - **Open ESPHome Device Builder** and the setup checks' links open in a new

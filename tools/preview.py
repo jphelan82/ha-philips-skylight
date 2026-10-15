@@ -2,7 +2,7 @@
 
 Run: python tools/preview.py [port] [stage]. Each action moves the fake setup one
 stage on. The stage starts the page at another point, for screenshots: "missing"
-(nothing set up yet), "pair" or "ready".
+(nothing set up yet), "install", "pair" or "ready".
 """
 
 import asyncio
@@ -92,6 +92,10 @@ STAGES = {
 STAGES["missing"] = {
     "esphome_nodes": [], "device_builder": None,
     "prerequisites": {"builder": False, "proxy": "none", "unadopted": [], "connections": {}},
+}
+STAGES["install"] = {
+    "esphome_nodes": [{"file": "proxy-1.yaml", "node": "proxy-1", "friendly_name": "Bluetooth Proxy",
+                       "has_skylight": True, "uses_package": True, "api_key": True}],
 }
 STAGES["ready"] = {**STAGES["pair"], "first_setup": False, "state": "on", "effect": "Relax"}
 if len(sys.argv) > 2:

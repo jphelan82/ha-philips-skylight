@@ -74,6 +74,7 @@ details.plain details.plain { border: 0; padding-bottom: 0; }
 summary { cursor: pointer; font-weight: 600; font-size: 14px; }
 details[open] > summary { margin-bottom: 10px; }
 a { color: var(--accent); font-size: 13px; }
+a.big-link { font-size: 16px; font-weight: 500; }
 code { font-size: 13px; padding: 1px 5px; border-radius: 4px; background: var(--button); }
 pre { padding: 12px; background: var(--page); border-radius: 8px; overflow: auto; font-size: 13px; }
 #notice { padding: 12px 16px; background: var(--info-bg); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; font-size: 14px; }
