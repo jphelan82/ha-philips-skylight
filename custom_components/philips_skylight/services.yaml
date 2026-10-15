@@ -42,7 +42,7 @@ pair_transmitter:
         boolean:
 unpair_all_remotes:
   name: Unpair all remotes
-  description: Makes the panel forget every paired sender, the original remote and this transmitter included. Run it as soon as the panel is back on after a power cycle at its light switch or breaker. Afterward, pair Home Assistant again with Pair transmitter. Then pair the wall remote again: switch the panel's power off and on, then hold the remote's power button for 10 seconds.
+  description: Makes the panel forget every paired sender, the original remote and this transmitter included. Run it as soon as the panel is back on after a power cycle at its light switch or breaker. Afterward, pair Home Assistant again with Pair transmitter. Then pair the wall remote again. Switch the panel's power off and on, then hold the remote's power button for 10 seconds.
   target:
     entity:
       integration: philips_skylight

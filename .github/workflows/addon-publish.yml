@@ -26,6 +26,7 @@ jobs:
       - run: python tools/sync_addon.py --check
       - run: python -m pytest -q
       - run: node --test addon_tests/test_frontend.mjs
+      - run: ruff check .
 
   publish:
     needs: test
