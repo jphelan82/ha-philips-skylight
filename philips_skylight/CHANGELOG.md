@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.11
+
+- **Restart Home Assistant** on the add-on page works again. While a restart was
+  pending, the page greyed out every button, this one included.
+- Greyed-out buttons show a "not allowed" pointer instead of a busy one.
+- The install steps name the buttons in order: **Open link**, **Add**,
+  **Install**, **Start** and **Open Web UI**.
+
 ## 0.4.10
 
 - The install guidance says that the first firmware build can take up to 15

@@ -176,16 +176,17 @@ integration for you.
    which is how Home Assistant names the repository. Change it if the address changes. -->
    [![Open the Philips Skylight add-on in your Home Assistant](https://my.home-assistant.io/badges/supervisor_app.svg)](https://my.home-assistant.io/redirect/supervisor_app/?app=ee6ebc3d_philips_skylight&repository_url=https%3A%2F%2Fgithub.com%2Fjphelan82%2Fha-philips-skylight)
 
-   Home Assistant asks to add this repository. Select **Add**. It then shows the
-   **Philips Skylight** add-on.
+   The My Home Assistant page opens. Select **Open link**. The first time, it
+   asks for your Home Assistant's address. Home Assistant then asks to add this
+   repository. Select **Add**, and the **Philips Skylight** add-on page opens.
 
    Or add the repository by hand: open **Settings → Apps**, select **Install
    app** at the bottom right, then **⋮** at the top right **→ Repositories**.
    Add `https://github.com/jphelan82/ha-philips-skylight`. On older versions,
    **Apps** is called **Add-ons**, and **Install app** is called **Add-on
    store**.
-2. Install **Philips Skylight**. Turn on **Start on boot**, start it, and open
-   its web page.
+2. On the add-on page, select **Install**. When it is installed, turn on
+   **Start on boot**, select **Start**, then select **Open Web UI**.
 3. If the page asks you to restart Home Assistant, select **Restart Home
    Assistant**.
 4. Follow the setup checklist on the page. Each step gets a ✓ when it is done.

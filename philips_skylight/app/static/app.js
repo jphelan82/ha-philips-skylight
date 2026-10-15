@@ -133,6 +133,14 @@ function renderChecks(checks, visible) {
     checkLine("check-connected", "", "");
   }
 }
+// While a restart is pending, only Install and Restart Home Assistant stay usable.
+// Restart needs the connection to Home Assistant, and Install does not.
+function buttonDisabled(kind, data) {
+  if (busy) return true;
+  if (kind === "install") return false;
+  if (kind === "restart") return !data.connected;
+  return !data.connected || data.restart_required;
+}
 function render(data) {
   state = data;
   el("connection").textContent = !data.connected ? "Connecting" : data.proxy_online ? "Proxy online" : "Proxy offline";
@@ -223,8 +231,7 @@ function render(data) {
   options("proxy", data.proxy_sensors, "Choose a sensor");
   el("version").textContent = "v" + data.version;
   for (const button of document.querySelectorAll("button")) {
-    const install = button.dataset.action === "install";
-    button.disabled = busy || (!install && (!data.connected || data.restart_required));
+    button.disabled = buttonDisabled(button.dataset.action, data);
   }
   el("add-card").disabled ||= !dashboardRevision || !el("view-choice").value;
 }

@@ -22,7 +22,8 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
 
 ## Get started
 
-1. Install and start the add-on, turn on **Start on boot**, and open its web page.
+1. Select **Install**. When it is installed, turn on **Start on boot**, select
+   **Start**, then select **Open Web UI**.
 2. If the page asks you to restart Home Assistant, select **Restart Home
    Assistant**.
 3. Follow the setup checklist. Each step gets a ✓ when it is done.

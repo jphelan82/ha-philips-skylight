@@ -55,7 +55,7 @@ async function page(source) {
     await callback?.();
     await setImmediate();
   };
-  return {element, posts, press, poll: () => poll(), tick};
+  return {element, posts, press, poll: () => poll(), tick, context};
 }
 
 const base = () => ({
@@ -316,4 +316,18 @@ test("updates show only the firmware and card steps that apply", async () => {
   await poll();
   await setImmediate();
   assert.equal(element("updates").hidden, true);
+});
+
+
+test("a pending restart leaves the restart and install buttons usable", async () => {
+  const source = {...base(), installed: true, restart_required: true};
+  const {context} = await page(source);
+  const data = {connected: true, restart_required: true};
+  assert.equal(context.buttonDisabled("restart", data), false);
+  assert.equal(context.buttonDisabled("install", data), false);
+  assert.equal(context.buttonDisabled("pair", data), true);
+  // Restart goes through Home Assistant, so it waits for the connection.
+  assert.equal(context.buttonDisabled("restart", {connected: false, restart_required: true}), true);
+  assert.equal(context.buttonDisabled("install", {connected: false}), false);
+  assert.equal(context.buttonDisabled("pair", {connected: true, restart_required: false}), false);
 });

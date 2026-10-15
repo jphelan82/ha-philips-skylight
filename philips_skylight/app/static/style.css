@@ -41,7 +41,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 button.primary:hover { background: color-mix(in srgb, var(--accent) 88%, var(--text)); }
 /* The remote's buttons keep a tile shape, like Home Assistant's tile cards. */
 .modes button, button.wide, .row button { border-radius: var(--radius); }
-button:disabled { opacity: .45; cursor: wait; }
+button:disabled { opacity: .45; cursor: not-allowed; }
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 button.wide { width: 100%; margin-bottom: 10px; }
 button.link { border: 0; background: none; color: var(--accent); padding: 8px 0; margin-top: 6px; }
