@@ -16,11 +16,11 @@ This allows Home Assistant to treat the device as a light entity, enabling you t
 Home Assistant talks to the panel through an [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/). 
 
 The Skylight uses encrypted Bluetooth Mesh with replay protection, so a simple
-replay or the `ble_adv` integration can't drive it. This project pairs Home
+replay or the [`ble_adv`](https://github.com/NicoIIT/ha-ble-adv) integration can't drive it. This project pairs Home
 Assistant as a second remote and sends properly encrypted commands through an
 ESPHome Bluetooth proxy. The proxy firmware builds on NicoIIT's
 [`esphome-ble_adv_proxy`](https://github.com/NicoIIT/esphome-ble_adv_proxy)
-component, from the [`ble_adv`](https://github.com/NicoIIT/ha-ble-adv) project.
+component, from the same `ble_adv` project.
 
 
 I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your [bluetooth-proxy](https://esphome.io/components/bluetooth_proxy/) and will guide you through all the requisite steps necessary to get the add-on set up.

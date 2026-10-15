@@ -1,7 +1,8 @@
 # Mesh transport changes
 
-Vendored from NicoIIT/esphome-ble_adv_proxy at
-`d7412240e7edd21b5717b3c6d3235aa1aeaf64cf`, under the adjacent MIT LICENSE.
+Vendored from [NicoIIT/esphome-ble_adv_proxy](https://github.com/NicoIIT/esphome-ble_adv_proxy) at
+[`d7412240e7edd21b5717b3c6d3235aa1aeaf64cf`](https://github.com/NicoIIT/esphome-ble_adv_proxy/tree/d7412240e7edd21b5717b3c6d3235aa1aeaf64cf),
+under the adjacent MIT LICENSE.
 
 Local changes: use non-connectable advertisements for the Bluetooth Mesh bearer,
 wait for GAP configuration/start/stop completion callbacks, and advertise each
