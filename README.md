@@ -227,8 +227,9 @@ settings and pairing. You do not need to pair again.
 
 ### When is the install done?
 
-Device Builder builds the firmware first. The first build can take up to 15
-minutes, and longer on a small device such as a Raspberry Pi. Its window never
+Device Builder builds the firmware first, on the computer that runs Home
+Assistant. The first build can take up to 15 minutes, and longer if that
+computer is small, such as a Raspberry Pi. Its window never
 says that it has finished. Check the add-on page instead: it says "The install
 is complete" when the proxy is back with the new firmware. In the Device Builder
 log, the install is done when the build messages stop and the proxy's own
