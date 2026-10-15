@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.19
+
+- **Settings and fixes → Start over** and the docs now say to pair the wall
+  remote again first if it stops working after setup. Switch the panel's power
+  off and on, then hold the remote's power button for 10 seconds. Home
+  Assistant keeps working. Use **Start over** only if that does not help.
+
 ## 0.4.18
 
 - Integration 0.3.3: pairing and **Unpair all** send their request twice a

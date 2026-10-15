@@ -141,6 +141,11 @@ Home Assistant sends a short burst, like the remote's own 10-second hold. A long
 stream of requests makes the panel drop your remote. Your remote stays paired.
 Pairing never happens by itself.
 
+If your wall remote stops working after Home Assistant pairs, pair the remote
+again first: switch the panel's power off and on, wait until it is back on, then
+hold the remote's power button for 10 seconds. Home Assistant keeps working. Use
+**Start over** only if that does not help.
+
 Pair Home Assistant only once. Pairing it again can make the panel drop your
 remote, so the add-on page refuses it after setup. To pair again, use **Settings
 and fixes → Start over** on the add-on page. It unpairs every remote, has you

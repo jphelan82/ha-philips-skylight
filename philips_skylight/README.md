@@ -77,6 +77,10 @@ Pairing is a one-time step. Updates do not need it, and your remote stays
 paired. Pairing Home Assistant again can make the panel drop your remote, so the
 page refuses it after setup.
 
+If your wall remote stops working after setup, pair the remote again first:
+switch the panel's power off and on, then hold the remote's power button for 10
+seconds. Home Assistant keeps working.
+
 To start over, use **Settings and fixes → Start over**. It unpairs every remote,
 has you pair your remote first, and then pairs Home Assistant through the setup
 checklist.

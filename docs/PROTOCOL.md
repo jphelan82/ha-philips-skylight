@@ -123,9 +123,17 @@ clean unpair all:
 |---|---|---|
 | Remote, then Home Assistant | A stream, 3 a second, for up to 90 seconds | The remote stopped working. Seen three times. |
 | Remote, then Home Assistant | One burst of 30 over 10 seconds | Both work. |
+| Remote, then Home Assistant (2026-10-15) | One burst of 30 over 10 seconds | The remote stopped working. Pairing the remote again, alone, brought it back, and Home Assistant kept working. |
 
-The remote's own pairing hold is also a 10-second burst. On 2026-10-12, Home
-Assistant paired with a 10-second burst too, and the remote kept working.
+The remote's own pairing hold is also a 10-second burst, at about two requests
+a second. On 2026-10-12, Home Assistant paired with a 10-second burst too, and
+the remote kept working. Since integration 0.3.3, Home Assistant sends two a
+second as well.
+
+The 2026-10-15 result fits one explanation: the panel keeps its two newest
+pairings, and Home Assistant's burst sometimes counts twice. Then Home Assistant
+holds both places, and the remote is pushed out. Pairing the remote again pushes
+out one of Home Assistant's two, and both work. This is not proven.
 
 The panel relays packets with TTL 4, from paired and unpaired senders alike. On
 2026-10-13 it relayed the remote's toggles after the remote had been dropped,
