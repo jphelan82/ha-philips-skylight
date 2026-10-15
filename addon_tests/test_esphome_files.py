@@ -138,3 +138,9 @@ def test_names_resolve_substitutions():
     unknown = "esphome:\n  name: ${x}\n  friendly_name: ${y}\n"
     assert esphome_files.friendly_name(unknown) is None
     assert esphome_files._node_name(unknown, "file") == "file"
+
+
+def test_home_assistants_proxies_count_without_the_yaml_section(tmp_path):
+    (tmp_path / "sensor.yaml").write_text("esphome:\n  name: sensor-1\npackages:\n  x: github://a/b.yaml\n")
+    assert esphome_files.list_nodes(tmp_path) == []
+    assert [n["node"] for n in esphome_files.list_nodes(tmp_path, {"sensor-1"})] == ["sensor-1"]

@@ -374,3 +374,23 @@ test("a restart started outside the page shows too", async () => {
   const {element} = await page(source);
   assert.equal(element("restart-status").hidden, false);
 });
+
+
+test("proxies show their friendly name, and the badge waits for a Skylight proxy", async () => {
+  const source = {...base(), esphome_nodes: [
+    {file: "esphome-web-ece638.yaml", node: "esphome-web-ece638", friendly_name: "bluetooth-proxy-1", has_skylight: false},
+    {file: "plain.yaml", node: "kitchen", friendly_name: null, has_skylight: false},
+  ], prerequisites: {builder: true, proxy: "ok", unadopted: [], connections: {"esphome-web-ece638": "ok"}}};
+  const {element, poll} = await page(source);
+  assert.ok(element("node-choice").options.length >= 2);
+  const line = (id) => element(id).options.map((part) => part.textContent).join("");
+  assert.match(line("check-proxy"), /bluetooth-proxy-1 \(esphome-web-ece638\), kitchen/);
+  assert.match(line("check-connected"), /connected to bluetooth-proxy-1 \(esphome-web-ece638\)/);
+  assert.equal(element("connection").hidden, true); // No Skylight proxy yet.
+  source.proxies = [{entity_id: "sensor.p", name: "P", node: "esphome-web-ece638", transmit_service: "x_adv_svc_v1"}];
+  source.proxy_online = true;
+  await poll();
+  await setImmediate();
+  assert.equal(element("connection").hidden, false);
+  assert.equal(element("connection").textContent, "Proxy online");
+});

@@ -40,14 +40,18 @@ class FakeHA:
         self.calls = []
         # ESPHome config entries and devices, as Home Assistant reports them.
         self.esphome_entries = []
+        self.bluetooth_entries = []
         self.devices = []
 
     async def call(self, *args, **kwargs):
         self.calls.append((args, kwargs))
 
     async def http(self, method, path, body=None):
-        assert (method, path) == ("GET", "config/config_entries/entry?domain=esphome")
-        return self.esphome_entries
+        assert method == "GET"
+        return {
+            "config/config_entries/entry?domain=esphome": self.esphome_entries,
+            "config/config_entries/entry?domain=bluetooth": self.bluetooth_entries,
+        }[path]
 
     async def request(self, kind, **data):
         assert kind == "config/device_registry/list"
@@ -662,3 +666,20 @@ async def test_setup_checks_never_guess_a_missing_connection(setup_panel, tmp_pa
     ]
     await setup_panel.check()
     assert setup_panel.prerequisites()["connections"] == {}
+
+
+async def test_a_proxy_from_a_ready_made_package_is_listed(setup_panel, tmp_path):
+    # The YAML has no bluetooth_proxy section: the package from GitHub turns it on.
+    (tmp_path / "sensor.yaml").write_text(
+        "substitutions:\n  name: apollo-msr-2-404a74\n"
+        "packages:\n  apollo: github://ApolloAutomation/MSR-2/MSR-2_Factory.yaml\n"
+        "esphome:\n  name: ${name}\n"
+    )
+    (tmp_path / "plain.yaml").write_text("esphome:\n  name: thermostat\n")
+    assert setup_panel.esphome_nodes() == []
+    setup_panel.ha.bluetooth_entries = [
+        {"title": "apollo-msr-2-404a74 (88:56:A6:40:4A:76)"},
+        {"title": "some-other-proxy (AA:AA:AA:00:00:09)"},
+    ]
+    await setup_panel.check()
+    assert [node["node"] for node in setup_panel.esphome_nodes()] == ["apollo-msr-2-404a74"]

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.13
+
+- The setup page finds Bluetooth proxies that run ready-made firmware, such as
+  the Apollo MSR-2. Their YAML turns the proxy on in a package from GitHub, so
+  it has no `bluetooth_proxy:` section. The add-on now also asks Home Assistant
+  which ESPHome devices it uses as Bluetooth proxies.
+- The page names a proxy by its friendly name, as Device Builder and Home
+  Assistant do, with its device name after it: "bluetooth-proxy-1
+  (esphome-web-ece638)".
+- The **Proxy offline** badge waits until a proxy has the Skylight firmware.
+  Before that, it read like a fault.
+
 ## 0.4.12
 
 - While Home Assistant restarts, the add-on page says so below **Restart Home

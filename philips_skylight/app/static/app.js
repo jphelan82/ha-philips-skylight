@@ -101,6 +101,11 @@ function checkLine(id, state, text, link) {
   el(id).replaceChildren(...parts);
   show(id, Boolean(state));
 }
+// Device Builder and Home Assistant show a proxy's friendly name, so lead with it.
+function nodeLabel(name) {
+  const node = (state?.esphome_nodes || []).find((item) => item.node === name);
+  return node?.friendly_name && node.friendly_name !== name ? node.friendly_name + " (" + name + ")" : name;
+}
 function renderChecks(checks, visible) {
   show("prereq", Boolean(checks) && visible);
   // The recommended path is Device Builder. Building it yourself stays a quiet second choice.
@@ -110,7 +115,7 @@ function renderChecks(checks, visible) {
     ? "ESPHome Device Builder is installed."
     : "Install ESPHome Device Builder, ESPHome's app for Home Assistant, then start it. ",
   checks.builder ? null : {href: LINKS.builder, label: "Open it in the app store"});
-  const nodes = (state.esphome_nodes || []).map((node) => node.node);
+  const nodes = (state.esphome_nodes || []).map((node) => nodeLabel(node.node));
   if (checks.proxy === "ok") {
     checkLine("check-proxy", "ok", "Device Builder has a Bluetooth proxy: " + nodes.join(", ") + ".");
   } else if (checks.proxy === "adopt") {
@@ -121,9 +126,9 @@ function renderChecks(checks, visible) {
       {href: LINKS.projects, label: "ESPHome's ready-made projects"});
   }
   const connections = Object.entries(checks.connections || {});
-  const missing = connections.filter(([, value]) => value === "missing").map(([node]) => node);
-  const offline = connections.filter(([, value]) => value === "offline").map(([node]) => node);
-  const connected = connections.filter(([, value]) => value === "ok").map(([node]) => node);
+  const missing = connections.filter(([, value]) => value === "missing").map(([node]) => nodeLabel(node));
+  const offline = connections.filter(([, value]) => value === "offline").map(([node]) => nodeLabel(node));
+  const connected = connections.filter(([, value]) => value === "ok").map(([node]) => nodeLabel(node));
   if (connected.length) {
     checkLine("check-connected", "ok", "Home Assistant is connected to " + connected.join(", ") + ".");
   } else if (offline.length) {
@@ -147,6 +152,8 @@ function buttonDisabled(kind, data) {
 function render(data) {
   state = data;
   el("connection").textContent = !data.connected ? "Connecting" : data.proxy_online ? "Proxy online" : "Proxy offline";
+  // Before a proxy has the Skylight firmware, "Proxy offline" reads like a fault.
+  show("connection", !data.connected || data.proxies.length > 0);
   el("connection").className = "badge" + (data.connected && data.proxy_online ? " online" : "");
   const needsInstall = !data.installed || data.restart_required;
   show("installation", needsInstall);
@@ -174,10 +181,10 @@ function render(data) {
   }
   lastProxyReady = proxyReady;
   show("proxy-firmware", !proxyReady && nodes.some((node) => !node.has_skylight) && !preparedNode);
-  options("node-choice", nodes.filter((node) => !node.has_skylight).map((node) => ({value: node.file, name: node.node})), "Choose a proxy");
+  options("node-choice", nodes.filter((node) => !node.has_skylight).map((node) => ({value: node.file, name: nodeLabel(node.node)})), "Choose a proxy");
   const installNode = preparedNode || (waiting.length === 1 ? waiting[0].node : null);
   show("proxy-install", !proxyReady && Boolean(installNode));
-  el("proxy-node").textContent = installNode || "";
+  el("proxy-node").textContent = installNode ? nodeLabel(installNode) : "";
   if (data.device_builder) el("device-builder").href = data.device_builder;
   show("device-builder", Boolean(data.device_builder));
   renderChecks(data.prerequisites, !proxyReady);
@@ -210,8 +217,8 @@ function render(data) {
   show("fixes", ready);
   const firmware = data.firmware?.status;
   const cards = data.outdated_cards || [];
-  const nodeNames = (data.firmware?.nodes || []).join(", ");
-  const keyless = nodes.filter((node) => node.has_skylight && node.api_key === false).map((node) => node.node);
+  const nodeNames = (data.firmware?.nodes || []).map(nodeLabel).join(", ");
+  const keyless = nodes.filter((node) => node.has_skylight && node.api_key === false).map((node) => nodeLabel(node.node));
   const needed = firmware === "files" || firmware === "install" || cards.length > 0;
   show("updates", ready && (needed || keyless.length > 0));
   // The API key is the user's choice, so a page with only that item says so.

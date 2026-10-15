@@ -72,6 +72,8 @@ class Panel:
         # What Home Assistant knows about ESPHome devices, for the setup checks.
         self.esphome_entries = None
         self.proxy_devices = []
+        # ESPHome devices that Home Assistant uses as Bluetooth proxies, by node name.
+        self.bluetooth_scanners = frozenset()
         self._checked = 0.0
         self._cards_checked = 0.0
         self._check_task = None
@@ -198,7 +200,7 @@ class Panel:
     def esphome_nodes(self):
         if not self.esphome_dir:
             return []
-        return esphome_files.list_nodes(self.esphome_dir)
+        return esphome_files.list_nodes(self.esphome_dir, self.bluetooth_scanners)
 
     def proxy_entries(self, proxies):
         """ESPHome config entries of the compatible proxies."""
@@ -232,6 +234,11 @@ class Panel:
                 for item in entries or []
                 if item.get("disabled_by") is None
             ]
+            scanners = await self.ha.http("GET", "config/config_entries/entry?domain=bluetooth")
+            # Each remote scanner's entry is titled "<node name> (<Bluetooth address>)".
+            self.bluetooth_scanners = frozenset(
+                str(item.get("title", "")).split(" (")[0] for item in scanners or []
+            ) - {""}
             devices = await self.ha.request("config/device_registry/list")
             # A ready-made ESPHome proxy reports the project esphome.bluetooth-proxy.
             self.proxy_devices = sorted(

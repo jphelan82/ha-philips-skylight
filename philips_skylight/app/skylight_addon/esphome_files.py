@@ -70,8 +70,13 @@ def has_skylight(text):
     return PACKAGE in text or re.search(r"^ble_adv_proxy:", text, re.M) is not None
 
 
-def list_nodes(folder: Path):
-    """ESPHome node files in the folder that are Bluetooth proxies."""
+def list_nodes(folder: Path, proxies=frozenset()):
+    """ESPHome node files in the folder that are Bluetooth proxies.
+
+    A node counts if its YAML has a bluetooth_proxy section, or if its name is in
+    `proxies`: the devices Home Assistant uses as Bluetooth proxies. Ready-made
+    firmware turns the proxy on in a package from GitHub, so its YAML may not say so.
+    """
     if not folder.is_dir():
         return []
     nodes = []
@@ -82,12 +87,13 @@ def list_nodes(folder: Path):
             text = path.read_text()
         except (OSError, UnicodeDecodeError):
             continue
-        if not re.search(r"^bluetooth_proxy:", text, re.M):
+        name = _node_name(text, path.stem)
+        if not re.search(r"^bluetooth_proxy:", text, re.M) and name not in proxies:
             continue
         nodes.append(
             {
                 "file": path.name,
-                "node": _node_name(text, path.stem),
+                "node": name,
                 "friendly_name": friendly_name(text),
                 "has_skylight": has_skylight(text),
                 # Only nodes that include the package get firmware updates from the add-on.
