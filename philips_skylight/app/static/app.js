@@ -202,9 +202,13 @@ function render(data) {
 
   // The integration sends the pairing request for 10 seconds, then the test follows.
   const remaining = data.pairing_remaining || 0;
-  if (lastRemaining && !remaining && !setupDone && pairStage === "pair") pairStage = "test";
+  const unpairing = data.last_command === "unpair all";
+  if (lastRemaining && !remaining && !setupDone && pairStage === "pair" && !unpairing) pairStage = "test";
+  // The unpair runs from Start over, far down the page, so its countdown shows there.
+  if (unpairing && remaining) besideButton("unpair_all", "Unpairing… " + remaining + " s. The panel blinks when it unpairs.", false);
+  if (unpairing && lastRemaining && !remaining) besideButton("unpair_all", "Unpair finished. If the panel blinked, pair your remote now, then select Continue. If it did not blink, switch the power off and on, then select Unpair all again.", false);
   lastRemaining = remaining;
-  show("pair-wait", remaining > 0);
+  show("pair-wait", remaining > 0 && !unpairing);
   el("pair-countdown").textContent = "Pairing… " + remaining + " s";
   step("step-pair", setupDone, setupDone ? "✓" : remaining ? "Pairing…" : "");
   const pairing = data.configured && !setupDone && !remaining;
@@ -286,15 +290,16 @@ const results = {
   create_dashboard: (body, result) => result.created ? "Dashboard created." : "You already have a Skylight dashboard.",
   add_card: (body, result) => result.added ? "Card added." : "That view already has the card.",
   skip_sequence: () => "Counter moved forward. Try the power button above.",
-  unpair_all: () => "Unpairing for 10 seconds. When the panel blinks, pair your remote, then select Continue.",
-  start_over: () => "",
+  unpair_all: () => "Unpairing for 10 seconds. The panel blinks when it unpairs.",
+  start_over: () => "Home Assistant pairs next. Follow the setup steps at the top of this page.",
   rhythm_start: () => "Schedule started. The panel blinks.",
   update_firmware: () => "Firmware files updated. Now install them on the proxy.",
   update_card: (body, result) => result.updated?.length ? "Card updated on " + result.updated.join(", ") + "." : "The card is already current.",
 };
 // The notice bar sits at the top of the page. A result from further down also
 // shows next to the button that caused it, where the user is looking.
-const BESIDE = {create_dashboard: "dashboard-result", add_card: "dashboard-result"};
+const BESIDE = {create_dashboard: "dashboard-result", add_card: "dashboard-result",
+  unpair_all: "fix-pair-result", start_over: "fix-pair-result", skip_sequence: "skip-result"};
 function besideButton(kind, message, error) {
   const id = BESIDE[kind];
   if (!id) return;
@@ -329,7 +334,7 @@ async function action(body) {
     if (body.action === "finish_setup") pairStage = "pair";
     if (body.action === "skip_sequence") el("skip-confirm").checked = false;
     if (body.action === "unpair_all") el("unpair-confirm").checked = false;
-    if (body.action === "start_over") pairStage = "pair";
+    if (body.action === "start_over") { pairStage = "pair"; el("setup").scrollIntoView({behavior: "smooth"}); }
     if (body.action === "add_card") await loadViews();
   } catch (error) {
     // Home Assistant can drop the request as it shuts down for the restart.
@@ -430,8 +435,10 @@ document.addEventListener("click", (event) => {
   const kind = button.dataset.action;
   if (!kind) return;
   if (kind === "restart" && !confirm("Restart Home Assistant now?")) return;
-  if (kind === "skip_sequence" && !el("skip-confirm").checked) return notice("Tick the box first.", true);
-  if (kind === "unpair_all" && !el("unpair-confirm").checked) return notice("Tick the box first.", true);
+  if ((kind === "skip_sequence" && !el("skip-confirm").checked) || (kind === "unpair_all" && !el("unpair-confirm").checked)) {
+    notice("Tick the box first.", true);
+    return besideButton(kind, "Tick the box first.", true);
+  }
   if (kind === "connect") return action(connectBody(button));
   if (kind === "prepare_firmware") return el("node-choice").value
     ? action({action: kind, file: el("node-choice").value}) : notice("Choose a proxy first.", true);

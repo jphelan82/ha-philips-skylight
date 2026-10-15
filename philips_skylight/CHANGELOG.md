@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.20
+
+- **Start over** shows its messages under its own buttons. Before, the result
+  of **Unpair all** showed only in the notice bar at the top of the page, out
+  of view, so the button seemed to do nothing.
+- While an unpair runs, the countdown shows under **Unpair all** and says
+  "Unpairing". Before, a countdown at the top of the page said "Pairing".
+- When the unpair finishes, the page says what to do next.
+- **Tick the box first** shows next to the button that needs the box.
+
 ## 0.4.19
 
 - **Settings and fixes → Start over** and the docs now say to pair the wall
