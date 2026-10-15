@@ -93,7 +93,8 @@ function checkLine(id, state, text, link) {
     const anchor = document.createElement("a");
     anchor.href = link.href;
     anchor.textContent = link.label;
-    anchor.target = link.href.startsWith("/") ? "_top" : "_blank";
+    // A new tab keeps this page open: setup continues here when the user comes back.
+    anchor.target = "_blank";
     anchor.rel = "noopener";
     parts.push(anchor);
   }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.14
+
+- **Open ESPHome Device Builder** and the setup checks' links open in a new
+  tab. The add-on page stays open, so you can come back to it to see that an
+  install is complete.
+
 ## 0.4.13
 
 - The setup page finds Bluetooth proxies that run ready-made firmware, such as

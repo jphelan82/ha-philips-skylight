@@ -180,6 +180,7 @@ test("several proxies need a choice, and the setup checks say what is missing", 
   assert.equal(element("check-proxy").className, "ok");
   assert.match(line("check-connected"), /has not added kitchen-proxy/);
   assert.equal(link("check-connected"), "/config/integrations/integration/esphome");
+  assert.equal(element("check-connected").options.find((part) => part.href).target, "_blank");
   source.prerequisites.connections = {"kitchen-proxy": "offline"};
   await poll();
   await setImmediate();
