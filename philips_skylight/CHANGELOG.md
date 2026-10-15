@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.23
+
+- Setup pairs Home Assistant first and the wall remote second. On 2026-10-15,
+  pairing Home Assistant after the remote made the panel drop the remote twice.
+  Pairing the remote after Home Assistant kept both working, both times.
+- The setup checklist has a new step after the test: pair your wall remote
+  again. Select **The remote works**, or **I have no remote**.
+- **Unpair remotes** hands over to the setup checklist after the unpair. The
+  checklist pairs Home Assistant, then has you pair your remote.
+- Integration 0.3.4: **Configure → Pair this transmitter**, **Unpair all
+  remotes** and the pairing action describe the same order. This update needs a
+  Home Assistant restart.
+
 ## 0.4.22
 
 - **Settings and fixes → Start over** is now called **Unpair remotes**.

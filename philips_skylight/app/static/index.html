@@ -82,8 +82,18 @@
           <p>What did the panel do?</p>
           <div class="row"><button data-action="confirm_test" data-result="off">It switched off</button><button data-action="confirm_test" data-result="on">It switched on</button><button data-action="confirm_test" data-result="none">Nothing changed</button></div>
         </div>
+        <div id="pair-remote" hidden>
+          <p>It works. Now pair your wall remote again. Pairing Home Assistant can make the panel drop it, and pairing the remote afterward keeps both working.</p>
+          <ol>
+            <li>Switch the panel's power off at its light switch or breaker, then on again.</li>
+            <li>Wait until the panel is back on.</li>
+            <li>Hold the remote's power button for 10 seconds, until the panel blinks.</li>
+            <li>Press the remote's power button to check it. If the panel does not respond, do these steps again.</li>
+          </ol>
+          <div class="row"><button data-action="remote_paired" class="primary">The remote works</button><button data-action="remote_paired" class="link">I have no remote</button></div>
+        </div>
         <div id="pair-mode" hidden>
-          <p>It works. Now choose a mode. The panel switches on in that mode.</p>
+          <p>Last step: choose a mode. The panel switches on in that mode.</p>
           <div class="modes" id="setup-modes"></div>
           <button data-action="finish_setup" class="link">Skip</button>
         </div>
@@ -146,7 +156,7 @@
     </details>
     <details class="plain" id="fix-pair"><summary>Unpair remotes</summary>
       <p>If only your wall remote stopped working, pair the remote again first: switch the panel's power off and on, wait until it is back on, then hold the remote's power button for 10 seconds. Home Assistant keeps working.</p>
-      <p>Home Assistant is paired. Pairing it again can make the panel drop your remote, so unpair the remotes instead. This removes every remote, Home Assistant included, and then pairs them again in the right order.</p>
+      <p>Home Assistant is paired. Pairing it again can make the panel drop your remote, so unpair the remotes instead. This removes every remote, Home Assistant included. Then Home Assistant pairs first, and your remote second.</p>
       <ol class="steps" id="unpair-steps">
         <li id="unpair-1">
           <h3>Unpair every remote <span class="status" id="unpair-1-status"></span></h3>
@@ -160,8 +170,8 @@
           <div class="row"><button data-action="unpair_blinked" data-blinked="yes">It blinked</button><button data-action="unpair_blinked" data-blinked="no">It did not blink</button></div>
         </li>
         <li id="unpair-3">
-          <h3>Pair your remote, then Home Assistant <span class="status" id="unpair-3-status"></span></h3>
-          <p>Switch the power off and on, wait until the panel is back on, then hold the remote's power button for 10 seconds until the panel blinks. Then select <strong>Continue</strong>. The setup checklist at the top pairs Home Assistant.</p>
+          <h3>Pair Home Assistant, then your remote <span class="status" id="unpair-3-status"></span></h3>
+          <p>Select <strong>Continue</strong>. The setup checklist at the top pairs Home Assistant first. Then it has you pair your remote.</p>
           <button data-action="start_over" class="primary">Continue</button>
         </li>
       </ol>

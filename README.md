@@ -100,7 +100,7 @@ This is an experimental project. Please read these limits before you install it.
 - **The panel accepts at most two remotes, and Home Assistant counts as one.**
   If two remotes already control your Skylight, this does not work unless you
   give one of them up. If you set this up before on another Home Assistant, use
-  **Unpair all remotes** first, then pair your remote again.
+  **Unpair all remotes** first. Then pair Home Assistant, and then your remote.
   In some cases, Home Assistant's pairing seems to count twice and pushes your
   wall remote out. If your remote stops working, see
   [Troubleshooting](#troubleshooting).
@@ -277,13 +277,20 @@ are unknown. A remote press, a mode button, or **Correct** sets them again.
 ## Pairing
 
 The panel ignores Home Assistant until you pair it. Pairing is a one-time step.
-Updates do not need it. Your remote stays paired.
+Updates do not need it.
 
 1. Switch the panel's power off at its light switch or breaker, then on again.
    The remote's power button does not work for this.
 2. Wait until the panel is back on. That can take up to 30 seconds.
 3. Select **Pair** straight away. Home Assistant sends the pairing request for
    10 seconds, and the panel blinks.
+4. Pair your wall remote again: switch the power off and on, wait until the
+   panel is back on, then hold the remote's power button for 10 seconds until
+   the panel blinks.
+
+Step 4 matters. Pairing Home Assistant can make the panel drop your remote.
+Pairing the remote afterward keeps both working. The setup checklist on the
+add-on page walks you through all four steps.
 
 The panel listens for pairing only for a short time after it comes back on, so
 do not wait long before you select **Pair**. Home Assistant sends a short burst,
@@ -296,9 +303,8 @@ action.
 
 Pair Home Assistant only once. Pairing it again can make the panel drop your
 remote, so the add-on page refuses it after setup. To pair again, use **Settings
-and fixes → Unpair remotes** on the add-on page. It unpairs every remote, has you
-pair your remote first, and then pairs Home Assistant through the setup
-checklist.
+and fixes → Unpair remotes** on the add-on page. It unpairs every remote, pairs
+Home Assistant through the setup checklist, and then has you pair your remote.
 
 To make the panel forget **every** remote, use **Configure → Unpair all
 remotes**, with the same steps. It removes your remote and Home Assistant.
@@ -361,7 +367,7 @@ changed.
 | Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
 | The dashboard shows Unknown, or the wrong power or mode | Use **Correct** and record what you see. |
 | The card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
-| Your wall remote stops working after setup | Pair your wall remote again first: switch the panel's power off and on at its light switch or breaker, wait until it is back on, then hold the remote's power button for 10 seconds until the panel blinks. Home Assistant keeps working. If that does not help, use **Settings and fixes → Unpair remotes** on the add-on page. It unpairs every remote, then pairs your wall remote and Home Assistant again, in that order. |
+| Your wall remote stops working after setup | Pair your wall remote again first: switch the panel's power off and on at its light switch or breaker, wait until it is back on, then hold the remote's power button for 10 seconds until the panel blinks. Home Assistant keeps working. If that does not help, use **Settings and fixes → Unpair remotes** on the add-on page. It unpairs every remote, then pairs Home Assistant and your wall remote again, in that order. |
 | The panel ignores every command | Check that the proxy is online. If the panel still ignores Home Assistant, use **Settings and fixes → Unpair remotes** on the add-on page. Do not pair Home Assistant a second time: the panel can drop your remote. |
 | Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
 | An update asks for a restart | Restart Home Assistant from the add-on page. |

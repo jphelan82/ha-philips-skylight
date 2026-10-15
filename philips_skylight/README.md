@@ -73,16 +73,17 @@ Assistant. Use the wall switch or breaker only for pairing.
 
 ## Pairing and unpairing
 
-Pairing is a one-time step. Updates do not need it, and your remote stays
-paired. Pairing Home Assistant again can make the panel drop your remote, so the
-page refuses it after setup.
+Pairing is a one-time step. Updates do not need it. Pairing Home Assistant can
+make the panel drop your remote, so the setup checklist has you pair the remote
+again right after. For the same reason, the page refuses to pair Home Assistant
+a second time.
 
-If your wall remote stops working after setup, pair the remote again first:
+If your wall remote stops working later, pair the remote again first:
 switch the panel's power off and on, then hold the remote's power button for 10
 seconds. Home Assistant keeps working.
 
-To pair everything again, use **Settings and fixes → Unpair remotes**. It unpairs every remote,
-has you pair your remote first, and then pairs Home Assistant through the setup
-checklist.
+To pair everything again, use **Settings and fixes → Unpair remotes**. It
+unpairs every remote, pairs Home Assistant through the setup checklist, and then
+has you pair your remote.
 
 See the **Documentation** tab for options, troubleshooting and recovery.

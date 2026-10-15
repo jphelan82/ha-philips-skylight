@@ -124,6 +124,8 @@ clean unpair all:
 | Remote, then Home Assistant | A stream, 3 a second, for up to 90 seconds | The remote stopped working. Seen three times. |
 | Remote, then Home Assistant | One burst of 30 over 10 seconds | Both work. |
 | Remote, then Home Assistant (2026-10-15) | One burst of 30 over 10 seconds | The remote stopped working. Pairing the remote again, alone, brought it back, and Home Assistant kept working. |
+| Remote, then Home Assistant (2026-10-15, integration 0.3.3) | One burst of 20 over 10 seconds, 2 a second | The remote stopped working. |
+| Home Assistant, then remote (2026-10-15) | Either burst | Both work. Seen twice, each time by pairing the remote again after Home Assistant. |
 
 The remote's own pairing hold is also a 10-second burst, at about two requests
 a second. On 2026-10-12, Home Assistant paired with a 10-second burst too, and
@@ -134,6 +136,12 @@ The 2026-10-15 result fits one explanation: the panel keeps its two newest
 pairings, and Home Assistant's burst sometimes counts twice. Then Home Assistant
 holds both places, and the remote is pushed out. Pairing the remote again pushes
 out one of Home Assistant's two, and both work. This is not proven.
+
+Since add-on 0.4.23 and integration 0.3.4, setup pairs Home Assistant first and
+the remote second. Nobody knows why "remote, then Home Assistant" worked on
+2026-10-13 but not on 2026-10-15. One difference: the proxy was rebuilt on
+2026-10-15 with a newer ESPHome Device Builder and Skylight firmware 2. Nobody
+has measured whether that changes how many times each request goes out.
 
 The panel relays packets with TTL 4, from paired and unpaired senders alike. On
 2026-10-13 it relayed the remote's toggles after the remote had been dropped,

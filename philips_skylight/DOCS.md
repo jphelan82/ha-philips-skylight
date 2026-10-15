@@ -136,29 +136,31 @@ The panel accepts a pairing request only for a short time after it comes back on
 2. Wait until the panel is back on. That can take up to 30 seconds.
 3. Select **Pair** straight away. Home Assistant sends the request for 10
    seconds, and the panel blinks.
+4. Pair your wall remote again: switch the power off and on, wait until the
+   panel is back on, then hold the remote's power button for 10 seconds until
+   the panel blinks.
 
-Home Assistant sends a short burst, like the remote's own 10-second hold. A long
-stream of requests makes the panel drop your remote. Your remote normally stays
-paired, but not always. Pairing never happens by itself.
+Pairing Home Assistant can make the panel drop your remote. Pairing the remote
+afterward keeps both working, so the setup checklist has you do it. Pairing
+never happens by itself.
 
-If your wall remote stops working after Home Assistant pairs, pair the remote
-again first: switch the panel's power off and on, wait until it is back on, then
-hold the remote's power button for 10 seconds. Home Assistant keeps working. Use
-**Unpair remotes** only if that does not help.
+If your wall remote stops working later, pair the remote again first: switch
+the panel's power off and on, wait until it is back on, then hold the remote's
+power button for 10 seconds. Home Assistant keeps working. Use **Unpair
+remotes** only if that does not help.
 
 Pair Home Assistant only once. Pairing it again can make the panel drop your
 remote, so the add-on page refuses it after setup. To pair again, use **Settings
-and fixes → Unpair remotes** on the add-on page. It unpairs every remote, has you
-pair your remote first, and then pairs Home Assistant through the setup
-checklist.
+and fixes → Unpair remotes** on the add-on page. It unpairs every remote, pairs
+Home Assistant through the setup checklist, and then has you pair your remote.
 
 **Configure** on the Skylight integration also offers **Pair this transmitter**
 and **Unpair all remotes**, with the same steps. Use **Pair this transmitter**
 only when Home Assistant is not paired yet, for example after **Unpair all
 remotes**. **Unpair all remotes** makes the
 panel forget every remote, Home Assistant included. If its request reaches the
-panel too late, the panel only switches off. Then try again. Afterward, pair your
-remote again.
+panel too late, the panel only switches off. Then try again. Afterward, pair
+Home Assistant first, and then your remote.
 
 Removing the add-on does not unpair the panel. The leftover pairing does no
 harm, because nothing else sends as Home Assistant's address.

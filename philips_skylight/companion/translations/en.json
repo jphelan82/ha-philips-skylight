@@ -42,14 +42,14 @@
       },
       "pair": {
         "title": "Pair this transmitter",
-        "description": "**Pair Home Assistant only once.** Use this only if Home Assistant is not paired yet, for example after **Unpair all remotes**. The panel keeps at most two remotes. Pairing Home Assistant again can make the panel drop your other remote, and then only Unpair all and pairing everything again brings it back.\n\nThe panel ignores Home Assistant until you pair it. On the first pairing, your other remote stays paired.\n\n1. Switch the panel's power off at its light switch or breaker, then on again. The remote's power button does not work for this.\n2. Wait until the panel is back on. That can take up to 30 seconds.\n3. Tick the box below and select **Submit** straight away. The panel blinks.",
+        "description": "**Pair Home Assistant only once.** Use this only if Home Assistant is not paired yet, for example after **Unpair all remotes**. The panel keeps at most two remotes. Pairing Home Assistant can make the panel drop your other remote. Pairing that remote again afterward keeps both working.\n\nThe panel ignores Home Assistant until you pair it.\n\n1. Switch the panel's power off at its light switch or breaker, then on again. The remote's power button does not work for this.\n2. Wait until the panel is back on. That can take up to 30 seconds.\n3. Tick the box below and select **Submit** straight away. The panel blinks.\n4. Pair your other remote again: switch the power off and on, wait until the panel is back on, then hold the remote's power button for 10 seconds until the panel blinks.",
         "data": {
           "confirm": "The panel just came back on"
         }
       },
       "unpair_all": {
         "title": "Unpair all remotes",
-        "description": "This makes the panel forget **every** remote, Home Assistant included. Afterward, none of them works until you pair it again.\n\n1. Switch the panel's power off at its light switch or breaker, then on again. The remote's power button does not work for this.\n2. Wait until the panel is back on. That can take up to 30 seconds.\n3. Tick the box below and select **Submit** straight away. The panel blinks.\n\nThen pair your remote again with its own steps, and pair Home Assistant again with **Pair this transmitter**.",
+        "description": "This makes the panel forget **every** remote, Home Assistant included. Afterward, none of them works until you pair it again.\n\n1. Switch the panel's power off at its light switch or breaker, then on again. The remote's power button does not work for this.\n2. Wait until the panel is back on. That can take up to 30 seconds.\n3. Tick the box below and select **Submit** straight away. The panel blinks.\n\nThen pair Home Assistant again with **Pair this transmitter**, and pair your remote again after that.",
         "data": {
           "confirm": "Remove every remote. The panel just came back on"
         }
@@ -61,8 +61,8 @@
     },
     "abort": {
       "not_loaded": "The Skylight integration is not running. Reload it, then try again.",
-      "pair_sent": "Pairing runs for 10 seconds. The panel blinks when it pairs. Then test a command.",
-      "unpair_all_sent": "Unpairing runs for 10 seconds. When the panel blinks, it has forgotten every remote. Then pair your remote again, and Home Assistant with Pair this transmitter."
+      "pair_sent": "Pairing runs for 10 seconds. The panel blinks when it pairs. Then test a command, and pair your other remote again.",
+      "unpair_all_sent": "Unpairing runs for 10 seconds. When the panel blinks, it has forgotten every remote. Then pair Home Assistant with Pair this transmitter, and then your remote."
     }
   }
 }

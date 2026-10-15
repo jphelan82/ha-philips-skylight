@@ -1,6 +1,6 @@
 """Supervisor add-on for the native Philips Skylight integration."""
 
-VERSION = "0.4.22"
+VERSION = "0.4.23"
 DOMAIN = "philips_skylight"
 # Mirrors the integration's const.EFFECTS; tests/test_integration.py checks parity.
 EFFECTS = ("Refresh", "Energize", "Focus", "Relax", "Rest", "Auto rhythm")

@@ -1,6 +1,6 @@
 [project]
 name = "ha-philips-skylight"
-version = "0.3.3"
+version = "0.3.4"
 requires-python = ">=3.12"
 dependencies = ["cryptography>=46.0.7"]
 

@@ -136,6 +136,11 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   await press({action: "test"});
   await press({action: "confirm_test", result: "off"});
   assert.deepEqual(posts.at(-1), {action: "confirm_test", result: "off"});
+  assert.equal(element("pair-remote").hidden, false); // Pair the wall remote after Home Assistant.
+  const sent = posts.length;
+  await press({action: "remote_paired"});
+  assert.equal(posts.length, sent); // Nothing goes to the panel.
+  assert.equal(element("pair-remote").hidden, true);
   assert.equal(element("pair-mode").hidden, false); // Choose a mode to finish.
   await press({action: "finish_setup", effect: "Energize"});
   assert.deepEqual(posts.at(-1), {action: "finish_setup", effect: "Energize"});

@@ -7,7 +7,7 @@ let state = null;
 // while a restart was pending. Either way, failed requests are expected.
 let restarting = false;
 let pairStage = "pair";
-// Unpair remotes: ready → wait (unpair running) → ask (did it blink?) → remote.
+// Unpair remotes: ready → wait (unpair running) → ask (did it blink?) → remote (continue to pairing).
 let unpairStage = "ready";
 let unpairSeen = false;
 let unpairStarted = 0;
@@ -235,6 +235,7 @@ function render(data) {
   show("pair-steps", pairing && pairStage === "pair");
   show("pair-test", pairing && pairStage === "test");
   show("pair-ask", pairing && pairStage === "ask");
+  show("pair-remote", pairing && pairStage === "remote");
   show("pair-mode", pairing && pairStage === "mode");
 
   const ready = data.configured && !needsInstall && setupDone;
@@ -350,7 +351,7 @@ async function action(body) {
       preparedNode = (state?.esphome_nodes || []).find((node) => node.file === body.file)?.node || body.file;
     }
     if (body.action === "test") pairStage = "ask";
-    if (body.action === "confirm_test") pairStage = body.result === "none" ? "pair" : "mode";
+    if (body.action === "confirm_test") pairStage = body.result === "none" ? "pair" : "remote";
     if (body.action === "finish_setup") pairStage = "pair";
     if (body.action === "skip_sequence") el("skip-confirm").checked = false;
     if (body.action === "unpair_all") { el("unpair-confirm").checked = false; unpairStage = "wait"; unpairSeen = false; unpairStarted = Date.now(); }
@@ -458,6 +459,11 @@ document.addEventListener("click", (event) => {
   if ((kind === "skip_sequence" && !el("skip-confirm").checked) || (kind === "unpair_all" && !el("unpair-confirm").checked)) {
     notice("Tick the box first.", true);
     return besideButton(kind, "Tick the box first.", true);
+  }
+  if (kind === "remote_paired") {
+    pairStage = "mode";
+    if (state) render(state);
+    return;
   }
   if (kind === "unpair_blinked") {
     const blinked = button.dataset.blinked === "yes";
