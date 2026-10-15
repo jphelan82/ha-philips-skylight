@@ -27,6 +27,9 @@ REMOTE_ORDER = ("Auto rhythm", "Refresh", "Energize", "Focus", "Relax", "Rest")
 CHECK_INTERVAL = 30
 # Finding older cards reads every dashboard, so it runs less often.
 CARD_CHECK_INTERVAL = 300
+# The check timers start here, so the first check runs at once. time.monotonic()
+# counts from boot, so 0 is not old enough in the first minutes after a boot.
+NEVER = float("-inf")
 SWITCH = "switch.philips_skylight_state_correction"
 FIRMWARE_SENSOR = re.compile(r"sensor\.\w*skylight_firmware(?:_\d+)?")
 
@@ -76,8 +79,8 @@ class Panel:
         self.proxy_devices = []
         # ESPHome devices that Home Assistant uses as Bluetooth proxies, by node name.
         self.bluetooth_scanners = frozenset()
-        self._checked = 0.0
-        self._cards_checked = 0.0
+        self._checked = NEVER
+        self._cards_checked = NEVER
         self._check_task = None
         self._auto_setup_tried = False
         self._holds = set()  # Hold commands still on their way to the panel.
@@ -564,7 +567,7 @@ class Panel:
         await self.ha.configure(name.strip(), service, proxy)
 
     async def _create_dashboard(self, entity, body):
-        self._cards_checked = 0
+        self._cards_checked = NEVER
         return await dashboards.create_dashboard(self.ha, self.card_config())
 
     async def _update_card(self, entity, body):
@@ -573,7 +576,7 @@ class Panel:
         )
         self._cards_unsaved.update(result["failed"])
         self.outdated_cards = []
-        self._cards_checked = 0
+        self._cards_checked = NEVER
         if result["failed"]:
             done = f"Card updated on {', '.join(result['updated'])}. " if result["updated"] else ""
             raise HAError(
@@ -583,7 +586,7 @@ class Panel:
         return result
 
     async def _add_card(self, entity, body):
-        self._cards_checked = 0
+        self._cards_checked = NEVER
         return await dashboards.add_card(
             self.ha,
             body.get("url_path"),
@@ -694,7 +697,7 @@ class Panel:
             body.get("file"),
             self.bluetooth_scanners,  # The same proxies the page lists.
         )
-        self._checked = 0  # Look for the Device Builder link again.
+        self._checked = NEVER  # Look for the Device Builder link again.
         return result
 
     async def _update_firmware(self, body):
@@ -707,7 +710,7 @@ class Panel:
             self.bluetooth_scanners,
         )
         self.firmware_files_current = None
-        self._checked = 0  # Compare the files again on the next poll.
+        self._checked = NEVER  # Compare the files again on the next poll.
         return result
 
     async def _allow_tracking(self, body):

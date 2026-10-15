@@ -727,6 +727,8 @@ async def test_a_card_that_fails_to_save_is_reported_and_not_offered_again(panel
         return None
 
     panel.ha.panel_url = panel_url
+    # Five seconds after a boot: a check marked "due" must still run.
+    monkeypatch.setattr("skylight_addon.server.time.monotonic", lambda: 5.0)
     monkeypatch.setattr(dashboards, "update_cards", update_cards)
     monkeypatch.setattr(dashboards, "outdated_cards", outdated_cards)
     with pytest.raises(HAError, match="Card updated on Kitchen.*did not save Overview"):

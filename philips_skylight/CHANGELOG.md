@@ -34,6 +34,9 @@ Skylight firmware 3 on the proxy.
   the others.
 - A README change to the firmware component no longer asks for a firmware
   update.
+- In the first five minutes after the computer boots, the add-on now runs its
+  setup and card checks at once. Before, it skipped them until five minutes
+  had passed.
 - A proxy YAML with a `packages:` list gets a clear message, and the add-on
   writes nothing to it.
 
