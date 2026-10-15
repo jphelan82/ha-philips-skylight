@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.24
+
+- The setup checklist warns at the top that setup can unpair your wall remote,
+  and that its last step has you pair the remote again.
+
 ## 0.4.23
 
 - Setup pairs Home Assistant first and the wall remote second. On 2026-10-15,

@@ -174,6 +174,9 @@ Install the add-on from Home Assistant's own app store, not from HACS (the Home
 Assistant Community Store). HACS cannot install add-ons. The add-on installs the
 integration for you.
 
+Setup can unpair your wall remote. If it does, pair the remote again after
+setup. The setup checklist has a step for it.
+
 1. Select the blue **Show app on My HA** button:
 
    <!-- ee6ebc3d is the first 8 hex digits of the SHA-1 of the repository address,

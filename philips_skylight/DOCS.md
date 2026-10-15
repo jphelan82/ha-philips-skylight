@@ -27,6 +27,9 @@ Supervisor gives the add-on its Home Assistant access.
 Open the add-on's web page and follow the checklist. Each step gets a ✓ when it
 is done.
 
+Setup can unpair your wall remote. If it does, the last step has you pair it
+again.
+
 1. **Finish installing.** At start, the add-on installs its Skylight
    integration into `custom_components/philips_skylight`. If Home Assistant
    needs a restart to load it, the page shows **Restart Home Assistant**. The
