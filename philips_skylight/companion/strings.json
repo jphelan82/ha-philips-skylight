@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Connect your Skylight transmitter",
-        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. Every panel paired with this transmitter responds to its commands. Support for several separately controlled panels is not built yet. Power is assumed; synchronize it after setup or reconnect.",
+        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. Every panel paired with this transmitter responds to its commands. Support for several separately controlled panels is not built yet. Home Assistant assumes the power state. Synchronize it after setup or reconnect.",
         "data": {
           "name": "Light name",
           "transmit_service": "ESPHome advertising action",
@@ -13,7 +13,7 @@
       },
       "reconfigure": {
         "title": "Change Skylight transmitter",
-        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. Every panel paired with this transmitter responds to its commands. Support for several separately controlled panels is not built yet. Power is assumed; synchronize it after setup or reconnect.",
+        "description": "Choose the BLE advertising action and the BLE Adv Proxy Name sensor from the same ESPHome proxy. Every panel paired with this transmitter responds to its commands. Support for several separately controlled panels is not built yet. Home Assistant assumes the power state. Synchronize it after setup or reconnect.",
         "data": {
           "name": "Light name",
           "transmit_service": "ESPHome advertising action",
@@ -23,7 +23,7 @@
     },
     "error": {
       "transmitter_missing": "The proxy advertising action is unavailable.",
-      "proxy_missing": "The selected proxy sensor could not be found."
+      "proxy_missing": "Home Assistant cannot find the selected proxy sensor."
     },
     "abort": {
       "already_configured": "The factory Skylight mesh is already configured.",
@@ -57,7 +57,7 @@
     },
     "error": {
       "confirm_required": "Tick the box to continue.",
-      "send_failed": "The proxy did not accept the request. Check that the proxy is online, then try again."
+      "send_failed": "Home Assistant cannot reach the proxy. Check that the proxy is online, then try again."
     },
     "abort": {
       "not_loaded": "The Skylight integration is not running. Reload it, then try again.",

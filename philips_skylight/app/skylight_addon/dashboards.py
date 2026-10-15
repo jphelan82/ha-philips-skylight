@@ -172,11 +172,23 @@ def _target(path):
     return {} if path is None else {"url_path": path}
 
 
+async def _default_is_yaml(ha):
+    """Whether the default dashboard is in YAML mode, which cannot be saved."""
+    try:
+        info = await ha.request("lovelace/info")
+    except HAError:
+        return False  # An older Home Assistant; update_cards reports a failed save instead.
+    return isinstance(info, dict) and info.get("mode") == "yaml"
+
+
 async def _dashboards_with_cards(ha):
     """Each editable dashboard's path, title and config. The default one has path None."""
     if not ha.ready:
         raise HAError("Wait for Home Assistant to reconnect")
-    found = [{"url_path": None, "title": "Overview"}] + await list_dashboards(ha)
+    # list_dashboards gives only storage dashboards, so YAML ones are left out.
+    found = await list_dashboards(ha)
+    if not await _default_is_yaml(ha):
+        found = [{"url_path": None, "title": "Overview"}] + found
     result = []
     for item in found:
         try:
@@ -199,11 +211,20 @@ async def outdated_cards(ha, switch, card):
 
 
 async def update_cards(ha, switch, card):
-    """Replace every older Skylight card with the current one. Nothing else changes."""
-    updated = []
+    """Replace every older Skylight card with the current one. Nothing else changes.
+
+    A dashboard that fails to save does not stop the others. Its save is not retried.
+    """
+    updated, failed = [], []
     for item in await _dashboards_with_cards(ha):
         config, replaced = replace_cards(item["config"], switch, card)
         if replaced:
-            await ha.request("lovelace/config/save", **_target(item["url_path"]), config=config)
+            try:
+                await ha.request(
+                    "lovelace/config/save", **_target(item["url_path"]), config=config
+                )
+            except HAError:
+                failed.append(item["title"])
+                continue
             updated.append(item["title"])
-    return {"updated": updated}
+    return {"updated": updated, "failed": failed}

@@ -248,4 +248,5 @@ def generated_files():
 
 
 if __name__ == "__main__":
-    OUTPUT.write_text(rendered_card())
+    for path, content in generated_files().items():
+        path.write_text(content)

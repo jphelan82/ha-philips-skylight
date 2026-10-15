@@ -17,8 +17,8 @@ Supervisor gives the add-on its Home Assistant access.
   two remotes already control your Skylight, this does not work unless you give
   one up.
 - If you set this up before on another Home Assistant, use **Unpair all
-  remotes** first, then pair your remote again. The old setup still holds one of
-  the two places.
+  remotes** first. The old setup still holds one of the two places. Then pair
+  Home Assistant, and then your remote.
 - One step needs the panel's power switched off and on at its light switch or
   breaker. Use a phone or a portable computer for setup.
 
@@ -77,8 +77,11 @@ again.
    changes it through the ESPHome integration's own settings dialog.
 5. **Pair Home Assistant with the panel.** See [Pairing](#pairing-and-unpairing).
    Then select **Switch the panel on or off**, and say what the panel did. That
-   answer records the real power. Last, choose a mode. A mode switches the panel
-   on in that mode, so Home Assistant then knows both.
+   answer records the real power. Next, pair your wall remote again. It stopped
+   working when Home Assistant paired. Switch the panel's power off and on, wait
+   until it is back on, and hold the remote's power button for 10 seconds. Then
+   select **The remote works**, or **I have no remote**. Last, choose a mode. A
+   mode switches the panel on in that mode, so Home Assistant then knows both.
 
 After setup, the page shows the panel's recorded state, controls, the
 dashboard tools, and **Settings and fixes**.

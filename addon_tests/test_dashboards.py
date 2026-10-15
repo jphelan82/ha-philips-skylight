@@ -128,11 +128,17 @@ class ManyDashboardsHA:
 
     ready = True
 
-    def __init__(self, configs):
+    def __init__(self, configs, default_mode="storage"):
         self.configs = configs
+        self.default_mode = default_mode
         self.saved = []
+        self.fail_save = set()
 
     async def request(self, kind, **data):
+        if kind == "lovelace/info":
+            if self.default_mode is None:
+                raise HAError("Unknown command.")  # An older Home Assistant.
+            return {"mode": self.default_mode}
         if kind == "lovelace/dashboards/list":
             return [
                 {"url_path": "kitchen", "title": "Kitchen", "mode": "storage"},
@@ -145,6 +151,8 @@ class ManyDashboardsHA:
                 raise HAError("config_not_found")
             return copy.deepcopy(self.configs[path])
         if kind == "lovelace/config/save":
+            if path in self.fail_save:
+                raise HAError("config_not_supported")
             self.saved.append(path)
             self.configs[path] = copy.deepcopy(data["config"])
             return None
@@ -165,7 +173,7 @@ async def test_older_cards_are_found_and_replaced_in_place():
     assert ha.saved == []
 
     result = await dashboards.update_cards(ha, SWITCH, new)
-    assert result == {"updated": ["Overview", "Kitchen"]}
+    assert result == {"updated": ["Overview", "Kitchen"], "failed": []}
     # The default dashboard is saved without a url_path, and the current card is left alone.
     assert ha.saved == [None, "kitchen"]
     assert configs[None]["views"][0]["cards"] == [other, new]
@@ -201,3 +209,27 @@ async def test_a_view_with_sections_but_no_type_gets_a_new_section():
     assert saved["sections"][-1] == {"type": "grid", "cards": [card]}
     assert dashboards.view_type({"cards": []}) == "masonry"
     assert dashboards.view_type({"type": "panel", "sections": []}) == "panel"
+
+
+async def test_a_yaml_default_dashboard_is_skipped_and_a_failed_save_blocks_nothing():
+    new = skylight_card("new")
+
+    def configs():
+        return {
+            None: {"views": [{"cards": [skylight_card("old")]}]},
+            "kitchen": {"views": [{"cards": [skylight_card("old")]}]},
+        }
+
+    ha = ManyDashboardsHA(configs(), default_mode="yaml")
+    assert [item["title"] for item in await dashboards.outdated_cards(ha, SWITCH, new)] == [
+        "Kitchen"
+    ]
+    assert await dashboards.update_cards(ha, SWITCH, new) == {"updated": ["Kitchen"], "failed": []}
+    assert ha.saved == ["kitchen"]
+
+    # An older Home Assistant cannot say the mode. The failed save does not stop the others.
+    ha = ManyDashboardsHA(configs(), default_mode=None)
+    ha.fail_save = {None}
+    result = await dashboards.update_cards(ha, SWITCH, new)
+    assert result == {"updated": ["Kitchen"], "failed": ["Overview"]}
+    assert ha.saved == ["kitchen"]

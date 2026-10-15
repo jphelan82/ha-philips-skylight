@@ -62,6 +62,9 @@ other five modes were not tested from off.
 - The panel ignores every sender that is not paired. `0x7FFE` did nothing
   until it sent the pairing request. On 2026-10-13, after an unpair all, the
   remote also did nothing until it paired again.
+- Unpair all removes Home Assistant too, and does not pair it again. On
+  2026-10-15, right after an unpair-all burst from Home Assistant, the panel
+  ignored a Home Assistant toggle and the wall remote.
 - After its mains power returns, the panel can take up to about 30 seconds to
   light up again. It accepts `CF … 01` and `CF … 02` only for a short time after
   that. A burst sent several seconds after the owner reported "back on" still
@@ -116,8 +119,8 @@ the hand. Together with Home Assistant (`0x7FFE`), that makes two paired
 senders, and both work together. The owner reports that the panel accepts at
 most two.
 
-The way Home Assistant pairs matters. All tests are from 2026-10-13, each from a
-clean unpair all:
+The way Home Assistant pairs matters. Each test started from a clean unpair all.
+A row without a date is from 2026-10-13:
 
 | Order | Home Assistant's request | Result |
 |---|---|---|

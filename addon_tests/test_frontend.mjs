@@ -6,48 +6,80 @@ import vm from "node:vm";
 
 const SCRIPT = new URL("../philips_skylight/app/static/app.js", import.meta.url);
 
+// A fetch answer, as the add-on sends it: JSON, or plain text from its access check.
+const reply = (body, status = 200) => ({
+  ok: status < 400, status, headers: {get: () => "application/json; charset=utf-8"},
+  json: async () => body, text: async () => JSON.stringify(body),
+});
+const textReply = (text, status, type = "text/plain; charset=utf-8") => ({
+  ok: status < 400, status, headers: {get: () => type},
+  json: async () => JSON.parse(text), text: async () => text,
+});
+
 async function page(source) {
   const elements = new Map();
+  const document = {
+    body: {id: "body"}, activeElement: null, hidden: false, listeners: {},
+    querySelector(selector) {
+      return selector === "base" ? {href: "http://localhost/"} : {content: "test-session"};
+    },
+    getElementById: (id) => element(id),
+    createElement: () => ({dataset: {}}),
+    // Elements made with control() stand for the page's buttons, in page order.
+    querySelectorAll: (selector) => [...elements.values()].filter((item) =>
+      selector.split(",").some((part) => part.trim().toUpperCase() === item.tagName)),
+    addEventListener(type, handler) { this.listeners[type] = handler; },
+  };
+  document.activeElement = document.body;
   const element = (id) => {
     if (!elements.has(id)) elements.set(id, {
       id, value: "", dataset: {}, options: [], listeners: {}, hidden: false,
-      textContent: "", className: "",
+      textContent: "", className: "", parent: null, scrolls: [],
       addEventListener(type, handler) { this.listeners[type] = handler; },
       replaceChildren(...options) { this.options = options; this.value = options[0]?.value ?? ""; },
+      scrollIntoView() { this.scrolls.push(this.hidden); },
+      focus() { document.activeElement = this; },
+      // A hidden element, or one inside a hidden element, has no box on the page.
+      getClientRects() {
+        for (let node = this; node; node = node.parent) if (node.hidden) return [];
+        return [{}];
+      },
     });
     return elements.get(id);
   };
+  // A button inside a section, so it hides with the section.
+  const control = (id, dataset, parent, tagName = "BUTTON") =>
+    Object.assign(element(id), {tagName, dataset, parent: parent ? element(parent) : null});
+  const windowListeners = {};
   const posts = [];
   const timers = [];
   let poll;
-  let click;
   const context = vm.createContext({
-    URL, console, confirm: () => true,
+    URL, console, confirm: () => true, document,
+    window: {addEventListener(type, handler) { windowListeners[type] = handler; }},
     setTimeout(callback) { timers.push(callback); return timers.length; },
     clearTimeout(id) { timers[id - 1] = null; },
-    document: {
-      querySelector(selector) {
-        return selector === "base" ? {href: "http://localhost/"} : {content: "test-session"};
-      },
-      getElementById: element,
-      createElement: () => ({dataset: {}}),
-      querySelectorAll: () => [],
-      addEventListener(type, handler) { if (type === "click") click = handler; },
-    },
     setInterval(callback) { poll = callback; },
     async fetch(url, init) {
       if (init?.method === "POST") {
         posts.push(JSON.parse(init.body));
-        return {ok: true, json: async () => ({ok: true})};
+        return reply({ok: true});
       }
       if (source.offline) throw new Error("Failed to fetch");
-      return {ok: true, json: async () => structuredClone(source)};
+      return reply(structuredClone(source));
     },
   });
   vm.runInContext(await readFile(SCRIPT, "utf8"), context);
   await setImmediate();
+  const click = (button) => document.listeners.click({target: {closest: () => button}});
   const press = async (dataset) => {
-    click({target: {closest: () => ({dataset, disabled: false})}});
+    click({dataset, disabled: false});
+    await setImmediate();
+  };
+  // Press a button made with control(), as the keyboard does.
+  const pressOn = async (button) => {
+    button.focus();
+    click(button);
     await setImmediate();
   };
   const tick = async () => {
@@ -56,7 +88,7 @@ async function page(source) {
     await callback?.();
     await setImmediate();
   };
-  return {element, posts, press, poll: () => poll(), tick, context};
+  return {element, control, posts, press, pressOn, poll: () => poll(), tick, context, document, windowListeners, timers};
 }
 
 const base = () => ({
@@ -83,15 +115,19 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   assert.equal(element("proxy-node").textContent, "proxy-1");
   assert.equal(element("device-builder").hidden, false);
 
-  // The proxy returns with the firmware; the add-on connects it by itself.
+  // The proxy returns with the firmware. The add-on tries to connect it by itself,
+  // and the page offers Connect too, with the only proxy chosen.
   source.esphome_nodes[0].has_skylight = true;
   source.proxies = [{entity_id: "sensor.p", name: "Proxy", node: "proxy-1", transmit_service: "proxy_1_adv_svc_v1"}];
   source.proxy_online = true;
   await poll();
   assert.equal(element("step-proxy").className, "done");
   assert.equal(element("notice").textContent, "The proxy is back with the Skylight firmware. The install is complete.");
-  assert.equal(element("step-connect-status").textContent, "Connecting…");
-  assert.equal(element("connect-choice").hidden, true);
+  assert.equal(element("step-connect-status").textContent, "");
+  assert.equal(element("connect-choice").hidden, false);
+  assert.equal(element("proxy-choice").value, "sensor.p");
+  await press({action: "connect"});
+  assert.deepEqual(posts.at(-1), {action: "setup", proxy: "sensor.p", name: "Philips Skylight"});
 
   source.configured = true;
   source.first_setup = true;
@@ -100,6 +136,7 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   await poll();
   assert.equal(element("step-connect").className, "done");
   assert.equal(element("tracking-off").hidden, false);
+  assert.equal(element("pair-steps").hidden, false); // Tracking is optional. Pairing works without it.
   await press({action: "allow_tracking"});
   assert.equal(posts.at(-1).action, "allow_tracking");
 
@@ -137,6 +174,9 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   await press({action: "confirm_test", result: "off"});
   assert.deepEqual(posts.at(-1), {action: "confirm_test", result: "off"});
   assert.equal(element("pair-remote").hidden, false); // Pair the wall remote after Home Assistant.
+  // A first install: the remote often still works, so the user can skip.
+  assert.equal(element("remote-skip").hidden, false);
+  assert.match(element("pair-remote-text").textContent, /often unpairs your wall remote/);
   const sent = posts.length;
   await press({action: "remote_paired"});
   assert.equal(posts.length, sent); // Nothing goes to the panel.
@@ -213,14 +253,14 @@ test("several proxies need a choice, and the setup checks say what is missing", 
 test("corrections change only the record, and controls send commands", async () => {
   const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
     proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
-  const {element, posts, press} = await page(source);
+  const {element, posts, press, tick} = await page(source);
   assert.equal(element("setup").hidden, true);
   assert.equal(element("fixes").hidden, false);
   await press({action: "sync_power", on: "yes"});
   assert.deepEqual(posts.at(-1), {action: "sync_power", is_on: true});
   element("observed-mode").value = "Relax";
   element("observed-mode").listeners.change();
-  await setImmediate();
+  await tick(); // The mode goes after a short pause.
   assert.deepEqual(posts.at(-1), {action: "sync_mode", effect: "Relax"});
   await press({action: "scene", effect: "Refresh"});
   assert.deepEqual(posts.at(-1), {action: "scene", effect: "Refresh"});
@@ -244,7 +284,7 @@ test("holding a dim button repeats the hold command until release", async () => 
   dimUp.dataset.hold = "up";
   const captured = [];
   dimUp.setPointerCapture = (id) => captured.push(id);
-  dimUp.listeners.pointerdown({pointerId: 7});
+  dimUp.listeners.pointerdown({pointerId: 7, button: 0});
   assert.deepEqual(captured, [7]); // The finger stays on the button if it slides.
   // A long touch on a phone opens the phone's menu unless the page stops it.
   let stopped = false;
@@ -252,15 +292,15 @@ test("holding a dim button repeats the hold command until release", async () => 
   assert.equal(stopped, true);
   await tick(); // Held long enough: the first hold command.
   await tick(); // 0.6 seconds later: another one.
-  dimUp.listeners.pointerup();
+  dimUp.listeners.pointerup({pointerId: 7});
   assert.deepEqual(posts, [
     {action: "dim_hold", direction: "up"},
     {action: "dim_hold", direction: "up"},
   ]);
   // A quick press is one ordinary step. Releasing also ends the capture.
-  dimUp.listeners.pointerdown({pointerId: 8});
-  dimUp.listeners.pointerup();
-  dimUp.listeners.lostpointercapture();
+  dimUp.listeners.pointerdown({pointerId: 8, button: 0});
+  dimUp.listeners.pointerup({pointerId: 8});
+  dimUp.listeners.lostpointercapture({pointerId: 8});
   await setImmediate();
   assert.deepEqual(posts.at(-1), {action: "dim_up"});
   // A pointer click on a dim button sends nothing more; the keyboard sends one step.
@@ -368,7 +408,7 @@ test("a restart request that Home Assistant drops still counts as a restart", as
   const {element, press, context} = await page(source);
   context.fetch = async (url, init) => {
     if (init?.method === "POST") throw new Error("Failed to fetch");
-    return {ok: true, json: async () => structuredClone(source)};
+    return reply(structuredClone(source));
   };
   await press({action: "restart"});
   assert.equal(element("restart-status").hidden, false);
@@ -419,15 +459,240 @@ test("dashboard results show next to the dashboard buttons", async () => {
     proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
   const {element, press, context} = await page(source);
   context.fetch = async (url, init) => init?.method === "POST"
-    ? {ok: true, json: async () => ({ok: true, created: true, url: "/skylight-control/panel"})}
-    : {ok: true, json: async () => structuredClone(source)};
+    ? reply({ok: true, created: true, url: "/skylight-control/panel"})
+    : reply(structuredClone(source));
   await press({action: "create_dashboard"});
   assert.equal(element("dashboard-result").hidden, false);
   assert.equal(element("dashboard-result").textContent, "Dashboard created.");
   context.fetch = async (url, init) => init?.method === "POST"
-    ? {ok: false, json: async () => ({ok: false, error: "Dashboard changed. Refresh the dashboard choices before adding the card"})}
-    : {ok: true, json: async () => structuredClone(source)};
+    ? reply({ok: false, error: "Dashboard changed. Refresh the dashboard choices before adding the card"}, 400)
+    : reply(structuredClone(source));
   await press({action: "create_dashboard"});
   assert.equal(element("dashboard-result").className, "result error");
   assert.match(element("dashboard-result").textContent, /Dashboard changed/);
+});
+
+const setupSource = () => ({...base(), configured: true, first_setup: true, entity_id: "light.skylight",
+  tracking: true, proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]});
+
+test("a reload after Home Assistant paired goes on to the test", async () => {
+  const fresh = await page(setupSource()); // No setup_paired field counts as false.
+  assert.equal(fresh.element("pair-steps").hidden, false);
+  assert.equal(fresh.element("pair-test").hidden, true);
+  const {element} = await page({...setupSource(), setup_paired: true});
+  assert.equal(element("pair-steps").hidden, true);
+  assert.equal(element("pair-test").hidden, false);
+});
+
+test("answers that are not JSON show a plain message, and a good poll clears only a poll error", async () => {
+  const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
+    proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
+  const {element, press, poll, context} = await page(source);
+  let status = () => reply(structuredClone(source));
+  let post = () => textReply("Invalid action session", 403);
+  context.fetch = async (url, init) => init?.method === "POST" ? post() : status();
+  // The add-on restarted, so it has a new action session.
+  await press({action: "toggle"});
+  assert.equal(element("notice").textContent, "The add-on restarted. Reload this page.");
+  await poll();
+  await setImmediate();
+  assert.equal(element("notice").textContent, "The add-on restarted. Reload this page."); // An action's message stays.
+  // Home Assistant answers with its own error page.
+  status = () => textReply("<html>502 Bad Gateway</html>", 502, "text/html");
+  await poll();
+  await setImmediate();
+  assert.equal(element("notice").textContent, "The add-on did not answer as expected. HTTP status 502.");
+  assert.equal(element("notice").className, "error");
+  status = () => reply(structuredClone(source));
+  await poll();
+  await setImmediate();
+  assert.equal(element("notice").hidden, true); // The next good poll clears the poll error.
+  post = () => reply({ok: true, created: true});
+  await press({action: "create_dashboard"});
+  await poll();
+  await setImmediate();
+  assert.equal(element("notice").textContent, "Dashboard created.");
+});
+
+test("Unpair remotes shows each result at its step, then hands over to the setup checklist", async () => {
+  const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
+    proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
+  const {element, press, poll, context} = await page(source);
+  const unpair = async () => {
+    element("unpair-confirm").checked = true;
+    await press({action: "unpair_all"});
+    source.last_command = "unpair all";
+    source.pairing_remaining = 7;
+    await poll();
+    await setImmediate();
+  };
+  await press({action: "unpair_all"});
+  assert.equal(element("unpair-1-result").textContent, "Tick the box first."); // Next to the tick box.
+  await unpair();
+  assert.equal(element("unpair-1-result").hidden, false);
+  assert.match(element("unpair-1-result").textContent, /^Unpairing… 7 s/); // Under step 1, not below step 3.
+  source.pairing_remaining = 0;
+  await poll();
+  await setImmediate();
+  assert.equal(element("unpair-1-result").hidden, true);
+  assert.equal(element("unpair-2").className, "");
+  await press({action: "unpair_blinked", blinked: "no"});
+  assert.match(element("unpair-1-result").textContent, /did not unpair/);
+  assert.equal(element("unpair-1").className, "");
+
+  await unpair();
+  source.pairing_remaining = 0;
+  await poll();
+  await setImmediate();
+  await press({action: "unpair_blinked", blinked: "yes"});
+  assert.equal(element("unpair-3").className, "");
+  const normal = context.fetch;
+  context.fetch = async (url, init) => init?.method === "POST"
+    ? reply({ok: false, error: "Home Assistant is not connected"}, 400) : normal(url, init);
+  await press({action: "start_over"});
+  assert.equal(element("unpair-3-result").textContent, "Home Assistant is not connected");
+  context.fetch = normal;
+
+  // Continue reopens the checklist. The page scrolls to it once it shows.
+  Object.assign(source, {first_setup: true, setup_paired: false, setup_after_unpair: true});
+  await press({action: "start_over"});
+  assert.deepEqual(element("setup").scrolls, [false]);
+  assert.equal(element("pair-steps").hidden, false);
+  assert.equal(element("unpair-1-result").hidden, true);
+  assert.equal(element("unpair-3-result").hidden, true);
+  assert.equal(element("unpair-1").className, ""); // Back to step 1.
+
+  source.setup_paired = true;
+  await poll();
+  await setImmediate();
+  await press({action: "test"});
+  await press({action: "confirm_test", result: "on"});
+  // After Unpair all, the wall remote is certainly gone, so there is no Skip.
+  assert.equal(element("pair-remote").hidden, false);
+  assert.equal(element("remote-skip").hidden, true);
+  assert.equal(element("pair-remote-text").textContent, "It works. Unpair all removed your wall remote too, so pair the remote again now.");
+  context.besideButton("unpair_all", "Tick the box first.", true);
+  await press({action: "remote_paired"});
+  await press({action: "finish_setup"});
+  assert.equal(element("unpair-1-result").hidden, true); // Setup is done: no old result stays.
+});
+
+test("the observed mode goes once, with the last choice, after a pause", async () => {
+  const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
+    proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
+  const {element, posts, poll, tick, context} = await page(source);
+  const mode = element("observed-mode");
+  for (const value of ["Refresh", "Energize", "Relax"]) {
+    mode.value = value;
+    mode.listeners.change();
+  }
+  await poll(); // A poll in the pause keeps the choice.
+  await setImmediate();
+  assert.equal(posts.length, 0);
+  await tick();
+  assert.deepEqual(posts, [{action: "sync_mode", effect: "Relax"}]);
+  // Another action is running: the mode waits for it.
+  vm.runInContext("busy = true", context);
+  mode.value = "Energize";
+  mode.listeners.change();
+  await tick();
+  assert.equal(posts.length, 1);
+  vm.runInContext("busy = false", context);
+  await tick();
+  assert.deepEqual(posts.at(-1), {action: "sync_mode", effect: "Energize"});
+});
+
+test("keyboard focus stays on the button, or moves to the next one when it hides", async () => {
+  const source = {...setupSource(), setup_paired: true};
+  const {element, control, pressOn, document, context} = await page(source);
+  const test = control("test-button", {action: "test"}, "pair-test");
+  const off = control("off-button", {action: "confirm_test", result: "off"}, "pair-ask");
+  const toggle = control("toggle-button", {action: "toggle"}, "control");
+  const normal = context.fetch;
+  // A browser drops the focus while the button is disabled.
+  context.fetch = async (url, init) => {
+    if (init?.method === "POST") document.activeElement = document.body;
+    return normal(url, init);
+  };
+  await pressOn(test);
+  assert.equal(element("pair-ask").hidden, false);
+  assert.equal(document.activeElement, off); // The test button hid, so the next button has focus.
+  Object.assign(source, {first_setup: false, setup_paired: false});
+  await pressOn(off);
+  await pressOn(toggle);
+  assert.equal(document.activeElement, toggle); // Still visible: it keeps focus.
+});
+
+test("a dim hold starts only from a main press, and a cancelled or lost press sends nothing", async () => {
+  const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
+    proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
+  const {element, posts, tick, context, document, windowListeners} = await page(source);
+  const dimUp = element("dim-up");
+  const dimDown = element("dim-down");
+  dimUp.dataset.hold = "up";
+  dimDown.dataset.hold = "down";
+  const captured = [];
+  dimUp.setPointerCapture = (id) => captured.push(id);
+  dimDown.setPointerCapture = (id) => captured.push(id);
+  // A cancelled short press sends no step.
+  dimUp.listeners.pointerdown({pointerId: 1, button: 0});
+  dimUp.listeners.pointercancel({pointerId: 1});
+  dimUp.listeners.lostpointercapture({pointerId: 1});
+  await setImmediate();
+  assert.deepEqual(posts, []);
+  // The right mouse button, a disabled button, or a running action start nothing.
+  dimUp.listeners.pointerdown({pointerId: 2, button: 2});
+  dimUp.disabled = true;
+  dimUp.listeners.pointerdown({pointerId: 3, button: 0});
+  dimUp.disabled = false;
+  vm.runInContext("busy = true", context);
+  dimUp.listeners.pointerdown({pointerId: 4, button: 0});
+  vm.runInContext("busy = false", context);
+  assert.deepEqual(captured, [1]);
+  // The page loses focus or hides: the hold stops, with no step.
+  dimUp.listeners.pointerdown({pointerId: 5, button: 0});
+  windowListeners.blur();
+  await tick();
+  dimUp.listeners.pointerup({pointerId: 5});
+  dimUp.listeners.pointerdown({pointerId: 6, button: 0});
+  document.hidden = true;
+  document.listeners.visibilitychange();
+  document.hidden = false;
+  await tick();
+  dimUp.listeners.pointerup({pointerId: 6});
+  await setImmediate();
+  assert.deepEqual(posts, []);
+  // A second finger on the other dim button does not end the first hold.
+  dimUp.listeners.pointerdown({pointerId: 7, button: 0});
+  dimDown.listeners.pointerdown({pointerId: 8, button: 0});
+  dimDown.listeners.pointerup({pointerId: 8});
+  await tick();
+  dimUp.listeners.pointerup({pointerId: 7});
+  await setImmediate();
+  assert.deepEqual(posts, [{action: "dim_hold", direction: "up"}]);
+});
+
+test("an install error at startup shows in the install section", async () => {
+  const source = {...base(), install_error: "Cannot write custom_components."};
+  const {element, poll} = await page(source);
+  assert.equal(element("installation").hidden, false);
+  assert.equal(element("install-error").textContent,
+    "The add-on could not install its integration: Cannot write custom_components. Restart the add-on. If this keeps happening, open an issue.");
+  assert.equal(element("install-message").hidden, true); // The integration is installed.
+  source.install_error = null;
+  await poll();
+  await setImmediate();
+  assert.equal(element("installation").hidden, true);
+});
+
+test("a card update that fails shows its message next to the button", async () => {
+  const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
+    proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}],
+    outdated_cards: ["Kitchen"]};
+  const {element, press, context} = await page(source);
+  context.fetch = async (url, init) => init?.method === "POST"
+    ? reply({ok: false, error: "These dashboards were not saved: Kitchen"}, 400) : reply(structuredClone(source));
+  await press({action: "update_card"});
+  assert.equal(element("card-result").textContent, "These dashboards were not saved: Kitchen");
+  assert.equal(element("card-result").className, "result error");
 });

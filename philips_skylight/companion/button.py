@@ -69,6 +69,11 @@ class SkylightPowerSyncButton(SkylightEntity, ButtonEntity):
         self._attr_name = f"Record panel {power}"
         self._attr_unique_id = f"factory_mesh_7ffe_record_panel_{power}"
 
+    @property
+    def available(self) -> bool:
+        # Records only and never transmits, so it works while the proxy is offline.
+        return True
+
     async def async_press(self) -> None:
         async with self.controller.lock:
             self.controller.state.is_on = self.is_on

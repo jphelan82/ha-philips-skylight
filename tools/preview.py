@@ -19,7 +19,8 @@ PROXY = {"entity_id": "sensor.p", "name": "Bluetooth Proxy", "node": "proxy-1",
          "transmit_service": "proxy_1_adv_svc_v1"}
 state = {
     "connected": True, "installed": True, "restart_required": False, "configured": False,
-    "first_setup": False, "state": "unknown", "effect": None, "name": "Philips Skylight",
+    "first_setup": False, "setup_paired": False, "setup_after_unpair": False,
+    "state": "unknown", "effect": None, "name": "Philips Skylight",
     "version": VERSION, "entity_id": None,
     "effects": ["Auto rhythm", "Refresh", "Energize", "Focus", "Relax", "Rest"],
     "proxies": [], "transmit_services": [], "proxy_sensors": [], "proxy_online": False,
@@ -66,7 +67,12 @@ async def action(request):
         state["tracking"] = True
     elif kind == "pair":
         state["last_command"] = "pair"
+        if state["first_setup"]:
+            state["setup_paired"] = True
         asyncio.create_task(countdown(10))
+    elif kind == "start_over":
+        # The panel forgot every remote: the setup checklist pairs Home Assistant next.
+        state.update(first_setup=True, setup_paired=False, setup_after_unpair=True)
     elif kind == "unpair_all":
         state["last_command"] = "unpair all"
         asyncio.create_task(countdown(10))
@@ -74,8 +80,10 @@ async def action(request):
         state.update(state="on", effect=body["effect"])
     elif kind == "confirm_test" and body.get("result") in ("on", "off"):
         state["state"] = body["result"]
+    elif kind == "confirm_test":
+        state["setup_paired"] = False  # The pairing did not take, so Pair opens again.
     elif kind == "finish_setup":
-        state["first_setup"] = False
+        state.update(first_setup=False, setup_paired=False, setup_after_unpair=False)
         if body.get("effect"):
             state.update(state="on", effect=body["effect"])
     elif kind in ("toggle", "test"):

@@ -65,6 +65,9 @@ class BleAdvProxy : public Component, public Parented<esp32_ble::ESP32BLE>, publ
   uint32_t adv_stop_time_ = 0;
   enum class AdvState { IDLE, CONFIGURING, STARTING, RUNNING, STOPPING };
   AdvState adv_state_ = AdvState::IDLE;
+  // millis() when adv_state_ last changed, for the event timeout.
+  uint32_t adv_state_time_ = 0;
+  void set_adv_state_(AdvState state);
   void drop_packet_();
   static uint32_t deadline_(uint32_t delay);
 

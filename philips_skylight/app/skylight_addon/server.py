@@ -69,6 +69,8 @@ class Panel:
         self.device_builder = None
         self.firmware_files_current = None
         self.outdated_cards = []
+        # Dashboards whose card update failed to save. They are not offered again.
+        self._cards_unsaved = set()
         # What Home Assistant knows about ESPHome devices, for the setup checks.
         self.esphome_entries = None
         self.proxy_devices = []
@@ -84,15 +86,25 @@ class Panel:
         self.lock = asyncio.Lock()
         self.ever_connected = False
         self.first_setup = False
+        # Home Assistant paired during this first setup. Pairing again can drop the remote.
+        self.setup_paired = False
+        # This first setup follows Unpair remotes, so the wall remote is unpaired too.
+        self.setup_after_unpair = False
         data = getattr(installer, "data", None)
         self.onboarding_file = data / "onboarding.json" if data is not None else None
         if self.onboarding_file and self.onboarding_file.exists():
             try:
-                self.first_setup = (
-                    json.loads(self.onboarding_file.read_text())["in_progress"] is True
+                saved = json.loads(self.onboarding_file.read_text())
+                self.first_setup = saved["in_progress"] is True
+                # Files from older add-on versions have neither of these keys.
+                self.setup_paired = self.first_setup and saved.get("setup_paired") is True
+                self.setup_after_unpair = (
+                    self.first_setup and saved.get("setup_after_unpair") is True
                 )
-            except (ValueError, KeyError, TypeError, OSError):
-                self.first_setup = True  # Show help; never trigger a physical action.
+            except (ValueError, KeyError, TypeError, AttributeError, OSError):
+                # Not in setup: the pair action stays locked. Start over reopens setup.
+                LOG.warning("Cannot read %s; first setup is not in progress", self.onboarding_file)
+                self.first_setup = self.setup_paired = self.setup_after_unpair = False
         ha.on_ready = self.connected
         # Actions that work before the integration has a light entity.
         self.setup_actions = {
@@ -128,21 +140,52 @@ class Panel:
             "update_card": self._update_card,
         }
 
-    async def set_first_setup(self, in_progress):
+    async def _save_onboarding(self, in_progress, paired, after_unpair):
         def save():
             if self.onboarding_file:
                 self.onboarding_file.parent.mkdir(parents=True, exist_ok=True)
                 staging = self.onboarding_file.with_suffix(".tmp")
-                staging.write_text(json.dumps({"in_progress": in_progress}))
+                staging.write_text(
+                    json.dumps(
+                        {
+                            "in_progress": in_progress,
+                            "setup_paired": paired,
+                            "setup_after_unpair": after_unpair,
+                        }
+                    )
+                )
                 staging.replace(self.onboarding_file)
 
         await asyncio.to_thread(save)
         self.first_setup = in_progress
+        self.setup_paired = paired
+        self.setup_after_unpair = after_unpair
+
+    async def set_first_setup(self, in_progress, after_unpair=False):
+        # Starting or ending first setup forgets an earlier pairing.
+        await self._save_onboarding(in_progress, False, in_progress and after_unpair)
 
     def connected(self):
-        if self.ever_connected and self.installer.pending_restart:
-            self.installer.mark_restarted()
+        self.check_restarted(reconnected=self.ever_connected)
         self.ever_connected = True
+
+    def check_restarted(self, reconnected=False):
+        """Clear the pending restart once Home Assistant runs the installed integration."""
+        if not self.installer.pending_restart:
+            return
+        entity = self.light()
+        if entity:
+            attributes = self.ha.states.get(entity, {}).get("attributes", {})
+            try:
+                running = _version(attributes.get("integration_version"))
+                done = running >= _version(self.installer.version)
+            except (ValueError, AttributeError):
+                done = False  # Not loaded yet, or an unreadable version.
+        else:
+            # With no light to report a version, a new connection is the only sign.
+            done = reconnected
+        if done:
+            self.installer.mark_restarted()
 
     def entities(self):
         """Map each enabled Skylight unique ID to its current entity ID."""
@@ -269,17 +312,20 @@ class Panel:
                 found = await dashboards.outdated_cards(
                     self.ha, self.card_entities()[SWITCH], self.card_config()
                 )
-                self.outdated_cards = [item["title"] for item in found]
+                self.outdated_cards = [
+                    item["title"] for item in found if item["title"] not in self._cards_unsaved
+                ]
             except (ValueError, HAError, aiohttp.ClientError, TimeoutError):
                 self.outdated_cards = []
 
-    def prerequisites(self):
+    def prerequisites(self, nodes=None):
         """What the first setup step needs: Device Builder, a proxy in it, and a connection."""
 
         def key(text):
             return re.sub(r"[^a-z0-9]", "", (text or "").lower())
 
-        nodes = self.esphome_nodes()
+        if nodes is None:
+            nodes = self.esphome_nodes()
         builder = bool(self.device_builder) or bool(
             self.esphome_dir and self.esphome_dir.is_dir()
         )
@@ -307,9 +353,11 @@ class Panel:
             "connections": connections,
         }
 
-    def firmware_status(self):
+    def firmware_status(self, nodes=None):
         """Whether the proxy firmware is current, needs new files, or needs an install."""
-        nodes = [node for node in self.esphome_nodes() if node["uses_package"]]
+        if nodes is None:
+            nodes = self.esphome_nodes()
+        nodes = [node for node in nodes if node["uses_package"]]
         if not nodes:
             return None  # Setup adds the firmware, or the proxy is managed elsewhere.
         try:
@@ -374,14 +422,20 @@ class Panel:
         state = self.ha.states.get(entity, {})
         attributes = state.get("attributes", {})
         proxies = self.proxies()
+        # Each call reads every ESPHome YAML file, so read them once per snapshot.
+        nodes = self.esphome_nodes()
+        install_error = getattr(self.installer, "error", None)
         return {
             "version": VERSION,
             "connected": self.ha.ready,
-            "error": self.ha.error,
+            "error": self.ha.error or install_error,
+            "install_error": install_error,
             "installed": self.installer.installed(),
             "restart_required": self.restart_required(entity),
             "configured": bool(entity),
             "first_setup": self.first_setup,
+            "setup_paired": self.setup_paired,
+            "setup_after_unpair": self.setup_after_unpair,
             "entity_id": entity,
             "name": attributes.get("friendly_name", "Philips Skylight"),
             "state": state.get("state", "unknown") if self.ha.ready else "unavailable",
@@ -398,10 +452,10 @@ class Panel:
                 for item in proxies
             ),
             "tracking": self.tracking,
-            "esphome_nodes": self.esphome_nodes(),
+            "esphome_nodes": nodes,
             "device_builder": self.device_builder,
-            "firmware": self.firmware_status(),
-            "prerequisites": self.prerequisites(),
+            "firmware": self.firmware_status(nodes),
+            "prerequisites": self.prerequisites(nodes),
             "outdated_cards": self.outdated_cards,
             "pairing_remaining": _remaining(attributes.get("pairing_until")),
         }
@@ -436,6 +490,7 @@ class Panel:
         return web.Response(text=content, content_type="text/html")
 
     async def status(self, request):
+        self.check_restarted()
         self.schedule_checks()
         return web.json_response(self.snapshot())
 
@@ -453,6 +508,13 @@ class Panel:
             return web.json_response({"ok": True, **(result or {})})
         except (ValueError, HAError, aiohttp.ClientError, TimeoutError, OSError) as err:
             return web.json_response({"ok": False, "error": str(err)[:400]}, status=400)
+        except (TypeError, AttributeError) as err:
+            # A field of the wrong type, such as a list where a name belongs.
+            LOG.warning("Rejected an action request: %r", err)
+            return web.json_response(
+                {"ok": False, "error": "The action request has a value of the wrong type"},
+                status=400,
+            )
 
     async def perform(self, body):
         action = body.get("action")
@@ -509,8 +571,15 @@ class Panel:
         result = await dashboards.update_cards(
             self.ha, self.card_entities()[SWITCH], self.card_config()
         )
+        self._cards_unsaved.update(result["failed"])
         self.outdated_cards = []
         self._cards_checked = 0
+        if result["failed"]:
+            done = f"Card updated on {', '.join(result['updated'])}. " if result["updated"] else ""
+            raise HAError(
+                f"{done}Home Assistant did not save {', '.join(result['failed'])}. "
+                "Replace the card there by hand."
+            )
         return result
 
     async def _add_card(self, entity, body):
@@ -577,9 +646,9 @@ class Panel:
         await self.ha.call(DOMAIN, "unpair_all_remotes", entity, confirm=True)
 
     async def _start_over(self, entity, body):
-        # The panel forgot every remote, and the user paired the remote again.
-        # The checklist now pairs Home Assistant and runs the tests.
-        await self.set_first_setup(True)
+        # Unpair remotes made the panel forget every remote. The setup checklist now
+        # pairs Home Assistant first, then the user pairs the wall remote again.
+        await self.set_first_setup(True, after_unpair=True)
 
     async def _dim_hold(self, entity, body):
         direction = body.get("direction")
@@ -603,18 +672,27 @@ class Panel:
     async def _pair(self, entity, body):
         if body.get("confirm") is not True:
             raise ValueError("Confirm that the panel just came back on")
-        if not self.first_setup:
-            # Pairing Home Assistant again can make the panel drop the remote.
-            raise ValueError("Home Assistant is already paired. To pair again, use Settings and fixes → Unpair remotes.")
+        if not self.first_setup or self.setup_paired:
+            # Pairing Home Assistant again can make the panel drop the wall remote.
+            raise ValueError(
+                "Home Assistant is already paired. Pairing again can drop the wall remote. "
+                "To pair again, use Settings and fixes → Unpair remotes."
+            )
         # Returns at once; the integration sends the request for 10 seconds.
         await self.ha.call(DOMAIN, "pair_transmitter", entity, confirm=True)
+        # A page reload now skips to the test step instead of offering Pair again.
+        await self._save_onboarding(True, True, self.setup_after_unpair)
 
     async def _prepare_firmware(self, body):
         if not self.esphome_dir:
             raise ValueError("The ESPHome folder is not available to this add-on")
         firmware = self.root / "firmware"
         result = await asyncio.to_thread(
-            esphome_files.install_package, self.esphome_dir, firmware, body.get("file")
+            esphome_files.install_package,
+            self.esphome_dir,
+            firmware,
+            body.get("file"),
+            self.bluetooth_scanners,  # The same proxies the page lists.
         )
         self._checked = 0  # Look for the Device Builder link again.
         return result
@@ -623,7 +701,10 @@ class Panel:
         if not self.esphome_dir:
             raise ValueError("The ESPHome folder is not available to this add-on")
         result = await asyncio.to_thread(
-            esphome_files.update_files, self.esphome_dir, self.root / "firmware"
+            esphome_files.update_files,
+            self.esphome_dir,
+            self.root / "firmware",
+            self.bluetooth_scanners,
         )
         self.firmware_files_current = None
         self._checked = 0  # Compare the files again on the next poll.
@@ -648,6 +729,9 @@ class Panel:
         if result != "none":
             # The answer also tells Home Assistant the real power state.
             await self.ha.call(DOMAIN, "set_assumed_power", entity, is_on=result == "on")
+        elif self.first_setup:
+            # The pairing did not take, so the checklist offers Pair again.
+            await self._save_onboarding(True, False, self.setup_after_unpair)
 
     async def _finish_setup(self, entity, body):
         effect = body.get("effect")

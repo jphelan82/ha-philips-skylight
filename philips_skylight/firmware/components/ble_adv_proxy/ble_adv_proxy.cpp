@@ -4,18 +4,7 @@
 #include <esp_err.h>
 #include <esp_bt.h>
 #include <esp_bt_device.h>
-
-#ifdef ESP_PWR_LVL_P20
-#define MAX_TX_POWER ESP_PWR_LVL_P20
-#elif ESP_PWR_LVL_P18
-#define MAX_TX_POWER ESP_PWR_LVL_P18
-#elif ESP_PWR_LVL_P15
-#define MAX_TX_POWER ESP_PWR_LVL_P15
-#elif ESP_PWR_LVL_P12
-#define MAX_TX_POWER ESP_PWR_LVL_P12
-#else
-#define MAX_TX_POWER ESP_PWR_LVL_P9
-#endif
+#include <sdkconfig.h>
 
 namespace esphome {
 namespace ble_adv_proxy {
@@ -34,9 +23,25 @@ static constexpr const char *CONF_ORIGIN = "orig";
 static constexpr const char *CONF_DURATION = "duration";
 static constexpr const char *CONF_REPEAT = "repeat";
 
+// esp_power_level_t is an enum, so the preprocessor cannot test its names. The chip
+// target macros come from sdkconfig.h instead. ESP-IDF 5.1 to 5.5 define ESP_PWR_LVL_P20
+// (+20 dBm) for these chips. The ESP32-S3 uses the ESP32-C3 header, and the ESP32-C61
+// uses the ESP32-C6 header. The original ESP32 stops at ESP_PWR_LVL_P9 (+9 dBm). Every
+// target defines ESP_PWR_LVL_P9, so it is the fallback for any other chip.
+#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || \
+    defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C5) || \
+    defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32C61) || defined(CONFIG_IDF_TARGET_ESP32H2)
+static constexpr esp_power_level_t MAX_TX_POWER = ESP_PWR_LVL_P20;
+#else
+static constexpr esp_power_level_t MAX_TX_POWER = ESP_PWR_LVL_P9;
+#endif
+
 static constexpr const uint8_t REPEAT_NB = 3;
 static constexpr const uint8_t MIN_ADV = 0x20;
 static constexpr const uint8_t MIN_VIABLE_PACKET_LEN = 5;
+// The Bluetooth stack answers each configure, start and stop request with an event.
+// If an event does not come in this time, the proxy gives up on the packet.
+static constexpr const uint32_t ADV_EVENT_TIMEOUT_MS = 1000;
 
 BleAdvParam::BleAdvParam(const std::string &hex_string, uint32_t duration)
     : duration_(duration), len_(std::min(MAX_PACKET_LEN, hex_string.size() / 2)) {
@@ -219,24 +224,40 @@ void BleAdvProxy::loop() {
       // Each burst contains several advertising events at a 20ms interval.
       this->adv_params_.adv_int_min = MIN_ADV;
       this->adv_params_.adv_int_max = MIN_ADV;
-      this->adv_state_ = AdvState::CONFIGURING;
+      this->set_adv_state_(AdvState::CONFIGURING);
       auto err = esp_ble_gap_config_adv_data_raw(packet.buf_, packet.len_);
       if (err != ESP_OK) {
         ESP_LOGE(TAG, "Configure advertising failed: %s", esp_err_to_name(err));
         this->drop_packet_();
       }
     }
-  } else {
+  } else if (this->adv_state_ == AdvState::RUNNING) {
     // Packet is being advertised, stop advertising and remove packet
-    if (this->adv_state_ == AdvState::RUNNING && int32_t(millis() - this->adv_stop_time_) >= 0) {
-      this->adv_state_ = AdvState::STOPPING;
+    if (int32_t(millis() - this->adv_stop_time_) >= 0) {
+      this->set_adv_state_(AdvState::STOPPING);
       auto err = esp_ble_gap_stop_advertising();
       if (err != ESP_OK) {
         ESP_LOGE(TAG, "Stop advertising failed: %s", esp_err_to_name(err));
         this->drop_packet_();
       }
     }
+  } else if (millis() - this->adv_state_time_ >= ADV_EVENT_TIMEOUT_MS) {
+    // CONFIGURING, STARTING or STOPPING: the completion event never came. Unsigned
+    // subtraction keeps this test correct when millis() rolls over.
+    ESP_LOGW(TAG, "No Bluetooth event in state %d after %ums, dropping packet", int(this->adv_state_),
+             unsigned(ADV_EVENT_TIMEOUT_MS));
+    // Advertising may have started without its event, so stop it before the next packet.
+    auto err = esp_ble_gap_stop_advertising();
+    if (err != ESP_OK) {
+      ESP_LOGW(TAG, "Stop advertising after timeout failed: %s", esp_err_to_name(err));
+    }
+    this->drop_packet_();
   }
+}
+
+void BleAdvProxy::set_adv_state_(AdvState state) {
+  this->adv_state_ = state;
+  this->adv_state_time_ = millis();
 }
 
 uint32_t BleAdvProxy::deadline_(uint32_t delay) {
@@ -261,7 +282,7 @@ void BleAdvProxy::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb
       this->drop_packet_();
       return;
     }
-    this->adv_state_ = AdvState::STARTING;
+    this->set_adv_state_(AdvState::STARTING);
     auto err = esp_ble_gap_start_advertising(&this->adv_params_);
     if (err != ESP_OK) {
       ESP_LOGE(TAG, "Start advertising failed: %s", esp_err_to_name(err));
@@ -273,7 +294,7 @@ void BleAdvProxy::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb
       this->drop_packet_();
       return;
     }
-    this->adv_state_ = AdvState::RUNNING;
+    this->set_adv_state_(AdvState::RUNNING);
     this->adv_stop_time_ = millis() + this->send_packets_.front().duration_;
     ESP_LOGI(TAG, "Mesh advertising started (non-connectable, 20ms interval)");
   } else if (event == ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT && this->adv_state_ == AdvState::STOPPING) {

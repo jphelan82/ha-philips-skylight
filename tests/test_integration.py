@@ -1,5 +1,6 @@
 """Exercise the real light platform, entity actions, and unload lifecycle."""
 
+import asyncio
 import sys
 from pathlib import Path
 
@@ -61,7 +62,8 @@ async def test_config_flow_creates_entry_with_online_transmitter(hass):
     assert result["data"] == DATA
 
 
-async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
+async def setup_entry(hass, monkeypatch):
+    """Load the real entry with a recording ESPHome action and an online proxy."""
     loader.async_setup(hass)
     dr.async_setup(hass)
     await dr.async_load(hass)
@@ -96,6 +98,11 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     await hass.config_entries.async_add(entry)
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.LOADED
+    return entry, calls
+
+
+async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
+    entry, calls = await setup_entry(hass, monkeypatch)
     registry = er.async_get(hass)
     lights = [
         entity.entity_id
@@ -226,12 +233,35 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"
-    assert hass.states.get(recorded_scene).state == "unavailable"
+    # The entities and actions that only record stay usable while the proxy is offline.
+    assert hass.states.get(recorded_scene).state == "Unknown"
     assert hass.states.get(correction_mode).state == "on"
     await hass.services.async_call(
         "switch", "turn_off", {"entity_id": correction_mode}, blocking=True
     )
     assert hass.states.get(correction_mode).state == "off"
+    record_on = registry.async_get_entity_id("button", DOMAIN, "factory_mesh_7ffe_record_panel_on")
+    await hass.services.async_call("button", "press", {"entity_id": record_on}, blocking=True)
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": recorded_scene, "option": "Relax"}, blocking=True
+    )
+    assert hass.states.get(recorded_scene).state == "Relax"
+    controller = entry.runtime_data
+    assert controller.state.is_on is True
+    await hass.services.async_call(
+        DOMAIN, "set_assumed_power", {"entity_id": entity_id, "is_on": False}, blocking=True
+    )
+    assert controller.state.is_on is False
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": recorded_scene, "option": "Unknown"}, blocking=True
+    )
+    # An action that must transmit fails visibly instead of skipping the unavailable light.
+    for action in ("pair_transmitter", "unpair_all_remotes"):
+        with pytest.raises(HomeAssistantError, match="Cannot reach the Skylight proxy"):
+            await hass.services.async_call(
+                DOMAIN, action, {"entity_id": entity_id, "confirm": True}, blocking=True
+            )
+    assert controller.pairing_until is None
     assert len(calls) == 21
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "skylight-proxy")
     await hass.async_block_till_done()
@@ -249,6 +279,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert entry.title == "Renamed Skylight"
     assert hass.states.get(correction_mode).state == "off"
     assert registry.async_get(entity_id).config_entry_id == entry.entry_id
+    assert entry.runtime_data is not controller
     controller = entry.runtime_data
     assert await controller.sequence.async_next() == 256
     with pytest.raises(vol.Invalid, match="Skip the sequence only"):
@@ -323,3 +354,61 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"
+
+
+async def test_configure_reports_send_failed_when_the_proxy_is_offline(hass, monkeypatch):
+    entry, calls = await setup_entry(hass, monkeypatch)
+    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
+    await hass.async_block_till_done()
+    for step in ("pair", "unpair_all"):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": step}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"confirm": True}
+        )
+        assert result["type"] == "form"
+        assert result["errors"] == {"base": "send_failed"}
+    assert entry.runtime_data.pairing_task is None
+    assert calls == []
+    # The recovery skip sends nothing, so it works while the proxy is offline.
+    light = er.async_get(hass).async_get_entity_id("light", DOMAIN, "factory_mesh_7ffe_light")
+    await hass.services.async_call(
+        DOMAIN, "skip_sequence", {"entity_id": light, "confirm": True}, blocking=True
+    )
+    assert await entry.runtime_data.sequence.async_next() == 0x100000
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_unload_stops_a_running_burst_and_dim_hold(hass, monkeypatch):
+    entry, calls = await setup_entry(hass, monkeypatch)
+    controller = entry.runtime_data
+    light = er.async_get(hass).async_get_entity_id("light", DOMAIN, "factory_mesh_7ffe_light")
+    await hass.services.async_call(
+        DOMAIN, "unpair_all_remotes", {"entity_id": light, "confirm": True}, blocking=True
+    )
+    burst = controller.pairing_task
+    hold = asyncio.ensure_future(
+        hass.services.async_call(
+            DOMAIN, "dim", {"entity_id": light, "direction": "up", "hold": 10}, blocking=True
+        )
+    )
+    while len(calls) < 3:
+        await asyncio.sleep(0.05)
+    assert controller.pairing_until is not None
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    assert burst.cancelled()
+    assert controller.pairing_until is None
+    assert controller.tasks == set()
+    with pytest.raises(HomeAssistantError, match="unloaded"):
+        await hold
+    sent = len(calls)
+    await asyncio.sleep(1.5)
+    assert len(calls) == sent  # Nothing more from the old controller.
+    assert sent < 10
+    # An action with no loaded Skylight fails visibly.
+    with pytest.raises(HomeAssistantError, match="set up"):
+        await hass.services.async_call(
+            DOMAIN, "dim", {"entity_id": light, "direction": "up"}, blocking=True
+        )

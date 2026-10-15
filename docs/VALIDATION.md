@@ -362,6 +362,24 @@ Assistant restart was needed.
   package existed. So the page showed no firmware step, as designed. The test
   proxy still runs firmware that forwards every advert.
 
+## Add-on 0.4.18 to 0.4.24
+
+Tested on 2026-10-15 on the owner's panel, with integrations 0.3.3 and 0.3.4.
+
+### Physical observations
+
+- From a clean unpair all, the owner paired the remote, then Home Assistant
+  paired with one burst of 30 over 10 seconds. The remote stopped working.
+  Pairing the remote again, alone, brought it back, and Home Assistant kept
+  working.
+- The same order with a burst of 20 at two a second (integration 0.3.3) gave
+  the same result. The rate is not the cause.
+- After an unpair-all burst from Home Assistant, the owner pressed the add-on's
+  power toggle, then the wall remote. The panel ignored both. Unpair all removes
+  Home Assistant too. It does not pair Home Assistant again.
+- Pairing Home Assistant first and the remote second left both working, each
+  time it was tried. Add-on 0.4.23 uses that order.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store

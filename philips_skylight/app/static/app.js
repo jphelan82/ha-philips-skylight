@@ -13,6 +13,8 @@ let unpairSeen = false;
 let unpairStarted = 0;
 let lastRemaining = 0;
 let preparedNode = null;
+// A short pause after the last change of the observed mode, before the page sends it.
+let modeTimer = null;
 // What the last status showed, so the page can say when an install has finished.
 let lastProxyReady = null;
 let lastFirmware = null;
@@ -41,10 +43,26 @@ function followTheme() {
   } catch { /* Opened outside Home Assistant: keep the default colors. */ }
 }
 followTheme();
-function notice(message, error = false) {
+// A failed status poll shows a notice. The next good poll clears it, but leaves
+// any other notice, such as an action's result, in place.
+let pollNotice = false;
+function notice(message, error = false, fromPoll = false) {
   el("notice").textContent = message;
   el("notice").className = error ? "error" : "";
   el("notice").hidden = !message;
+  pollNotice = Boolean(message) && fromPoll;
+}
+// Disabled or hidden controls lose keyboard focus. Put it back on the same control,
+// or else on the nearest usable control after it, or else before it.
+function keepFocus(previous) {
+  const now = document.activeElement;
+  if (!previous || previous === document.body || (now && now !== document.body && now !== previous)) return;
+  const usable = (item) => !item.disabled && item.getClientRects().length > 0;
+  if (usable(previous)) return previous.focus();
+  const items = [...document.querySelectorAll("button, input, select, summary")];
+  const at = items.indexOf(previous);
+  if (at < 0) return;
+  (items.slice(at + 1).find(usable) || items.slice(0, at).reverse().find(usable))?.focus();
 }
 function options(id, items, empty = null) {
   const select = el(id);
@@ -165,7 +183,14 @@ function render(data) {
   show("connection", !data.connected || data.proxies.length > 0);
   el("connection").className = "badge" + (data.connected && data.proxy_online ? " online" : "");
   const needsInstall = !data.installed || data.restart_required;
-  show("installation", needsInstall);
+  // The add-on keeps running when its own install fails at startup, so the page can say why.
+  show("installation", needsInstall || Boolean(data.install_error));
+  show("install-message", needsInstall);
+  el("install-error").textContent = data.install_error
+    ? "The add-on could not install its integration: " + String(data.install_error).replace(/\.$/, "")
+      + ". Restart the add-on. If this keeps happening, open an issue."
+    : "";
+  show("install-error", Boolean(data.install_error));
   show("install", !data.installed);
   show("restart", data.installed && data.restart_required);
   if (data.restart_required && !data.connected) restarting = true;
@@ -199,8 +224,9 @@ function render(data) {
   show("device-builder", Boolean(data.device_builder));
   renderChecks(data.prerequisites, !proxyReady);
 
-  step("step-connect", data.configured, data.configured ? "✓" : proxyReady && data.proxies.length === 1 ? "Connecting…" : "");
-  show("connect-choice", proxyReady && !data.configured && data.proxies.length > 1);
+  // With one proxy, the add-on connects it by itself. The button stays in case that fails.
+  step("step-connect", data.configured, data.configured ? "✓" : "");
+  show("connect-choice", proxyReady && !data.configured);
   const proxyNames = data.proxies.map((item) => ({...item, name: item.name + " · " + item.node}));
   options("proxy-choice", proxyNames, "Choose a proxy");
   options("proxy-change", proxyNames, "Choose a proxy");
@@ -212,6 +238,8 @@ function render(data) {
   const remaining = data.pairing_remaining || 0;
   const unpairing = data.last_command === "unpair all";
   if (lastRemaining && !remaining && !setupDone && pairStage === "pair" && !unpairing) pairStage = "test";
+  // The stage lives only in this page. After a reload, the add-on says that Home Assistant has paired.
+  if (data.first_setup && data.setup_paired === true && !remaining && pairStage === "pair") pairStage = "test";
   // The unpair runs from Unpair remotes, far down the page, so its countdown shows there.
   if (unpairStage === "wait") {
     if (unpairing && remaining) {
@@ -236,6 +264,12 @@ function render(data) {
   show("pair-test", pairing && pairStage === "test");
   show("pair-ask", pairing && pairStage === "ask");
   show("pair-remote", pairing && pairStage === "remote");
+  // After Unpair all, the wall remote is certainly gone. After a first pairing, it often still works.
+  const afterUnpair = data.setup_after_unpair === true;
+  el("pair-remote-text").textContent = afterUnpair
+    ? "It works. Unpair all removed your wall remote too, so pair the remote again now."
+    : "It works. Pairing Home Assistant often unpairs your wall remote. Press the remote's power button. If the panel does not respond, pair the remote again:";
+  show("remote-skip", !afterUnpair);
   show("pair-mode", pairing && pairStage === "mode");
 
   const ready = data.configured && !needsInstall && setupDone;
@@ -269,7 +303,7 @@ function render(data) {
   modeButtons("modes", "scene", data.effects);
   modeButtons("setup-modes", "finish_setup", data.effects);
   options("observed-mode", ["Unknown", ...data.effects]);
-  if (!busy && data.connected) el("observed-mode").value = data.effects.includes(data.effect) ? data.effect : "Unknown";
+  if (!busy && !modeTimer && data.connected) el("observed-mode").value = data.effects.includes(data.effect) ? data.effect : "Unknown";
   options("service", data.transmit_services, "Choose an action");
   options("proxy", data.proxy_sensors, "Choose a sensor");
   el("version").textContent = "v" + data.version;
@@ -278,22 +312,37 @@ function render(data) {
   }
   el("add-card").disabled ||= !dashboardRevision || !el("view-choice").value;
 }
+// The add-on answers in JSON. Plain text comes from its access check, which refuses
+// an old action session after the add-on restarts. An HTML page comes from Home Assistant.
+async function answer(response, fallback) {
+  if (!(response.headers.get("Content-Type") || "").includes("application/json")) {
+    const text = await response.text().catch(() => "");
+    if (response.status === 403 && text.includes("Invalid action session")) {
+      throw new Error("The add-on restarted. Reload this page.");
+    }
+    throw new Error("The add-on did not answer as expected. HTTP status " + response.status + ".");
+  }
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || fallback);
+  return result;
+}
 async function get(path) {
   const response = await fetch(new URL(path, base), {cache: "no-store"});
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "Cannot read the add-on status");
-  return result;
+  return answer(response, "Cannot read the add-on status");
 }
 async function refresh() {
   followTheme();  // The theme can change while the page is open.
-  try { render(await get("api/status")); }
-  catch (error) {
+  try {
+    const data = await get("api/status");
+    if (pollNotice) notice("");
+    render(data);
+  } catch (error) {
     // During a restart the page's requests fail too, because they pass through Home Assistant.
     if (restarting || state?.restart_required) {
       restarting = true;
       show("restart-status", true);
       notice("");
-    } else if (!busy) notice(error.message, true);
+    } else if (!busy) notice(error.message, true, true);
   }
 }
 const messages = {
@@ -320,7 +369,8 @@ const results = {
 // The notice bar sits at the top of the page. A result from further down also
 // shows next to the button that caused it, where the user is looking.
 const BESIDE = {create_dashboard: "dashboard-result", add_card: "dashboard-result",
-  unpair_all: "fix-pair-result", start_over: "fix-pair-result", skip_sequence: "skip-result"};
+  unpair_all: "unpair-1-result", start_over: "unpair-3-result", skip_sequence: "skip-result",
+  update_card: "card-result"};
 function besideButton(kind, message, error) {
   const id = BESIDE[kind];
   if (!id) return;
@@ -328,9 +378,14 @@ function besideButton(kind, message, error) {
   el(id).className = "result" + (error ? " error" : "");
   show(id, Boolean(message));
 }
+function clearUnpairResults() {
+  for (const id of ["unpair-1-result", "unpair-3-result"]) { el(id).textContent = ""; show(id, false); }
+}
 async function action(body) {
   if (busy) return;
   busy = true;
+  const focused = document.activeElement;
+  let scrollToSetup = false;
   if (state) render(state);
   notice(messages[body.action] || "");
   try {
@@ -338,8 +393,8 @@ async function action(body) {
       method: "POST", headers: {"Content-Type": "application/json", "X-Skylight-CSRF": csrf},
       body: JSON.stringify(body),
     });
-    const result = await response.json();
-    if (!response.ok || !result.ok) throw new Error(result.error || "That did not work");
+    const result = await answer(response, "That did not work");
+    if (!result.ok) throw new Error(result.error || "That did not work");
     if (result.url) {
       el("dashboard-link").href = result.url;
       el("dashboard-link").hidden = false;
@@ -352,17 +407,23 @@ async function action(body) {
     }
     if (body.action === "test") pairStage = "ask";
     if (body.action === "confirm_test") pairStage = body.result === "none" ? "pair" : "remote";
-    if (body.action === "finish_setup") pairStage = "pair";
+    if (body.action === "finish_setup") { pairStage = "pair"; clearUnpairResults(); }
     if (body.action === "skip_sequence") el("skip-confirm").checked = false;
     if (body.action === "unpair_all") { el("unpair-confirm").checked = false; unpairStage = "wait"; unpairSeen = false; unpairStarted = Date.now(); }
-    if (body.action === "start_over") { pairStage = "pair"; unpairStage = "ready"; el("setup").scrollIntoView({behavior: "smooth"}); }
+    // The setup checklist shows only after the next status, so scroll after the refresh.
+    if (body.action === "start_over") { pairStage = "pair"; unpairStage = "ready"; clearUnpairResults(); scrollToSetup = true; }
     if (body.action === "add_card") await loadViews();
   } catch (error) {
     // Home Assistant can drop the request as it shuts down for the restart.
     if (body.action === "restart") { restarting = true; notice(""); }
     else { notice(error.message, true); besideButton(body.action, error.message, true); }
   }
-  finally { busy = false; await refresh(); }
+  finally {
+    busy = false;
+    await refresh();
+    keepFocus(focused);
+    if (scrollToSetup && !el("setup").hidden) el("setup").scrollIntoView({behavior: "smooth"});
+  }
 }
 async function loadViews() {
   const read = ++dashboardRead;
@@ -405,14 +466,15 @@ async function post(body) {
       method: "POST", headers: {"Content-Type": "application/json", "X-Skylight-CSRF": csrf},
       body: JSON.stringify(body),
     });
-    const result = await response.json();
-    if (!response.ok || !result.ok) throw new Error(result.error || "That did not work");
+    const result = await answer(response, "That did not work");
+    if (!result.ok) throw new Error(result.error || "That did not work");
   } catch (error) { notice(error.message, true); }
 }
-function holdStart(direction) {
-  if (hold || !state || !state.connected || state.restart_required) return;
-  hold = {direction, sent: false, busy: false};
+function holdStart(button, pointerId) {
+  if (hold || busy || button.disabled || !state || !state.connected || state.restart_required) return false;
+  hold = {direction: button.dataset.hold, pointerId, sent: false, busy: false};
   hold.timer = setTimeout(holdTick, 450);
+  return true;
 }
 async function holdTick() {
   const current = hold;
@@ -426,25 +488,33 @@ async function holdTick() {
   await post({action: "dim_hold", direction: current.direction});
   current.busy = false;
 }
-function holdEnd() {
-  if (!hold) return;
+// Only a lifted finger sends the short step. A cancelled press sends nothing.
+// Another finger, on the other dim button, does not end this hold.
+function holdEnd(pointerId, lifted) {
+  if (!hold || (pointerId !== undefined && pointerId !== hold.pointerId)) return;
   clearTimeout(hold.timer);
   const {direction, sent} = hold;
   hold = null;
-  if (!sent) action({action: "dim_" + direction});
+  if (lifted && !sent) action({action: "dim_" + direction});
 }
 for (const id of ["dim-down", "dim-up"]) {
   const button = el(id);
   button.addEventListener("pointerdown", (event) => {
+    // Only the main mouse button, a finger or a pen starts a hold.
+    if (event.button !== 0 || !holdStart(button, event.pointerId)) return;
     // Keep the finger's events on this button, even if it slides a little.
-    if (event && button.setPointerCapture) button.setPointerCapture(event.pointerId);
-    holdStart(button.dataset.hold);
+    if (button.setPointerCapture) button.setPointerCapture(event.pointerId);
   });
-  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) button.addEventListener(type, holdEnd);
+  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    button.addEventListener(type, (event) => holdEnd(event.pointerId, type === "pointerup"));
+  }
   // On a phone, a long touch opens the phone's own menu and cancels the touch.
   // Stop that, so the hold keeps going until the finger lifts.
   button.addEventListener("contextmenu", (event) => event.preventDefault());
 }
+// A hold stops when the page loses focus or goes out of sight, since no lift follows.
+window.addEventListener("blur", () => holdEnd(undefined, false));
+document.addEventListener("visibilitychange", () => { if (document.hidden) holdEnd(undefined, false); });
 document.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button || button.disabled) return;
@@ -460,17 +530,19 @@ document.addEventListener("click", (event) => {
     notice("Tick the box first.", true);
     return besideButton(kind, "Tick the box first.", true);
   }
+  const focused = document.activeElement;
   if (kind === "remote_paired") {
     pairStage = "mode";
     if (state) render(state);
-    return;
+    return keepFocus(focused);
   }
   if (kind === "unpair_blinked") {
     const blinked = button.dataset.blinked === "yes";
     unpairStage = blinked ? "remote" : "ready";
+    clearUnpairResults();
     besideButton("unpair_all", blinked ? "" : "The panel did not unpair. Switch the power off and on, wait until it is back on, then select Unpair all straight away.", !blinked);
     if (state) render(state);
-    return;
+    return keepFocus(focused);
   }
   if (kind === "connect") return action(connectBody(button));
   if (kind === "prepare_firmware") return el("node-choice").value
@@ -481,8 +553,16 @@ document.addEventListener("click", (event) => {
   if (kind === "sync_power") return action({action: kind, is_on: button.dataset.on === "yes"});
   action({action: kind, confirm: ["pair", "restart", "skip_sequence", "unpair_all"].includes(kind)});
 });
-el("observed-mode").addEventListener("change", () => {
+// Arrow keys on a closed list can send a change at each step. Send only the last
+// one, after a short pause. If another action is still running, wait for it.
+function sendMode() {
+  if (busy) { modeTimer = setTimeout(sendMode, 300); return; }
+  modeTimer = null;
   action({action: "sync_mode", effect: el("observed-mode").value});
+}
+el("observed-mode").addEventListener("change", () => {
+  clearTimeout(modeTimer);
+  modeTimer = setTimeout(sendMode, 600);
 });
 el("dashboard-choice").addEventListener("change", loadViews);
 el("view-choice").addEventListener("change", () => state && render(state));

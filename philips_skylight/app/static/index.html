@@ -21,6 +21,7 @@
 
   <section id="installation" hidden>
     <h2>Finish installing</h2>
+    <p class="result error" id="install-error" hidden></p>
     <p id="install-message"></p>
     <button data-action="install" id="install" class="primary">Install the Skylight integration</button>
     <button data-action="restart" id="restart" class="primary">Restart Home Assistant</button>
@@ -62,6 +63,7 @@
         <h3>Let Home Assistant hear your remote <span class="status" id="step-tracking-status"></span></h3>
         <div id="tracking-off" hidden>
           <p>This lets Home Assistant follow the presses on your own remote.</p>
+          <p class="hint">This step is optional. Pairing in the next step works without it.</p>
           <button data-action="allow_tracking" class="primary">Allow</button>
         </div>
       </li>
@@ -84,14 +86,14 @@
           <div class="row"><button data-action="confirm_test" data-result="off">It switched off</button><button data-action="confirm_test" data-result="on">It switched on</button><button data-action="confirm_test" data-result="none">Nothing changed</button></div>
         </div>
         <div id="pair-remote" hidden>
-          <p>It works. Now pair your wall remote again. Pairing Home Assistant can make the panel drop it, and pairing the remote afterward keeps both working.</p>
+          <p id="pair-remote-text">It works. Pairing Home Assistant often unpairs your wall remote. Press the remote's power button. If the panel does not respond, pair the remote again:</p>
           <ol>
             <li>Switch the panel's power off at its light switch or breaker, then on again.</li>
             <li>Wait until the panel is back on.</li>
             <li>Hold the remote's power button for 10 seconds, until the panel blinks.</li>
             <li>Press the remote's power button to check it. If the panel does not respond, do these steps again.</li>
           </ol>
-          <div class="row"><button data-action="remote_paired" class="primary">The remote works</button><button data-action="remote_paired" class="link">I have no remote</button></div>
+          <div class="row"><button data-action="remote_paired" class="primary">The remote works</button><button data-action="remote_paired" class="link" id="remote-skip">Skip – my remote is already working</button><button data-action="remote_paired" class="link">I have no remote</button></div>
         </div>
         <div id="pair-mode" hidden>
           <p>Last step: choose a mode. The panel switches on in that mode.</p>
@@ -120,6 +122,7 @@
     <div id="card-update" hidden>
       <p>The Skylight card on <strong id="card-dashboards"></strong> is an older version. Updating it changes only the Skylight card.</p>
       <button data-action="update_card" class="primary">Update the card</button>
+      <p class="result" id="card-result" hidden></p>
     </div>
   </section>
 
@@ -164,6 +167,7 @@
           <p>Switch the panel's power off at its light switch or breaker, then on again. Wait until the panel is back on. Then select <strong>Unpair all</strong> straight away.</p>
           <label class="check"><input id="unpair-confirm" type="checkbox">The panel just came back on. Remove every remote, and I will pair my remote again.</label>
           <button data-action="unpair_all" class="primary">Unpair all</button>
+          <p class="result" id="unpair-1-result" hidden></p>
         </li>
         <li id="unpair-2">
           <h3>Check the panel <span class="status" id="unpair-2-status"></span></h3>
@@ -174,9 +178,9 @@
           <h3>Pair Home Assistant, then your remote <span class="status" id="unpair-3-status"></span></h3>
           <p>Select <strong>Continue</strong>. The setup checklist at the top pairs Home Assistant first. Then it has you pair your remote.</p>
           <button data-action="start_over" class="primary">Continue</button>
+          <p class="result" id="unpair-3-result" hidden></p>
         </li>
       </ol>
-      <p class="result" id="fix-pair-result" hidden></p>
     </details>
     <details class="plain" id="fix-proxy"><summary>Change the Bluetooth proxy</summary>
       <label>Proxy<select id="proxy-change"></select></label>

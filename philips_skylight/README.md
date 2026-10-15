@@ -14,7 +14,7 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
   two remotes already control your Skylight, this does not work unless you give
   one up.
 - If you set this up before on another Home Assistant, use **Unpair all
-  remotes** first, then pair your remote again.
+  remotes** first. Then pair Home Assistant, and then your remote.
 - One step needs the panel's power switched off and on at its light switch or
   breaker. Use a phone or a portable computer for setup.
 - Optional: give the Bluetooth proxy's ESPHome API an encryption key. Without
@@ -38,8 +38,10 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
    3. **Let Home Assistant hear your remote.** Select **Allow**.
    4. **Pair Home Assistant with the panel.** Switch the panel's power off at
       its light switch or breaker, then on again. When the panel is back on,
-      select **Pair** straight away. The panel blinks. Then test it and choose a
-      mode.
+      select **Pair** straight away. The panel blinks. Then test it. Next, pair
+      your wall remote again: switch the panel's power off and on, and hold the
+      remote's power button for 10 seconds. Select **The remote works**, or **I
+      have no remote**. Last, choose a mode.
 4. Optional: add the Skylight card to a dashboard.
 
 To update, update the add-on in **Settings → Apps**, then open its page. A

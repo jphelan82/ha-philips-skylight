@@ -28,10 +28,11 @@ def firmware_version(text):
 
 def firmware_lock():
     """The firmware's version number and a hash of every file the proxy builds from."""
+    # The same file set that the bundle copies, so caches such as __pycache__ never count.
     files = [FIRMWARE / "skylight-transmitter.yaml"] + sorted(
         file
-        for file in (FIRMWARE / "components/ble_adv_proxy").rglob("*")
-        if file.is_file() and file.name not in ("README.md", "LICENSE")
+        for file in sources(FIRMWARE / "components/ble_adv_proxy").values()
+        if file.name not in ("README.md", "LICENSE")
     )
     digest = hashlib.sha256()
     for file in files:

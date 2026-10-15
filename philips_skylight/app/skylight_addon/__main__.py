@@ -27,10 +27,15 @@ async def application():
         )
     installer = Installer(ROOT / "companion", Path("/homeassistant"), Path("/data"))
     if options.get("auto_install_integration", True):
-        changed = await asyncio.to_thread(installer.install)
-        logging.info(
-            "Companion integration %s", "installed; Core restart needed" if changed else "current"
-        )
+        try:
+            changed = await asyncio.to_thread(installer.install)
+            logging.info(
+                "Companion integration %s",
+                "installed; Core restart needed" if changed else "current",
+            )
+        except Exception:
+            # Keep serving the page: it shows installer.error and offers Install again.
+            logging.exception("Companion integration was not installed")
     session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=25))
     ha = HAClient(session, token)
     panel = Panel(ha, installer, ROOT)

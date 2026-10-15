@@ -4,17 +4,21 @@ import asyncio
 import logging
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from time import monotonic
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_PROXY_ENTITY,
     CONF_TRANSMIT_SERVICE,
     DOMAIN,
     HOLD_INTERVAL,
+    OUTAGE_GRACE,
     PAIRING_BURST,
     PAIRING_RATE,
     RECEIVE_EVENT,
@@ -25,12 +29,14 @@ from .protocol import MeshCodec, command_payload, pairing_payload, unpair_all_pa
 from .sequence import SequenceAllocator
 
 _LOGGER = logging.getLogger(__name__)
+OFFLINE = ("unavailable", "unknown")
 
 
 class SkylightController:
     def __init__(self, hass: HomeAssistant, data: dict) -> None:
         self.hass = hass
         self.service = data[CONF_TRANSMIT_SERVICE]
+        self.proxy_entity = data[CONF_PROXY_ENTITY]
         self.codec = MeshCodec()
         self.state = AssumedState()
         self.state_correction = False
@@ -41,6 +47,27 @@ class SkylightController:
         self.outage_started: float | None = None
         self.pairing_task: asyncio.Task | None = None
         self.pairing_until: datetime | None = None
+        # Counts bursts, so a cancelled burst cannot clear the state of the next one.
+        self.pairing_burst = 0
+        # Background sends and setup calls that unload cancels.
+        self.tasks: set[asyncio.Task] = set()
+        self.stopped = False
+
+    @property
+    def transmitter_ready(self) -> bool:
+        """The proxy is online and its advertising action exists."""
+        proxy = self.hass.states.get(self.proxy_entity)
+        return (
+            proxy is not None
+            and proxy.state not in OFFLINE
+            and self.hass.services.has_service("esphome", self.service)
+        )
+
+    @callback
+    def _track(self, task: asyncio.Task) -> asyncio.Task:
+        self.tasks.add(task)
+        task.add_done_callback(self.tasks.discard)
+        return task
 
     @callback
     def forget_state(self) -> None:
@@ -72,6 +99,9 @@ class SkylightController:
         self, payload_builder: Callable[[int], bytes], repeat: int = 3
     ) -> None:
         """Reserve before transmitting; caller holds the shared command lock."""
+        if self.stopped:
+            # A reloaded entry has a new controller that reserves from the same Store.
+            raise HomeAssistantError("The Skylight integration is unloaded")
         try:
             seq = await self.sequence.async_next()
             payload = payload_builder(0x80 | (seq & 0x7F))
@@ -109,6 +139,19 @@ class SkylightController:
         if not hold:
             await self.async_send(command)
             return
+        # Run the hold in its own task, so unload can stop it.
+        task = self._track(
+            self.hass.async_create_task(self._async_hold(command, hold), f"Skylight {command} hold")
+        )
+        try:
+            await task
+        except asyncio.CancelledError:
+            current = asyncio.current_task()
+            if current is not None and current.cancelling():
+                raise
+            raise HomeAssistantError("The Skylight integration unloaded during the hold") from None
+
+    async def _async_hold(self, command: str, hold: float) -> None:
         for _ in range(max(1, round(hold / HOLD_INTERVAL))):
             async with self.lock:
                 await self._async_transmit_locked(
@@ -132,37 +175,71 @@ class SkylightController:
     ) -> None:
         # The panel listens only for a short time after its power returns, so the
         # user selects Pair as soon as the panel is back on.
+        if not self.transmitter_ready:
+            raise HomeAssistantError(
+                "Cannot reach the Skylight proxy. Check that the proxy is online, then try again."
+            )
         self.stop_pairing()
+        self.pairing_burst += 1
         self.pairing_until = dt_util.utcnow() + timedelta(seconds=duration)
         self.state.is_on = None
         self.state.effect = None
         self.state.last_command = label
         self.notify()
-        self.pairing_task = self.hass.async_create_background_task(
-            self._async_repeat(payload_builder, round(duration * PAIRING_RATE)), f"Skylight {label}"
+        self.pairing_task = self._track(
+            self.hass.async_create_background_task(
+                self._async_repeat(
+                    payload_builder, round(duration * PAIRING_RATE), label, self.pairing_burst
+                ),
+                f"Skylight {label}",
+            )
         )
 
-    async def _async_repeat(self, payload_builder: Callable[[int], bytes], count: int) -> None:
+    async def _async_repeat(
+        self, payload_builder: Callable[[int], bytes], count: int, label: str, burst: int
+    ) -> None:
+        failed = 0
         try:
             for _ in range(count):
                 try:
                     # Take the lock per request, so other commands still get through.
                     async with self.lock:
                         await self._async_transmit_locked(payload_builder, repeat=1)
-                except HomeAssistantError:
-                    _LOGGER.debug("Skylight pairing request not sent", exc_info=True)
+                except HomeAssistantError as err:
+                    failed += 1
+                    if failed == 1:
+                        _LOGGER.warning("Skylight %s request not sent: %s", label, err)
+                    else:
+                        _LOGGER.debug("Skylight %s request not sent", label, exc_info=True)
                 await asyncio.sleep(1 / PAIRING_RATE)
         finally:
-            # Neither the requests nor their end confirm pairing or power.
-            self.pairing_until = None
-            self.state.is_on = None
-            self.state.effect = None
-            self.notify()
+            # A newer burst owns pairing_until and the state now.
+            if burst == self.pairing_burst:
+                # Neither the requests nor their end confirm pairing or power.
+                self.pairing_until = None
+                self.state.is_on = None
+                self.state.effect = None
+                self.notify()
 
     @callback
     def stop_pairing(self) -> None:
         if self.pairing_task and not self.pairing_task.done():
             self.pairing_task.cancel()
+
+    async def async_stop(self) -> None:
+        """Unload: stop every background send and send nothing more."""
+        self.stopped = True
+        tasks = tuple(self.tasks)
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.wait(tasks)
+
+    async def async_set_assumed_power(self, is_on: bool) -> None:
+        """Record the observed power without sending a command."""
+        async with self.lock:
+            self.state.is_on = is_on
+            self.notify()
 
     async def async_skip_sequence(self) -> int:
         """Recover from a lost sequence Store without changing the sender address."""
@@ -203,6 +280,35 @@ class SkylightController:
     @callback
     def async_subscribe(self) -> Callable[[], None]:
         return self.hass.bus.async_listen(RECEIVE_EVENT, self.receive)
+
+    @callback
+    def async_track_proxy(self) -> Callable[[], None]:
+        """Follow the proxy here, not in an entity that the user can disable."""
+        return async_track_state_change_event(self.hass, [self.proxy_entity], self._proxy_changed)
+
+    @callback
+    def _proxy_changed(self, event: Event) -> None:
+        old = event.data.get("old_state")
+        new = event.data.get("new_state")
+        offline = new is None or new.state in OFFLINE
+        was_offline = old is None or old.state in OFFLINE
+        if new is None:
+            # The proxy sensor was removed, not just disconnected.
+            self.outage_started = None
+            self.forget_state()
+        elif offline and not was_offline:
+            self.outage_started = monotonic()
+        elif not offline and was_offline:
+            started = self.outage_started
+            self.outage_started = None
+            # The proxy drops for a fraction of a second now and then. Keep the
+            # recorded state then, but not after an outage long enough to miss presses.
+            if started is None or monotonic() - started > OUTAGE_GRACE:
+                self.forget_state()
+            self._track(
+                self.hass.async_create_task(self.async_setup_receiver(), "Skylight receiver setup")
+            )
+        self.notify()
 
 
 type SkylightConfigEntry = ConfigEntry[SkylightController]

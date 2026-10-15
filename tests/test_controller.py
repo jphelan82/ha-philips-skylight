@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from types import SimpleNamespace
 
 import pytest
@@ -25,6 +26,10 @@ async def make_controller(hass):
     controller = SkylightController(hass, DATA)
     await controller.sequence.async_load()
     return controller
+
+
+def proxy_online(hass):
+    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "skylight-proxy")
 
 
 async def test_unknown_power_requires_sync_and_same_power_is_noop(hass):
@@ -113,70 +118,73 @@ async def test_remote_event_and_proxy_outage(hass):
     controller.receive(Event(RECEIVE_EVENT, {"raw": "not hex"}))
     controller.state.effect = "Focus"
     old = hass.states.async_set(DATA[CONF_PROXY_ENTITY], "ready")
-    light._proxy_changed(Event("state_changed", {"old_state": old, "new_state": None}))
+    controller._proxy_changed(Event("state_changed", {"old_state": old, "new_state": None}))
     assert light.is_on is None
     assert light.effect is None
 
 
 async def test_short_proxy_drop_keeps_state_but_long_outage_forgets_it(hass, monkeypatch):
+    # No entity exists: the controller follows the proxy, so a disabled light changes nothing.
     controller = await make_controller(hass)
-    controller.async_setup_receiver = lambda: asyncio.sleep(0)
-    light = SkylightLight(controller, SimpleNamespace(data=DATA, title="Skylight"))
-    light.hass = hass
-    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "ready")
-    online = hass.states.get(DATA[CONF_PROXY_ENTITY])
-    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
-    offline = hass.states.get(DATA[CONF_PROXY_ENTITY])
-    clock = [1000.0]
-    monkeypatch.setattr("custom_components.philips_skylight.entity.monotonic", lambda: clock[0])
+    receiver_setups = []
 
-    def drop_for(seconds):
-        light._proxy_changed(Event("state_changed", {"old_state": online, "new_state": offline}))
+    async def setup_receiver():
+        receiver_setups.append(True)
+
+    controller.async_setup_receiver = setup_receiver
+    hass.states.async_set(DATA[CONF_PROXY_ENTITY], "ready")
+    unsubscribe = controller.async_track_proxy()
+    clock = [1000.0]
+    monkeypatch.setattr("custom_components.philips_skylight.controller.monotonic", lambda: clock[0])
+
+    async def drop_for(seconds):
+        hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
+        await hass.async_block_till_done()
         assert controller.state.is_on is True  # Kept while the proxy is away.
+        assert not controller.transmitter_ready
         clock[0] += seconds
-        light._proxy_changed(Event("state_changed", {"old_state": offline, "new_state": online}))
+        hass.states.async_set(DATA[CONF_PROXY_ENTITY], "ready")
+        await hass.async_block_till_done()
 
     controller.state.is_on, controller.state.effect = True, "Relax"
-    drop_for(0.1)
+    await drop_for(0.1)
     assert (controller.state.is_on, controller.state.effect) == (True, "Relax")
-    drop_for(OUTAGE_GRACE + 1)
+    assert len(receiver_setups) == 1  # Remote reception is set up again after each return.
+    await drop_for(OUTAGE_GRACE + 1)
     assert (controller.state.is_on, controller.state.effect) == (None, None)
-    await hass.async_block_till_done()
+    assert len(receiver_setups) == 2
+    unsubscribe()
 
 
 async def test_light_refuses_unknown_effect_and_synchronizes_without_transmitting(hass):
     controller = await make_controller(hass)
     light = SkylightLight(controller, SimpleNamespace(data=DATA, title="Skylight"))
     light.hass = hass
-    await light.async_set_assumed_power(False)
+    await controller.async_set_assumed_power(False)
     assert light.is_on is False
     with pytest.raises(HomeAssistantError, match="Unknown Skylight effect"):
         await light.async_turn_on(effect="invalid")
     assert controller.state.is_on is False
 
 
-async def test_pairing_requires_confirmation_and_uses_durable_sequences(hass, monkeypatch):
+async def test_pairing_uses_durable_sequences(hass, monkeypatch):
     calls = []
     hass.services.async_register(
         "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
     )
+    proxy_online(hass)
     controller = await make_controller(hass)
     controller.state.is_on = True
     controller.state.effect = "Focus"
     light = SkylightLight(controller, SimpleNamespace(data=DATA, title="Skylight"))
     light.hass = hass
-    with pytest.raises(HomeAssistantError, match="start pairing"):
-        await light.async_pair_transmitter(False)
-    assert calls == []
-    assert controller.state.is_on is True
-
     pauses = []
 
     async def no_wait(seconds):
         pauses.append(seconds)
 
     monkeypatch.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
-    await light.async_pair_transmitter(True)
+    await controller.async_pair()
     assert light.extra_state_attributes["pairing_until"] is not None
     await controller.pairing_task
     assert light.extra_state_attributes["pairing_until"] is None
@@ -196,7 +204,7 @@ async def test_pairing_requires_confirmation_and_uses_durable_sequences(hass, mo
 
 
 async def test_pairing_keeps_trying_through_failures_without_reporting_success(
-    hass, monkeypatch
+    hass, monkeypatch, caplog
 ):
     calls = []
 
@@ -210,30 +218,98 @@ async def test_pairing_keeps_trying_through_failures_without_reporting_success(
         raise HomeAssistantError("proxy offline")
 
     hass.services.async_register("esphome", DATA[CONF_TRANSMIT_SERVICE], fail)
+    proxy_online(hass)
     controller = await make_controller(hass)
     controller.state.is_on = True
-    await controller.async_pair()
-    await controller.pairing_task
+    with caplog.at_level(logging.DEBUG, "custom_components.philips_skylight"):
+        await controller.async_pair()
+        await controller.pairing_task
     assert len(calls) == 20  # A short proxy drop does not end the burst.
+    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert len(warnings) == 1  # Once per burst, not once per request.
+    assert "proxy offline" in warnings[0].getMessage()
     assert controller.state.is_on is None
     assert controller.state.effect is None
     assert await controller.sequence.async_next() == 20
 
 
-async def test_unload_stops_a_running_burst(hass):
+async def test_pairing_refuses_to_start_when_nothing_can_be_sent(hass):
+    calls = []
+    controller = await make_controller(hass)
+    controller.state.is_on = True
+    # The proxy is offline, then online without its advertising action.
+    for online in (False, True):
+        if online:
+            proxy_online(hass)
+        for start in (controller.async_pair, controller.async_unpair_all):
+            with pytest.raises(HomeAssistantError, match="Cannot reach the Skylight proxy"):
+                await start()
+    assert controller.pairing_task is None
+    assert controller.pairing_until is None
+    assert controller.state.is_on is True
+    hass.services.async_register(
+        "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
+    )
+    await controller.async_pair()
+    while not calls:
+        await asyncio.sleep(0)
+    await controller.async_stop()
+
+
+async def test_a_new_burst_keeps_its_state_when_the_old_burst_ends(hass):
+    calls = []
+    hass.services.async_register(
+        "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
+    )
+    proxy_online(hass)
+    controller = await make_controller(hass)
+    await controller.async_pair()
+    first = controller.pairing_task
+    while not calls:
+        await asyncio.sleep(0)
+    await controller.async_unpair_all()
+    second = controller.pairing_task
+    until = controller.pairing_until
+    # Let the cancelled first burst run its cleanup.
+    await asyncio.gather(first, return_exceptions=True)
+    assert first.cancelled()
+    assert not second.done()
+    assert controller.pairing_until == until
+    assert controller.state.last_command == "unpair all"
+    await controller.async_stop()
+    assert second.cancelled()
+    assert controller.pairing_until is None
+
+
+async def test_stopped_controller_sends_nothing(hass):
     calls = []
     hass.services.async_register(
         "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
     )
     controller = await make_controller(hass)
-    await controller.async_unpair_all()
-    while not calls:
-        await asyncio.sleep(0)
-    controller.stop_pairing()
-    with pytest.raises(asyncio.CancelledError):
-        await controller.pairing_task
-    assert controller.pairing_until is None
-    assert len(calls) < 5
+    await controller.async_stop()
+    with pytest.raises(HomeAssistantError, match="unloaded"):
+        await controller.async_send("toggle")
+    assert calls == []
+
+
+async def test_toggle_with_an_effect_sends_the_effect(hass):
+    calls = []
+    hass.services.async_register(
+        "esphome", DATA[CONF_TRANSMIT_SERVICE], lambda call: calls.append(call)
+    )
+    controller = await make_controller(hass)
+    light = SkylightLight(controller, SimpleNamespace(data=DATA, title="Skylight"))
+    light.hass = hass
+    controller.state.is_on = True
+    await light.async_toggle(effect="Rest")
+    (message,) = controller.codec.decode(bytes.fromhex(calls[0].data["raw"]))
+    assert identify_command(message.payload) == "Rest"
+    assert (controller.state.is_on, controller.state.effect) == (True, "Rest")
+    calls.clear()
+    await light.async_toggle()
+    (message,) = controller.codec.decode(bytes.fromhex(calls[0].data["raw"]))
+    assert identify_command(message.payload) == "toggle"
 
 
 async def test_dim_hold_repeats_the_hold_command_at_the_remote_cadence(hass, monkeypatch):

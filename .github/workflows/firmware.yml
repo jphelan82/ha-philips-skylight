@@ -5,6 +5,8 @@ on:
   pull_request:
     paths: ['esphome/**', '.github/esphome/**', '.github/workflows/firmware.yml']
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   compile:
     runs-on: ubuntu-latest

@@ -29,6 +29,11 @@ class SkylightRecordedScene(SkylightEntity, SelectEntity):
     _attr_options = [UNKNOWN_SCENE, *EFFECTS]
 
     @property
+    def available(self) -> bool:
+        # Records only and never transmits, so it works while the proxy is offline.
+        return True
+
+    @property
     def current_option(self):
         return self.controller.state.effect or UNKNOWN_SCENE
 

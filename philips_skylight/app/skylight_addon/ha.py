@@ -66,6 +66,7 @@ class HAClient:
         self._refresh_lock = asyncio.Lock()
         self._task = None
         self._refresh_task = None
+        self._refresh_again = False
 
     async def start(self):
         self._task = asyncio.create_task(self._run())
@@ -232,15 +233,22 @@ class HAClient:
     def _bus_event(self, event):
         if self._refresh_task is None or self._refresh_task.done():
             self._refresh_task = asyncio.create_task(self._refresh_later())
+        else:
+            # The running refresh can miss this change, so run one more after it.
+            self._refresh_again = True
 
     async def _refresh_later(self):
-        await asyncio.sleep(0.5)
-        try:
-            if self.ready:
-                await self.refresh()
-        except (HAError, aiohttp.ClientError, TimeoutError):
-            # These are read requests. Connection setup will refresh again.
-            pass
+        while True:
+            await asyncio.sleep(0.5)
+            self._refresh_again = False
+            try:
+                if self.ready:
+                    await self.refresh()
+            except (HAError, aiohttp.ClientError, TimeoutError):
+                # These are read requests. Connection setup will refresh again.
+                pass
+            if not self._refresh_again:
+                return
 
     async def call(self, domain: str, service: str, entity: str | None = None, **data):
         if not self.ready:
@@ -257,6 +265,8 @@ class HAClient:
         if self.entries:
             body["entry_id"] = self.entries[0]["entry_id"]
         flow = await self.http("POST", "config/config_entries/flow", body)
+        if not isinstance(flow, dict):
+            raise HAError("Cannot start setup: Home Assistant sent no answer")
         if flow.get("type") != "form":
             raise HAError(f"Cannot start setup: {flow.get('reason', flow.get('type'))}")
         result = await self.http(
@@ -264,6 +274,8 @@ class HAClient:
             f"config/config_entries/flow/{flow['flow_id']}",
             {"name": name, "transmit_service": service, "proxy_entity": proxy},
         )
+        if not isinstance(result, dict):
+            raise HAError("Home Assistant sent no setup result; check Devices & services")
         if result.get("type") == "form":
             raise HAError(f"Setup needs correction: {result.get('errors', {})}")
         if result.get("type") not in ("create_entry", "abort") or (
@@ -332,6 +344,11 @@ class HAClient:
                 LOG.warning(
                     "HA connection unavailable (%s); reconnecting in %ss", type(err).__name__, delay
                 )
+            except Exception as err:
+                # For example aiohttp raises a TypeError for a CLOSE frame during the
+                # handshake. Any failure must reconnect, never end the loop for good.
+                self.error = str(err)[:300] or type(err).__name__
+                LOG.exception("Unexpected HA connection failure; reconnecting in %ss", delay)
             finally:
                 self.ready = False
                 self._ws = None

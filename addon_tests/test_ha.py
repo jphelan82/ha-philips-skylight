@@ -118,3 +118,85 @@ def test_watched_entities_cover_skylight_and_esphome_sensors_only():
         "button.skylight_focus",
         "sensor.proxy_ble_adv_proxy_name",
     }
+
+
+async def test_a_close_during_the_handshake_reconnects(aiohttp_server, caplog):
+    sockets = []
+
+    async def websocket(request):
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        sockets.append(ws)
+        await ws.send_json({"type": "auth_required"})
+        await ws.receive_json()
+        if len(sockets) == 1:
+            await ws.close()  # A CLOSE frame where the client expects auth_ok.
+            return ws
+        await ws.send_json({"type": "auth_ok"})
+        async for frame in ws:
+            message = frame.json()
+            result = [] if message["type"] == "config/entity_registry/list" else {}
+            await ws.send_json(
+                {"id": message["id"], "type": "result", "success": True, "result": result}
+            )
+        return ws
+
+    async def entries(request):
+        return web.json_response([])
+
+    app = web.Application()
+    app.router.add_get("/websocket", websocket)
+    app.router.add_get("/api/config/config_entries/entry", entries)
+    server = await aiohttp_server(app)
+    async with aiohttp.ClientSession() as session:
+        client = HAClient(
+            session,
+            "token",
+            str(server.make_url("/api")),
+            str(server.make_url("/websocket")).replace("http://", "ws://"),
+        )
+        await client.start()
+        try:
+            await wait_for(lambda: client.ready)
+            assert len(sockets) == 2
+        finally:
+            await client.close()
+
+
+async def test_an_unexpected_error_does_not_end_the_reconnect_loop(monkeypatch):
+    client = HAClient(None, "token")
+    attempts = []
+
+    class Session:
+        def ws_connect(self, *args, **kwargs):
+            attempts.append(1)
+            raise RuntimeError("surprise")
+
+    client.session = Session()
+    sleep = asyncio.sleep
+    monkeypatch.setattr(asyncio, "sleep", lambda delay: sleep(0))  # No backoff wait.
+    await client.start()
+    try:
+        await wait_for(lambda: len(attempts) >= 3)
+        assert client.error == "surprise"
+    finally:
+        await client.close()
+
+
+async def test_a_registry_change_during_a_refresh_refreshes_again():
+    client = HAClient(None, "token")
+    client.ready = True
+    started = []
+    release = asyncio.Event()
+
+    async def refresh():
+        started.append(1)
+        await release.wait()
+
+    client.refresh = refresh
+    client._bus_event({})
+    await wait_for(lambda: started)
+    client._bus_event({})  # An entity registered while the first refresh runs.
+    release.set()
+    await client._refresh_task
+    assert len(started) == 2

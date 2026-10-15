@@ -7,7 +7,8 @@ is needed. The captured mesh protocol is in [docs/PROTOCOL.md](PROTOCOL.md).
 
 Physically verified on the owner's panel: the power toggle, the Rest, Energize
 and Relax modes, a mode turning an off panel on, relative dimming, Set auto rhythm
-start, pairing, unpair all, and three paired senders working together. See the
+start, pairing, unpair all, and two paired senders working together: the wall
+remote and Home Assistant. See the
 [validation notes](VALIDATION.md) for checks and remaining limits.
 
 ## Controls and limits
@@ -125,7 +126,7 @@ data:
   confirm: true
 ```
 
-The action sends the request three times a second for 10 seconds, like the
+The action sends the request twice a second for 10 seconds, 20 requests, like the
 remote's own hold, and the panel blinks. A long stream of requests makes the
 panel drop the other remote, so the burst stays short. The action returns at
 once, and the burst runs in the background. Other commands still get through
@@ -156,8 +157,11 @@ one sender.
 
 The HA Store `philips_skylight.sequence_7ffe` reserves 256 sequence values at a
 time and saves the high watermark **before** sending. Restarts skip unused
-reserved values. Corrupt storage, failed writes, and 24-bit exhaustion fail
-closed. Failed sends consume a sequence; toggles are never automatically retried.
+reserved values. Corrupt storage and 24-bit exhaustion fail closed. The
+integration saves each block of numbers before it uses them. It does not handle
+a disk that cannot be written. Home Assistant's Store logs a failed write and
+does not raise an error, so sending continues after a failed save.
+Failed sends consume a sequence. Toggles are never automatically retried.
 
 Keep that Store across integration removal/re-addition. Do not reset it, restore
 an older copy after sending newer packets, or run another transmitter as

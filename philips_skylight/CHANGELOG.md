@@ -1,5 +1,72 @@
 # Changelog
 
+## 0.5.0
+
+A review of all the code found the problems below. This version fixes them.
+It needs a Home Assistant restart for integration 0.4.0, and an install of
+Skylight firmware 3 on the proxy.
+
+**Setup and pairing**
+
+- A page reload during setup no longer offers **Pair** again after Home
+  Assistant paired. The add-on remembers the pairing and refuses a second one.
+  After **Nothing changed**, **Pair** opens again.
+- The remote step after pairing has a **Skip – my remote is already working**
+  button on a first install. After **Unpair remotes**, the step says that the
+  remote was unpaired too, and it has no Skip button.
+- With one proxy, the checklist shows a **Connect** button. Before, a failed
+  automatic connect left "Connecting…" with no way forward.
+- **Add Skylight firmware** works for a proxy that Home Assistant lists only as
+  a Bluetooth scanner.
+- **Unpair remotes** shows each message next to its own step.
+- The tracking step says that it is optional.
+
+**Reliability**
+
+- The add-on reconnects after Home Assistant closes the connection at any
+  point. Before, a restart at the wrong moment left it on "Connecting" until
+  the add-on restarted.
+- An install error at startup no longer stops the add-on. The page shows it.
+- The restart notice clears when Home Assistant runs the new integration.
+- After an add-on update, buttons say "The add-on restarted. Reload this page."
+  An error from a failed status check clears when the next check works.
+- Card updates skip dashboards in YAML mode. One failed dashboard does not stop
+  the others.
+- A README change to the firmware component no longer asks for a firmware
+  update.
+- A proxy YAML with a `packages:` list gets a clear message, and the add-on
+  writes nothing to it.
+
+**Integration 0.4.0**
+
+- **Configure → Pair this transmitter**, **Unpair all remotes** and the pairing
+  actions report an error when the proxy is offline. Before, they reported
+  success and sent nothing.
+- `set_assumed_power` and `skip_sequence` work while the proxy is offline. So
+  do **Record panel on**, **Record panel off** and **Recorded scene**.
+- `light.toggle` with an effect sends that mode.
+- Remote tracking and outage handling no longer depend on the light entity.
+- Unload and reload stop dim holds and pairing bursts.
+- A second pairing burst no longer loses its countdown when the first ends.
+
+**Skylight firmware 3**
+
+- The proxy uses its highest transmit power. On an ESP32-C3, that is +20 dBm.
+  Before, a preprocessor mistake set every chip to +9 dBm.
+- If the Bluetooth stack drops an event, the proxy gives up on that packet after
+  one second. Before, it stopped sending until a reboot.
+
+**Page**
+
+- Hold-to-dim ignores a cancelled touch, other mouse buttons and a second
+  finger. It stops when the page loses focus.
+- Keyboard focus stays on the control that you used.
+- Arrow keys on the mode list send only the final choice.
+
+**Releases**
+
+- The release workflow runs all tests before it publishes images.
+
 ## 0.4.24
 
 - The setup checklist warns at the top that setup can unpair your wall remote,

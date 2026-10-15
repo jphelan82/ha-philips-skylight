@@ -215,6 +215,10 @@ setup. The setup checklist has a step for it.
    4. **Pair Home Assistant with the panel.** See [Pairing](#pairing). The page
       shows "Pairing…" for 10 seconds. Then select **Switch the panel on or
       off**, and say what the panel did.
+      Next, pair your wall remote again. It stopped working when Home
+      Assistant paired. Switch the panel's power off and on, wait until it is
+      back on, and hold the remote's power button for 10 seconds. Then select
+      **The remote works**, or **I have no remote**.
       Finally, choose a mode. The panel switches on in that mode, so Home
       Assistant knows its state.
 5. Optional: create a Skylight dashboard, or add the Skylight card to one of
@@ -311,8 +315,8 @@ Home Assistant through the setup checklist, and then has you pair your remote.
 
 To make the panel forget **every** remote, use **Configure → Unpair all
 remotes**, with the same steps. It removes your remote and Home Assistant.
-Afterward, pair your remote again with its own steps, and pair Home Assistant
-again. No command removes only one remote. If the request reaches the panel too
+Afterward, pair Home Assistant first, then pair your remote again with its own
+steps. No command removes only one remote. If the request reaches the panel too
 late, the panel only switches off. Then try again.
 
 Removing or reinstalling the add-on does not unpair the panel, because the panel

@@ -64,3 +64,41 @@ def test_installer_refuses_symlinks_and_newer_integration(installer, tmp_path):
     )
     assert not installer.install()
     assert json.loads((installer.target / "manifest.json").read_text())["version"] == "9.0.0"
+
+
+def test_an_interrupted_install_is_recovered_first(installer):
+    previous = installer.target.parent / ".philips_skylight-previous"
+    previous.mkdir(parents=True)
+    (previous / "manifest.json").write_text(
+        json.dumps({"domain": "philips_skylight", "version": "0.1.0"})
+    )
+    (previous / "light.py").write_text("OLD = True\n")
+    assert installer.install()
+    assert not previous.exists()
+    assert (installer.target / "light.py").read_text() == "NEW = True\n"
+    # The recovered old version was kept as a backup before the update.
+    (backup,) = (installer.data / "backups").iterdir()
+    assert (backup / "light.py").read_text() == "OLD = True\n"
+
+
+def test_damaged_installs_never_raise_anything_but_a_clear_error(installer):
+    installer.target.mkdir(parents=True)
+    (installer.target / "light.py").write_text("PARTIAL = True\n")
+    # A folder without manifest.json is incomplete, so it is replaced.
+    assert installer.install()
+    assert installer.error is None
+    (installer.target / "manifest.json").write_text(
+        json.dumps({"domain": "philips_skylight", "version": "0.3.0b1"})
+    )
+    with pytest.raises(ValueError, match="version"):
+        installer.install()
+    assert "not installed" in installer.error
+    (installer.target / "manifest.json").write_text("{not json")
+    with pytest.raises(ValueError, match="damaged"):
+        installer.install()
+
+
+def test_an_unreadable_marker_does_not_stop_startup(installer):
+    installer.data.mkdir(parents=True)
+    installer.marker.write_text("[1, 2")
+    assert not Installer(installer.source, installer.ha_config, installer.data).pending_restart

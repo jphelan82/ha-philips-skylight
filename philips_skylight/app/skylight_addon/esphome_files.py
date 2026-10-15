@@ -111,18 +111,36 @@ def firmware_version(text):
     return match[1] if match else None
 
 
+def _build_files(component: Path):
+    """The component files the proxy builds from, as tools/firmware.lock counts them.
+
+    The README, the license and Python caches do not change the firmware.
+    """
+    return [
+        item.relative_to(component)
+        for item in component.rglob("*")
+        if item.is_file()
+        and item.name not in ("README.md", "LICENSE")
+        and "__pycache__" not in item.relative_to(component).parts
+        and item.suffix != ".pyc"
+    ]
+
+
+def _component_differs(folder: Path, firmware: Path):
+    component, source = folder / COMPONENT, firmware / COMPONENT
+    return any(
+        not (component / name).is_file()
+        or (component / name).read_bytes() != (source / name).read_bytes()
+        for name in _build_files(source)
+    )
+
+
 def _differs(folder: Path, firmware: Path):
     """Whether the copies in the ESPHome folder differ from the add-on's firmware files."""
     package = folder / PACKAGE
     if not package.is_file() or package.read_bytes() != (firmware / PACKAGE).read_bytes():
         return True
-    component = folder / COMPONENT
-    return any(
-        not (component / item.name).is_file()
-        or (component / item.name).read_bytes() != item.read_bytes()
-        for item in (firmware / COMPONENT).iterdir()
-        if item.is_file()
-    )
+    return _component_differs(folder, firmware)
 
 
 def files_current(folder: Path, firmware: Path):
@@ -140,11 +158,7 @@ def _copy_files(folder: Path, firmware: Path, stamp: str):
         shutil.copy2(package, folder / backups[-1])
     shutil.copyfile(firmware / PACKAGE, package)
     source = firmware / COMPONENT
-    if component.exists() and any(
-        not (component / item.name).is_file()
-        or (component / item.name).read_bytes() != item.read_bytes()
-        for item in source.iterdir()
-    ):
+    if component.exists() and _component_differs(folder, firmware):
         backups.append(f"ble_adv_proxy.bak-{stamp}")
         shutil.copytree(component, folder / backups[-1])
     component.parent.mkdir(exist_ok=True)
@@ -152,9 +166,12 @@ def _copy_files(folder: Path, firmware: Path, stamp: str):
     return backups
 
 
-def update_files(folder: Path, firmware: Path):
-    """Bring the shared firmware files up to date. The node YAML files stay as they are."""
-    if not any(node["uses_package"] for node in list_nodes(folder)):
+def update_files(folder: Path, firmware: Path, proxies=frozenset()):
+    """Bring the shared firmware files up to date. The node YAML files stay as they are.
+
+    `proxies` is the same set of node names that list_nodes takes.
+    """
+    if not any(node["uses_package"] for node in list_nodes(folder, proxies)):
         raise ValueError("No Bluetooth proxy uses the Skylight firmware package")
     if files_current(folder, firmware):
         return {"changed": False, "backups": []}
@@ -168,6 +185,13 @@ def add_package_line(text):
     match = re.search(r"^packages:[ \t]*(?:#[^\n]*)?$", text, re.M)
     if match:
         rest = text[match.end() :]
+        first = re.search(r"^[ \t]*([^ \t\n#])", rest, re.M)
+        if first and first[1] == "-":
+            # A mapping entry inside a YAML list makes the file invalid.
+            raise ValueError(
+                "This node's packages setting is a list. Use Install the firmware by hand, "
+                f"and add '- !include {PACKAGE}' to that list."
+            )
         indent = re.match(r"\n([ \t]+)\S", rest)
         prefix = indent[1] if indent else "  "
         return text[: match.end()] + f"\n{prefix}{PACKAGE_LINE}" + rest
@@ -193,17 +217,20 @@ def _write_atomic(path: Path, text: str):
         raise
 
 
-def install_package(folder: Path, firmware: Path, file: str):
-    """Copy the package beside the node YAML and add its entry. Return what changed."""
-    if file not in {node["file"] for node in list_nodes(folder)}:
+def install_package(folder: Path, firmware: Path, file: str, proxies=frozenset()):
+    """Copy the package beside the node YAML and add its entry. Return what changed.
+
+    `proxies` is the same set of node names that list_nodes takes.
+    """
+    if file not in {node["file"] for node in list_nodes(folder, proxies)}:
         raise ValueError("Choose one of the Bluetooth proxies listed")
     node = folder / file
     if folder.is_symlink() or node.is_symlink():
         raise ValueError("Refusing to change files through a symbolic link")
+    text = node.read_text()
+    updated = add_package_line(text)  # Raises before any file changes.
     stamp = _stamp()
     _copy_files(folder, firmware, stamp)
-    text = node.read_text()
-    updated = add_package_line(text)
     backup = None
     if updated != text:
         backup = f"{file}.bak-{stamp}"

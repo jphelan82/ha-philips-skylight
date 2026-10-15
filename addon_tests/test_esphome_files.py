@@ -144,3 +144,43 @@ def test_home_assistants_proxies_count_without_the_yaml_section(tmp_path):
     (tmp_path / "sensor.yaml").write_text("esphome:\n  name: sensor-1\npackages:\n  x: github://a/b.yaml\n")
     assert esphome_files.list_nodes(tmp_path) == []
     assert [n["node"] for n in esphome_files.list_nodes(tmp_path, {"sensor-1"})] == ["sensor-1"]
+
+
+def test_notes_and_caches_do_not_make_the_firmware_new(tmp_path):
+    (tmp_path / "proxy.yaml").write_text(PROXY)
+    esphome_files.install_package(tmp_path, FIRMWARE, "proxy.yaml")
+    component = tmp_path / "components/ble_adv_proxy"
+    (component / "README.md").write_text("old notes\n")
+    (component / "LICENSE").unlink()
+    (component / "__pycache__").mkdir()
+    (component / "__pycache__/__init__.cpython-312.pyc").write_bytes(b"cache")
+    assert esphome_files.files_current(tmp_path, FIRMWARE)
+    (component / "__init__.py").write_text("# old\n")
+    assert not esphome_files.files_current(tmp_path, FIRMWARE)
+
+
+def test_a_packages_list_is_refused_and_nothing_is_written(tmp_path):
+    # The list items can be indented or not. Both are valid YAML.
+    for packages in ("packages:\n  - !include a.yaml\n", "packages:\n- !include a.yaml\n"):
+        text = PROXY + packages
+        with pytest.raises(ValueError, match="Install the firmware by hand"):
+            esphome_files.add_package_line(text)
+        (tmp_path / "proxy.yaml").write_text(text)
+        with pytest.raises(ValueError, match="by hand"):
+            esphome_files.install_package(tmp_path, FIRMWARE, "proxy.yaml")
+        assert (tmp_path / "proxy.yaml").read_text() == text
+        assert sorted(path.name for path in tmp_path.iterdir()) == ["proxy.yaml"]
+
+
+def test_install_and_update_accept_home_assistants_proxies(tmp_path):
+    # An Apollo sensor: its YAML has no bluetooth_proxy section.
+    text = "esphome:\n  name: sensor-1\npackages:\n  x: github://a/b.yaml\n"
+    (tmp_path / "sensor.yaml").write_text(text)
+    with pytest.raises(ValueError, match="Choose one"):
+        esphome_files.install_package(tmp_path, FIRMWARE, "sensor.yaml")
+    result = esphome_files.install_package(tmp_path, FIRMWARE, "sensor.yaml", {"sensor-1"})
+    assert result["changed"] is True
+    (tmp_path / "skylight-transmitter.yaml").write_text("# old package\n")
+    with pytest.raises(ValueError, match="No Bluetooth proxy"):
+        esphome_files.update_files(tmp_path, FIRMWARE)
+    assert esphome_files.update_files(tmp_path, FIRMWARE, {"sensor-1"})["changed"] is True

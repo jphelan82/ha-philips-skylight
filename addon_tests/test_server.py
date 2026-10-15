@@ -606,7 +606,11 @@ async def test_dim_hold_sends_one_hold_command_per_request(setup_panel):
 
 
 
-async def test_start_over_unpairs_everything_then_reopens_pairing(panel):
+async def test_unpair_all_needs_a_tick_and_start_over_reopens_setup_for_one_pairing(
+    panel, tmp_path
+):
+    panel.installer.data = tmp_path
+    panel = Panel(panel.ha, panel.installer, ROOT, allowed_ips={"127.0.0.1"})
     with pytest.raises(ValueError, match="Tick the box"):
         await panel.perform({"action": "unpair_all"})
     await panel.perform({"action": "unpair_all", "confirm": True})
@@ -615,9 +619,120 @@ async def test_start_over_unpairs_everything_then_reopens_pairing(panel):
     ]
     assert panel.first_setup is False
     await panel.perform({"action": "start_over"})
-    assert panel.first_setup is True
+    snapshot = panel.snapshot()
+    assert (snapshot["first_setup"], snapshot["setup_paired"]) == (True, False)
+    assert snapshot["setup_after_unpair"] is True
     await panel.perform({"action": "pair", "confirm": True})  # Allowed again.
     assert panel.ha.calls[-1][0][1] == "pair_transmitter"
+    # A page reload, or an add-on restart, must not offer Pair a second time.
+    reloaded = Panel(panel.ha, panel.installer, ROOT, allowed_ips={"127.0.0.1"})
+    snapshot = reloaded.snapshot()
+    assert (snapshot["first_setup"], snapshot["setup_paired"]) == (True, True)
+    assert snapshot["setup_after_unpair"] is True
+    with pytest.raises(ValueError, match="Unpair remotes"):
+        await reloaded.perform({"action": "pair", "confirm": True})
+    assert len(panel.ha.calls) == 2
+    # "Nothing changed" means the pairing did not take, so Pair opens again.
+    await reloaded.perform({"action": "confirm_test", "result": "none"})
+    assert (reloaded.setup_paired, reloaded.setup_after_unpair) == (False, True)
+    await reloaded.perform({"action": "pair", "confirm": True})
+    assert reloaded.ha.calls[-1][0][1] == "pair_transmitter"
+    assert reloaded.setup_paired is True
+    await reloaded.perform({"action": "finish_setup"})
+    assert (reloaded.setup_paired, reloaded.setup_after_unpair) == (False, False)
+    await reloaded.perform({"action": "start_over"})
+    assert (reloaded.setup_paired, reloaded.setup_after_unpair) == (False, True)
+
+
+async def test_a_first_install_is_not_setup_after_unpair_and_old_files_still_load(
+    setup_panel, tmp_path
+):
+    await setup_panel.perform({"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name"})
+    snapshot = setup_panel.snapshot()
+    assert snapshot["first_setup"] is True
+    assert (snapshot["setup_paired"], snapshot["setup_after_unpair"]) == (False, False)
+    # A file from an older add-on has only the in_progress key.
+    setup_panel.onboarding_file.write_text('{"in_progress": true}')
+    old = Panel(setup_panel.ha, setup_panel.installer, ROOT, esphome_dir=tmp_path)
+    assert (old.first_setup, old.setup_paired, old.setup_after_unpair) == (True, False, False)
+
+
+async def test_an_unreadable_onboarding_file_keeps_pairing_locked(setup_panel, tmp_path):
+    await setup_panel.perform({"action": "setup", "proxy": "sensor.proxy_ble_adv_proxy_name"})
+    setup_panel.onboarding_file.write_text("{damaged")
+    restarted = Panel(setup_panel.ha, setup_panel.installer, ROOT, esphome_dir=tmp_path)
+    assert restarted.first_setup is False
+    with pytest.raises(ValueError, match="already paired"):
+        await restarted.perform({"action": "pair", "confirm": True})
+
+
+async def test_the_restart_notice_clears_when_the_installed_version_runs(panel):
+    panel.ha.states = {
+        "light.renamed": {"state": "on", "attributes": {"integration_version": "0.1.0"}}
+    }
+    panel.installer.pending_restart = True
+    panel.installer.mark_restarted = lambda: setattr(panel.installer, "pending_restart", False)
+    panel.connected()
+    panel.connected()  # A reconnect alone is not a restart.
+    assert panel.restart_required()
+    panel.ha.states["light.renamed"]["attributes"]["integration_version"] = "0.2.0"
+    panel.check_restarted()
+    assert not panel.installer.pending_restart
+    assert not panel.restart_required()
+    # With no light yet, only a new connection can show that Home Assistant restarted.
+    panel.installer.pending_restart = True
+    panel.ha.registry = []
+    panel.ever_connected = False
+    panel.connected()
+    assert panel.installer.pending_restart
+    panel.connected()
+    assert not panel.installer.pending_restart
+
+
+async def test_wrong_value_types_get_a_short_400(panel, aiohttp_client):
+    client = await aiohttp_client(panel.app())
+    for body in ({"action": ["toggle"]}, {"action": {"name": "toggle"}}):
+        response = await client.post(
+            "/api/action", json=body, headers={"X-Skylight-CSRF": panel.csrf}
+        )
+        assert response.status == 400
+        assert "wrong type" in (await response.json())["error"]
+    assert not panel.ha.calls
+
+
+async def test_an_install_error_is_shown_and_the_page_keeps_working(panel):
+    panel.installer.error = "The integration was not installed: disk full"
+    snapshot = panel.snapshot()
+    assert snapshot["install_error"] == "The integration was not installed: disk full"
+    assert snapshot["error"] == snapshot["install_error"]
+
+
+async def test_a_card_that_fails_to_save_is_reported_and_not_offered_again(panel, monkeypatch):
+    from skylight_addon import dashboards
+    from skylight_addon.server import CARD_ENTITIES
+
+    panel.ha.registry = [
+        {"entity_id": entity, "unique_id": unique, "platform": "philips_skylight"}
+        for entity, unique in CARD_ENTITIES.items()
+    ]
+    panel.ha.states = {"light.philips_skylight": panel.ha.states["light.renamed"]}
+
+    async def update_cards(ha, switch, card):
+        return {"updated": ["Kitchen"], "failed": ["Overview"]}
+
+    async def outdated_cards(ha, switch, card):
+        return [{"url_path": None, "title": "Overview"}, {"url_path": "x", "title": "Hall"}]
+
+    async def panel_url(match):
+        return None
+
+    panel.ha.panel_url = panel_url
+    monkeypatch.setattr(dashboards, "update_cards", update_cards)
+    monkeypatch.setattr(dashboards, "outdated_cards", outdated_cards)
+    with pytest.raises(HAError, match="Card updated on Kitchen.*did not save Overview"):
+        await panel.perform({"action": "update_card"})
+    await panel.check()
+    assert panel.outdated_cards == ["Hall"]
 
 
 async def test_setup_checks_report_device_builder_proxy_and_connection(setup_panel, tmp_path):
@@ -683,3 +798,33 @@ async def test_a_proxy_from_a_ready_made_package_is_listed(setup_panel, tmp_path
     ]
     await setup_panel.check()
     assert [node["node"] for node in setup_panel.esphome_nodes()] == ["apollo-msr-2-404a74"]
+
+
+async def test_firmware_goes_onto_a_proxy_found_only_through_home_assistant(
+    setup_panel, tmp_path
+):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    (tmp_path / "sensor.yaml").write_text(
+        "esphome:\n  name: apollo-msr-2\npackages:\n  apollo: github://a/b.yaml\n"
+    )
+    setup_panel.ha.bluetooth_entries = [{"title": "apollo-msr-2 (88:56:A6:40:4A:76)"}]
+    await setup_panel.check()
+    result = await setup_panel.perform({"action": "prepare_firmware", "file": "sensor.yaml"})
+    assert result["changed"] is True
+    (tmp_path / "skylight-transmitter.yaml").write_text("# older package\n")
+    assert (await setup_panel.perform({"action": "update_firmware"}))["changed"] is True
+
+
+def test_a_snapshot_reads_the_esphome_folder_once(setup_panel, monkeypatch):
+    from skylight_addon import esphome_files
+
+    reads = []
+    original = esphome_files.list_nodes
+    monkeypatch.setattr(
+        esphome_files, "list_nodes", lambda *args: reads.append(1) or original(*args)
+    )
+    setup_panel.snapshot()
+    assert len(reads) == 1
