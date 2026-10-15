@@ -407,3 +407,22 @@ test("a proxy with the firmware files but no install shows only the install step
   assert.equal(element("proxy-install").hidden, false);
   assert.equal(element("proxy-node").textContent, "bluetooth-proxy-1 (esphome-web-ece638)");
 });
+
+
+test("dashboard results show next to the dashboard buttons", async () => {
+  const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
+    proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
+  const {element, press, context} = await page(source);
+  context.fetch = async (url, init) => init?.method === "POST"
+    ? {ok: true, json: async () => ({ok: true, created: true, url: "/skylight-control/panel"})}
+    : {ok: true, json: async () => structuredClone(source)};
+  await press({action: "create_dashboard"});
+  assert.equal(element("dashboard-result").hidden, false);
+  assert.equal(element("dashboard-result").textContent, "Dashboard created.");
+  context.fetch = async (url, init) => init?.method === "POST"
+    ? {ok: false, json: async () => ({ok: false, error: "Dashboard changed. Refresh the dashboard choices before adding the card"})}
+    : {ok: true, json: async () => structuredClone(source)};
+  await press({action: "create_dashboard"});
+  assert.equal(element("dashboard-result").className, "result error");
+  assert.match(element("dashboard-result").textContent, /Dashboard changed/);
+});

@@ -187,3 +187,17 @@ async def test_only_the_skylight_card_shape_matches():
 async def test_automatic_dashboards_are_skipped():
     ha = ManyDashboardsHA({None: {"strategy": {"type": "original-states"}}})
     assert await dashboards.outdated_cards(ha, SWITCH, skylight_card("new")) == []
+
+
+async def test_a_view_with_sections_but_no_type_gets_a_new_section():
+    # Home Assistant shows such a view as sections and hides its old card list.
+    view = {"title": "Home", "sections": [{"type": "grid", "cards": []}]}
+    ha = DashboardHA({"views": [view]})
+    card = {"type": "tile", "entity": "light.skylight"}
+    result = await add_card(ha, "my-home", 0, revision(ha.config), card)
+    assert result["added"] is True
+    saved = ha.config["views"][0]
+    assert "cards" not in saved
+    assert saved["sections"][-1] == {"type": "grid", "cards": [card]}
+    assert dashboards.view_type({"cards": []}) == "masonry"
+    assert dashboards.view_type({"type": "panel", "sections": []}) == "panel"

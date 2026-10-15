@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.17
+
+- **Add to a dashboard** puts the card in a new section when the view has
+  sections but names no view type. Home Assistant shows such a view as a
+  sections view. Before, the card went into the view's old card list, which
+  shows only while you edit the dashboard.
+- The result of **Create a Skylight dashboard** and **Add the card** shows right
+  under the buttons, as well as in the notice bar at the top.
+- The install guidance says that Device Builder builds the firmware on the
+  computer that runs Home Assistant.
+
 ## 0.4.16
 
 - When a proxy already has the Skylight firmware files but no install yet, the

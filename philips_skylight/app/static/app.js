@@ -292,6 +292,16 @@ const results = {
   update_firmware: () => "Firmware files updated. Now install them on the proxy.",
   update_card: (body, result) => result.updated?.length ? "Card updated on " + result.updated.join(", ") + "." : "The card is already current.",
 };
+// The notice bar sits at the top of the page. A result from further down also
+// shows next to the button that caused it, where the user is looking.
+const BESIDE = {create_dashboard: "dashboard-result", add_card: "dashboard-result"};
+function besideButton(kind, message, error) {
+  const id = BESIDE[kind];
+  if (!id) return;
+  el(id).textContent = message;
+  el(id).className = "result" + (error ? " error" : "");
+  show(id, Boolean(message));
+}
 async function action(body) {
   if (busy) return;
   busy = true;
@@ -308,7 +318,9 @@ async function action(body) {
       el("dashboard-link").href = result.url;
       el("dashboard-link").hidden = false;
     }
-    notice(results[body.action] ? results[body.action](body, result) : "");
+    const message = results[body.action] ? results[body.action](body, result) : "";
+    notice(message);
+    besideButton(body.action, message, false);
     if (body.action === "prepare_firmware") {
       preparedNode = (state?.esphome_nodes || []).find((node) => node.file === body.file)?.node || body.file;
     }
@@ -322,7 +334,7 @@ async function action(body) {
   } catch (error) {
     // Home Assistant can drop the request as it shuts down for the restart.
     if (body.action === "restart") { restarting = true; notice(""); }
-    else notice(error.message, true);
+    else { notice(error.message, true); besideButton(body.action, error.message, true); }
   }
   finally { busy = false; await refresh(); }
 }

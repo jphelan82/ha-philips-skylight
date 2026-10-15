@@ -38,6 +38,14 @@ async def load_dashboard(ha, path):
     return await ha.request("lovelace/config", url_path=path, force=True)
 
 
+def view_type(view):
+    """The view's layout. Home Assistant treats a view with sections as a sections
+    view even when it names no type, so the card must go into a section there."""
+    if view.get("type"):
+        return view["type"]
+    return "sections" if "sections" in view else "masonry"
+
+
 def editable_views(config):
     if config.get("strategy"):
         return []  # Never take control of an automatically generated dashboard.
@@ -45,7 +53,7 @@ def editable_views(config):
         {"index": index, "title": view.get("title", f"View {index + 1}")}
         for index, view in enumerate(config.get("views", []))
         if not view.get("strategy")
-        and view.get("type", "masonry") in ("sections", "masonry", "sidebar")
+        and view_type(view) in ("sections", "masonry", "sidebar")
     ]
 
 
@@ -106,7 +114,7 @@ async def add_card(ha, path, index, expected_revision, card):
 
     if contains(view):
         return {"url": f"/{path}/{view.get('path', index)}", "added": False}
-    if view.get("type") == "sections":
+    if view_type(view) == "sections":
         view.setdefault("sections", []).append({"type": "grid", "cards": [card]})
     else:
         view.setdefault("cards", []).append(card)
