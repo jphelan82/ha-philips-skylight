@@ -172,7 +172,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             blocking=True,
         )
         await hass.config_entries.async_entries(DOMAIN)[0].runtime_data.pairing_task
-    assert len(calls) == 31
+    assert len(calls) == 21
     assert hass.states.get(entity_id).state == "unknown"
     assert hass.states.get(recorded_scene).state == "Unknown"
     # Native dashboard correction entities update only the recorded state.
@@ -201,7 +201,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         )
         assert hass.states.get(recorded_scene).state == "Unknown"
         assert hass.states.get(entity_id).attributes["assumed_effect"] is None
-        assert len(calls) == 31
+        assert len(calls) == 21
     with pytest.raises(HomeAssistantError, match="not valid"):
         await hass.services.async_call(
             "select",
@@ -210,7 +210,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             blocking=True,
         )
     assert hass.states.get(recorded_scene).state == "Unknown"
-    assert len(calls) == 31
+    assert len(calls) == 21
     correction_mode = registry.async_get_entity_id(
         "switch", DOMAIN, "factory_mesh_7ffe_state_correction"
     )
@@ -222,7 +222,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
     assert hass.states.get(correction_mode).state == "on"
     assert hass.states.get(entity_id).state == "off"
     assert hass.states.get(recorded_scene).state == "Unknown"
-    assert len(calls) == 31
+    assert len(calls) == 21
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "unavailable")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "unavailable"
@@ -232,7 +232,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         "switch", "turn_off", {"entity_id": correction_mode}, blocking=True
     )
     assert hass.states.get(correction_mode).state == "off"
-    assert len(calls) == 31
+    assert len(calls) == 21
     hass.states.async_set(DATA[CONF_PROXY_ENTITY], "skylight-proxy")
     await hass.async_block_till_done()
     # A short drop keeps the recorded power.
@@ -259,14 +259,14 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         DOMAIN, "skip_sequence", {"entity_id": entity_id, "confirm": True}, blocking=True
     )
     assert await controller.sequence.async_next() == 512 + 0x100000
-    assert len(calls) == 31
+    assert len(calls) == 21
 
     # Set auto rhythm start sends the captured E0 command and is not a mode.
     rhythm = "button.philips_skylight_set_auto_rhythm_start"
     assert registry.async_get(rhythm).unique_id == "factory_mesh_7ffe_set_rhythm_start"
     effect = hass.states.get(entity_id).attributes["effect"]
     await hass.services.async_call("button", "press", {"entity_id": rhythm}, blocking=True)
-    assert len(calls) == 32
+    assert len(calls) == 22
     (message,) = MeshCodec().decode(bytes.fromhex(calls[-1].data["raw"]))
     assert message.payload == command_payload(RHYTHM_START, message.payload[3])
     assert identify_command(message.payload) == RHYTHM_START
@@ -278,7 +278,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
         await hass.services.async_call(
             DOMAIN, "unpair_all_remotes", {"entity_id": entity_id, "confirm": False}, blocking=True
         )
-    assert len(calls) == 32
+    assert len(calls) == 22
     with monkeypatch.context() as timing:
         timing.setattr("custom_components.philips_skylight.controller.asyncio.sleep", no_wait)
         await hass.services.async_call(
@@ -288,8 +288,8 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             blocking=True,
         )
         await controller.pairing_task
-    assert len(calls) == 62
-    for call in calls[32:]:
+    assert len(calls) == 42
+    for call in calls[22:]:
         (message,) = MeshCodec().decode(bytes.fromhex(call.data["raw"]))
         assert message.payload[:3] == bytes.fromhex("cf1102")
         assert message.payload[4:] == b"\x02" + b"\x11" * 6
@@ -317,7 +317,7 @@ async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):
             assert result["type"] == "abort"  # The dialog closes at once.
             assert result["reason"] == f"{step}_sent"
             await controller.pairing_task
-        assert len(calls) == before + 30  # Three requests a second for 10 seconds.
+        assert len(calls) == before + 20  # Two requests a second for 10 seconds, like the remote.
         (message,) = MeshCodec().decode(bytes.fromhex(calls[-1].data["raw"]))
         assert message.payload[4] == sub_command
     assert await hass.config_entries.async_unload(entry.entry_id)

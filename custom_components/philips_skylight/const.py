@@ -1,7 +1,7 @@
 """Configuration and protocol constants."""
 
 DOMAIN = "philips_skylight"
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 CONF_TRANSMIT_SERVICE = "transmit_service"
 CONF_PROXY_ENTITY = "proxy_entity"
 RECEIVE_EVENT = "esphome.ble_adv.raw_adv"
@@ -34,5 +34,7 @@ SEQUENCE_SKIP = 0x100000
 # A pairing or unpair-all request repeats for this long, like the remote's 10-second
 # hold. A much longer stream of requests makes the panel drop the other remote.
 PAIRING_BURST = 10
+# The remote sends its pairing request about twice a second while the button is held.
+PAIRING_RATE = 2
 # Keep the recorded power and mode if the proxy comes back within this many seconds.
 OUTAGE_GRACE = 60

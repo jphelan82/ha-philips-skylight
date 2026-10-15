@@ -43,7 +43,7 @@ Each command is a vendor message with company ID `0x0211` (Telink Semiconductor)
 | Rest | `C9 11 02 TT 04 FF 05 41` | |
 | Auto rhythm | `C9 11 02 TT 04 FF 06 41` | |
 | Set auto rhythm start (hold Auto rhythm and Relax together) | `E0 11 02 TT 00` | Opcode `E0` with one parameter byte. The remote sent it three times in about a second, each with a new `TT`, and the panel relayed each one. The panel blinks. The manual says this sets the current time as the start of the Auto rhythm schedule. One command from `0x7FFE` is enough. Captured and tested 2026-10-13. |
-| Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11` | The remote repeats it about twice a second, with a new `TT` each time, for the whole hold. Six `11` parameter bytes follow `01`. The complete access payload is 11 bytes. Home Assistant sends it 30 times over 10 seconds. |
+| Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11` | The remote repeats it about twice a second, with a new `TT` each time, for the whole hold. Six `11` parameter bytes follow `01`. The complete access payload is 11 bytes. Home Assistant sends it the same way: twice a second for 10 seconds, 20 requests. A capture on 2026-10-12 showed the remote's hold at about two requests a second. |
 | Unpair all (no remote gesture known) | `CF 11 02 TT 02 11 11 11 11 11 11` | The pairing request with `02` in place of `01`. Inside the pairing window, it makes the panel blink and forget every paired sender. Outside the window, it switches the panel off and changes no pairing. Tested 2026-10-13. |
 | Nothing found | `CF 11 02 TT 00 11 11 11 11 11 11` | No visible effect and no change to pairing, both right after power-on and at other times. Tested 2026-10-13. |
 

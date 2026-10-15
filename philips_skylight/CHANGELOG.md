@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.18
+
+- Integration 0.3.3: pairing and **Unpair all** send their request twice a
+  second for 10 seconds, like the remote's own pairing hold. Before, Home
+  Assistant sent three a second. On 2026-10-15, a pairing at three a second
+  made the panel drop the wall remote. This update needs a Home Assistant
+  restart.
+
 ## 0.4.17
 
 - **Add to a dashboard** puts the card in a new section when the view has

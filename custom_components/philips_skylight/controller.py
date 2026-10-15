@@ -16,6 +16,7 @@ from .const import (
     DOMAIN,
     HOLD_INTERVAL,
     PAIRING_BURST,
+    PAIRING_RATE,
     RECEIVE_EVENT,
     STORAGE_KEY,
 )
@@ -138,7 +139,7 @@ class SkylightController:
         self.state.last_command = label
         self.notify()
         self.pairing_task = self.hass.async_create_background_task(
-            self._async_repeat(payload_builder, round(duration * 3)), f"Skylight {label}"
+            self._async_repeat(payload_builder, round(duration * PAIRING_RATE)), f"Skylight {label}"
         )
 
     async def _async_repeat(self, payload_builder: Callable[[int], bytes], count: int) -> None:
@@ -150,7 +151,7 @@ class SkylightController:
                         await self._async_transmit_locked(payload_builder, repeat=1)
                 except HomeAssistantError:
                     _LOGGER.debug("Skylight pairing request not sent", exc_info=True)
-                await asyncio.sleep(1 / 3)
+                await asyncio.sleep(1 / PAIRING_RATE)
         finally:
             # Neither the requests nor their end confirm pairing or power.
             self.pairing_until = None

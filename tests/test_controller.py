@@ -180,8 +180,8 @@ async def test_pairing_requires_confirmation_and_uses_durable_sequences(hass, mo
     assert light.extra_state_attributes["pairing_until"] is not None
     await controller.pairing_task
     assert light.extra_state_attributes["pairing_until"] is None
-    assert len(calls) == 30
-    assert pauses == [1 / 3] * 30
+    assert len(calls) == 20  # Like the remote: twice a second for 10 seconds.
+    assert pauses == [1 / 2] * 20
     for sequence, call in enumerate(calls):
         assert call.data["repeat"] == 1
         assert call.data["duration"] == 100
@@ -214,10 +214,10 @@ async def test_pairing_keeps_trying_through_failures_without_reporting_success(
     controller.state.is_on = True
     await controller.async_pair()
     await controller.pairing_task
-    assert len(calls) == 30  # A short proxy drop does not end the burst.
+    assert len(calls) == 20  # A short proxy drop does not end the burst.
     assert controller.state.is_on is None
     assert controller.state.effect is None
-    assert await controller.sequence.async_next() == 30
+    assert await controller.sequence.async_next() == 20
 
 
 async def test_unload_stops_a_running_burst(hass):
