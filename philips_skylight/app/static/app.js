@@ -7,6 +7,10 @@ let state = null;
 // while a restart was pending. Either way, failed requests are expected.
 let restarting = false;
 let pairStage = "pair";
+// Start over: ready → wait (unpair running) → ask (did it blink?) → remote.
+let unpairStage = "ready";
+let unpairSeen = false;
+let unpairStarted = 0;
 let lastRemaining = 0;
 let preparedNode = null;
 // What the last status showed, so the page can say when an install has finished.
@@ -146,6 +150,10 @@ function renderChecks(checks, visible) {
 // Restart needs the connection to Home Assistant, and Install does not.
 function buttonDisabled(kind, data) {
   if (busy) return true;
+  // Start over: only the current step's buttons work.
+  if (kind === "unpair_all" && unpairStage !== "ready") return true;
+  if (kind === "unpair_blinked" && unpairStage !== "ask") return true;
+  if (kind === "start_over" && unpairStage !== "remote") return true;
   if (kind === "install") return false;
   if (kind === "restart") return !data.connected;
   return !data.connected || data.restart_required;
@@ -205,8 +213,20 @@ function render(data) {
   const unpairing = data.last_command === "unpair all";
   if (lastRemaining && !remaining && !setupDone && pairStage === "pair" && !unpairing) pairStage = "test";
   // The unpair runs from Start over, far down the page, so its countdown shows there.
-  if (unpairing && remaining) besideButton("unpair_all", "Unpairing… " + remaining + " s. The panel blinks when it unpairs.", false);
-  if (unpairing && lastRemaining && !remaining) besideButton("unpair_all", "Unpair finished. If the panel blinked, pair your remote now, then select Continue. If it did not blink, switch the power off and on, then select Unpair all again.", false);
+  if (unpairStage === "wait") {
+    if (unpairing && remaining) {
+      unpairSeen = true;
+      besideButton("unpair_all", "Unpairing… " + remaining + " s. The panel blinks when it unpairs.", false);
+    } else if (unpairSeen || Date.now() - unpairStarted > 15000) {
+      unpairStage = "ask";
+      besideButton("unpair_all", "", false);
+    }
+  }
+  const unpairAt = {ready: 1, wait: 1, ask: 2, remote: 3}[unpairStage];
+  [1, 2, 3].forEach((n) => {
+    el("unpair-" + n).className = n < unpairAt ? "done" : n > unpairAt ? "later" : "";
+    el("unpair-" + n + "-status").textContent = n < unpairAt ? "✓" : "";
+  });
   lastRemaining = remaining;
   show("pair-wait", remaining > 0 && !unpairing);
   el("pair-countdown").textContent = "Pairing… " + remaining + " s";
@@ -290,7 +310,7 @@ const results = {
   create_dashboard: (body, result) => result.created ? "Dashboard created." : "You already have a Skylight dashboard.",
   add_card: (body, result) => result.added ? "Card added." : "That view already has the card.",
   skip_sequence: () => "Counter moved forward. Try the power button above.",
-  unpair_all: () => "Unpairing for 10 seconds. The panel blinks when it unpairs.",
+  unpair_all: () => "",
   start_over: () => "Home Assistant pairs next. Follow the setup steps at the top of this page.",
   rhythm_start: () => "Schedule started. The panel blinks.",
   update_firmware: () => "Firmware files updated. Now install them on the proxy.",
@@ -333,8 +353,8 @@ async function action(body) {
     if (body.action === "confirm_test") pairStage = body.result === "none" ? "pair" : "mode";
     if (body.action === "finish_setup") pairStage = "pair";
     if (body.action === "skip_sequence") el("skip-confirm").checked = false;
-    if (body.action === "unpair_all") el("unpair-confirm").checked = false;
-    if (body.action === "start_over") { pairStage = "pair"; el("setup").scrollIntoView({behavior: "smooth"}); }
+    if (body.action === "unpair_all") { el("unpair-confirm").checked = false; unpairStage = "wait"; unpairSeen = false; unpairStarted = Date.now(); }
+    if (body.action === "start_over") { pairStage = "pair"; unpairStage = "ready"; el("setup").scrollIntoView({behavior: "smooth"}); }
     if (body.action === "add_card") await loadViews();
   } catch (error) {
     // Home Assistant can drop the request as it shuts down for the restart.
@@ -438,6 +458,13 @@ document.addEventListener("click", (event) => {
   if ((kind === "skip_sequence" && !el("skip-confirm").checked) || (kind === "unpair_all" && !el("unpair-confirm").checked)) {
     notice("Tick the box first.", true);
     return besideButton(kind, "Tick the box first.", true);
+  }
+  if (kind === "unpair_blinked") {
+    const blinked = button.dataset.blinked === "yes";
+    unpairStage = blinked ? "remote" : "ready";
+    besideButton("unpair_all", blinked ? "" : "The panel did not unpair. Switch the power off and on, wait until it is back on, then select Unpair all straight away.", !blinked);
+    if (state) render(state);
+    return;
   }
   if (kind === "connect") return action(connectBody(button));
   if (kind === "prepare_firmware") return el("node-choice").value

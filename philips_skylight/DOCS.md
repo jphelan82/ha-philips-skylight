@@ -138,8 +138,8 @@ The panel accepts a pairing request only for a short time after it comes back on
    seconds, and the panel blinks.
 
 Home Assistant sends a short burst, like the remote's own 10-second hold. A long
-stream of requests makes the panel drop your remote. Your remote stays paired.
-Pairing never happens by itself.
+stream of requests makes the panel drop your remote. Your remote normally stays
+paired, but not always. Pairing never happens by itself.
 
 If your wall remote stops working after Home Assistant pairs, pair the remote
 again first: switch the panel's power off and on, wait until it is back on, then

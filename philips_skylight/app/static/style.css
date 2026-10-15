@@ -67,6 +67,8 @@ select, input:not([type=checkbox]) {
 .steps > li:first-child { border-top: 0; padding-top: 0; }
 .steps > li.done h3 { color: var(--done); }
 .steps > li.done > div, .steps > li.done > p { display: none; }
+.steps > li.done > label, .steps > li.done > button { display: none; }
+.steps > li.later { opacity: 0.55; }
 .status { font-weight: 400; color: var(--muted); }
 .done .status { color: var(--done); }
 details.plain { border-top: 1px solid var(--line); padding: 12px 0; }

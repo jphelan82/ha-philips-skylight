@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.21
+
+- **Start over** is a numbered list of three steps, like the setup checklist.
+  Each step has its own button, and only the current step's buttons work:
+  1. Switch the power off and on, then select **Unpair all**. The checkbox now
+     says "The panel just came back on".
+  2. Say whether the panel blinked. If it did not, the page goes back to step 1.
+  3. Pair your remote, then select **Continue**.
+- The 0.4.20 changes reach users with this version.
+
 ## 0.4.20
 
 - **Start over** shows its messages under its own buttons. Before, the result

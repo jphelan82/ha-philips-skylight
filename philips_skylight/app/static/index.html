@@ -147,14 +147,24 @@
     <details class="plain" id="fix-pair"><summary>Start over</summary>
       <p>If only your wall remote stopped working, pair the remote again first: switch the panel's power off and on, wait until it is back on, then hold the remote's power button for 10 seconds. Home Assistant keeps working.</p>
       <p>Home Assistant is paired. Pairing it again can make the panel drop your remote, so start over instead. This removes every remote, Home Assistant included, and then pairs them again in the right order.</p>
-      <ol>
-        <li>Switch the panel's power off at its light switch or breaker, then on again.</li>
-        <li>Wait until the panel is back on. Then select <strong>Unpair all</strong> straight away. The panel blinks. If it only switches off, the request came too late. Try again.</li>
-        <li>Pair your remote: switch the power off and on, wait until the panel is back on, then hold the remote's power button for 10 seconds until the panel blinks.</li>
-        <li>Select <strong>Continue</strong>. The setup checklist pairs Home Assistant.</li>
+      <ol class="steps" id="unpair-steps">
+        <li id="unpair-1">
+          <h3>Unpair every remote <span class="status" id="unpair-1-status"></span></h3>
+          <p>Switch the panel's power off at its light switch or breaker, then on again. Wait until the panel is back on. Then select <strong>Unpair all</strong> straight away.</p>
+          <label class="check"><input id="unpair-confirm" type="checkbox">The panel just came back on. Remove every remote, and I will pair my remote again.</label>
+          <button data-action="unpair_all" class="primary">Unpair all</button>
+        </li>
+        <li id="unpair-2">
+          <h3>Check the panel <span class="status" id="unpair-2-status"></span></h3>
+          <p>Did the panel blink?</p>
+          <div class="row"><button data-action="unpair_blinked" data-blinked="yes">It blinked</button><button data-action="unpair_blinked" data-blinked="no">It did not blink</button></div>
+        </li>
+        <li id="unpair-3">
+          <h3>Pair your remote, then Home Assistant <span class="status" id="unpair-3-status"></span></h3>
+          <p>Switch the power off and on, wait until the panel is back on, then hold the remote's power button for 10 seconds until the panel blinks. Then select <strong>Continue</strong>. The setup checklist at the top pairs Home Assistant.</p>
+          <button data-action="start_over" class="primary">Continue</button>
+        </li>
       </ol>
-      <label class="check"><input id="unpair-confirm" type="checkbox">Remove every remote. I will pair my remote again.</label>
-      <div class="row"><button data-action="unpair_all">Unpair all</button><button data-action="start_over">Continue</button></div>
       <p class="result" id="fix-pair-result" hidden></p>
     </details>
     <details class="plain" id="fix-proxy"><summary>Change the Bluetooth proxy</summary>
