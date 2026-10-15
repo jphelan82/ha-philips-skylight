@@ -605,7 +605,7 @@ class Panel:
             raise ValueError("Confirm that the panel just came back on")
         if not self.first_setup:
             # Pairing Home Assistant again can make the panel drop the remote.
-            raise ValueError("Home Assistant is already paired. To pair again, use Start over.")
+            raise ValueError("Home Assistant is already paired. To pair again, use Settings and fixes → Unpair remotes.")
         # Returns at once; the integration sends the request for 10 seconds.
         await self.ha.call(DOMAIN, "pair_transmitter", entity, confirm=True)
 

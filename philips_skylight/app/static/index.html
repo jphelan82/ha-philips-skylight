@@ -144,9 +144,9 @@
       <div class="row"><button data-action="sync_power" data-on="yes">Panel is on</button><button data-action="sync_power" data-on="no">Panel is off</button></div>
       <label>Mode<select id="observed-mode"></select></label>
     </details>
-    <details class="plain" id="fix-pair"><summary>Start over</summary>
+    <details class="plain" id="fix-pair"><summary>Unpair remotes</summary>
       <p>If only your wall remote stopped working, pair the remote again first: switch the panel's power off and on, wait until it is back on, then hold the remote's power button for 10 seconds. Home Assistant keeps working.</p>
-      <p>Home Assistant is paired. Pairing it again can make the panel drop your remote, so start over instead. This removes every remote, Home Assistant included, and then pairs them again in the right order.</p>
+      <p>Home Assistant is paired. Pairing it again can make the panel drop your remote, so unpair the remotes instead. This removes every remote, Home Assistant included, and then pairs them again in the right order.</p>
       <ol class="steps" id="unpair-steps">
         <li id="unpair-1">
           <h3>Unpair every remote <span class="status" id="unpair-1-status"></span></h3>
@@ -176,9 +176,6 @@
         <label>Name sensor<select id="proxy"></select></label>
         <button data-action="connect" data-from="advanced">Save</button>
       </details>
-    </details>
-    <details class="plain"><summary>Unpair all remotes</summary>
-      <p>This makes the panel forget every remote, Home Assistant included. Use <strong>Start over</strong> above. It unpairs everything and pairs your remote and Home Assistant again.</p>
     </details>
     <details class="plain"><summary>The panel ignores Home Assistant after a backup restore</summary>
       <p>An older backup has an older command counter, and the panel ignores old numbers. Moving the counter forward fixes this. It sends nothing to the panel.</p>

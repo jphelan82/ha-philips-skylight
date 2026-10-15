@@ -7,7 +7,7 @@ let state = null;
 // while a restart was pending. Either way, failed requests are expected.
 let restarting = false;
 let pairStage = "pair";
-// Start over: ready → wait (unpair running) → ask (did it blink?) → remote.
+// Unpair remotes: ready → wait (unpair running) → ask (did it blink?) → remote.
 let unpairStage = "ready";
 let unpairSeen = false;
 let unpairStarted = 0;
@@ -150,7 +150,7 @@ function renderChecks(checks, visible) {
 // Restart needs the connection to Home Assistant, and Install does not.
 function buttonDisabled(kind, data) {
   if (busy) return true;
-  // Start over: only the current step's buttons work.
+  // Unpair remotes: only the current step's buttons work.
   if (kind === "unpair_all" && unpairStage !== "ready") return true;
   if (kind === "unpair_blinked" && unpairStage !== "ask") return true;
   if (kind === "start_over" && unpairStage !== "remote") return true;
@@ -212,7 +212,7 @@ function render(data) {
   const remaining = data.pairing_remaining || 0;
   const unpairing = data.last_command === "unpair all";
   if (lastRemaining && !remaining && !setupDone && pairStage === "pair" && !unpairing) pairStage = "test";
-  // The unpair runs from Start over, far down the page, so its countdown shows there.
+  // The unpair runs from Unpair remotes, far down the page, so its countdown shows there.
   if (unpairStage === "wait") {
     if (unpairing && remaining) {
       unpairSeen = true;

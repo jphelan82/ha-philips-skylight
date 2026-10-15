@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.22
+
+- **Settings and fixes → Start over** is now called **Unpair remotes**.
+- The separate **Unpair all remotes** section on the add-on page is gone. It
+  only pointed to **Start over**.
+
 ## 0.4.21
 
 - **Start over** is a numbered list of three steps, like the setup checklist.

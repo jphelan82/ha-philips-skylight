@@ -48,8 +48,9 @@ I have tried to make the setup of this as easy as possible, although it required
   you see. This changes only the record and sends nothing to the panel.
 - **Automations, scripts and scenes.** Use the light, the mode buttons and the
   `philips_skylight.dim` action like any other device.
-- **Pairing and unpairing.** Pair Home Assistant with the panel, unpair every
-  remote, or start over, from the add-on page or the integration's settings.
+- **Pairing and unpairing.** Pair Home Assistant with the panel, or unpair
+  every remote and pair them again, from the add-on page or the integration's
+  settings.
 - **A ready-made dashboard card.** It uses the remote's icons and colors, and
   the top tile glows in the current mode's color. It is built from Home
   Assistant's own cards, so it needs no custom card or HACS (the Home Assistant
@@ -295,7 +296,7 @@ action.
 
 Pair Home Assistant only once. Pairing it again can make the panel drop your
 remote, so the add-on page refuses it after setup. To pair again, use **Settings
-and fixes → Start over** on the add-on page. It unpairs every remote, has you
+and fixes → Unpair remotes** on the add-on page. It unpairs every remote, has you
 pair your remote first, and then pairs Home Assistant through the setup
 checklist.
 
@@ -360,8 +361,8 @@ changed.
 | Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
 | The dashboard shows Unknown, or the wrong power or mode | Use **Correct** and record what you see. |
 | The card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
-| Your wall remote stops working after setup | Pair your wall remote again first: switch the panel's power off and on at its light switch or breaker, wait until it is back on, then hold the remote's power button for 10 seconds until the panel blinks. Home Assistant keeps working. If that does not help, use **Settings and fixes → Start over** on the add-on page. It unpairs every remote, then pairs your wall remote and Home Assistant again, in that order. |
-| The panel ignores every command | Check that the proxy is online. If the panel still ignores Home Assistant, use **Settings and fixes → Start over** on the add-on page. Do not pair Home Assistant a second time: the panel can drop your remote. |
+| Your wall remote stops working after setup | Pair your wall remote again first: switch the panel's power off and on at its light switch or breaker, wait until it is back on, then hold the remote's power button for 10 seconds until the panel blinks. Home Assistant keeps working. If that does not help, use **Settings and fixes → Unpair remotes** on the add-on page. It unpairs every remote, then pairs your wall remote and Home Assistant again, in that order. |
+| The panel ignores every command | Check that the proxy is online. If the panel still ignores Home Assistant, use **Settings and fixes → Unpair remotes** on the add-on page. Do not pair Home Assistant a second time: the panel can drop your remote. |
 | Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
 | An update asks for a restart | Restart Home Assistant from the add-on page. |
 | An install or update fails with "not enough free space" | Home Assistant needs about 2 GB free to install any app. Delete old local backups. |
