@@ -395,3 +395,15 @@ test("proxies show their friendly name, and the badge waits for a Skylight proxy
   assert.equal(element("connection").hidden, false);
   assert.equal(element("connection").textContent, "Proxy online");
 });
+
+
+test("a proxy with the firmware files but no install shows only the install step", async () => {
+  const source = {...base(), esphome_nodes: [
+    {file: "apollo.yaml", node: "apollo", friendly_name: "Apollo MSR-2", has_skylight: false},
+    {file: "proxy.yaml", node: "esphome-web-ece638", friendly_name: "bluetooth-proxy-1", has_skylight: true},
+  ]};
+  const {element} = await page(source);
+  assert.equal(element("proxy-firmware").hidden, true);
+  assert.equal(element("proxy-install").hidden, false);
+  assert.equal(element("proxy-node").textContent, "bluetooth-proxy-1 (esphome-web-ece638)");
+});

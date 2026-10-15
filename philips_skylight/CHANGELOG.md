@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.16
+
+- When a proxy already has the Skylight firmware files but no install yet, the
+  first setup step shows only the install instruction for that proxy. Before,
+  it also listed the other proxies, which suggested a choice was still open.
+
 ## 0.4.15
 
 - **Open ESPHome Device Builder** is larger and sits right under the install

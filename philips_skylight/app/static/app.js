@@ -181,7 +181,8 @@ function render(data) {
     notice("The proxy is back with the Skylight firmware. The install is complete.");
   }
   lastProxyReady = proxyReady;
-  show("proxy-firmware", !proxyReady && nodes.some((node) => !node.has_skylight) && !preparedNode);
+  // Once a proxy has the firmware files, the only step left is its install.
+  show("proxy-firmware", !proxyReady && nodes.some((node) => !node.has_skylight) && !preparedNode && waiting.length === 0);
   options("node-choice", nodes.filter((node) => !node.has_skylight).map((node) => ({value: node.file, name: nodeLabel(node.node)})), "Choose a proxy");
   const installNode = preparedNode || (waiting.length === 1 ? waiting[0].node : null);
   show("proxy-install", !proxyReady && Boolean(installNode));
