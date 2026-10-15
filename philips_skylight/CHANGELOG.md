@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.10
+
+- The install guidance says that the first firmware build can take up to 15
+  minutes. A full rebuild took 13 minutes on the test system.
+- The example log line shows the real format, with milliseconds:
+  `[12:00:01.234][D]`.
+
 ## 0.4.9
 
 - Clearer guidance on when a firmware install is done. The add-on page is the

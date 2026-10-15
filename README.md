@@ -16,10 +16,9 @@ This allows Home Assistant to treat the device as a light entity, enabling you t
 Home Assistant talks to the panel through an [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/). 
 
 
-I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) and will guide you through all the requisite steps necessary to get the add-on set up.
+I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your [bluetooth-proxy](https://esphome.io/components/bluetooth_proxy/) and will guide you through all the requisite steps necessary to get the add-on set up.
 
-> **AI disclosure:** I built this project with AI coding agents. Claude Opus 5.5 decoded the remote's Bluetooth protocol, using the [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) to capture its messages during pairing and button presses. Codex did further development, and Opus did the refactoring and final implementation. I'm a software developer. I wrote the specifications and reviewed the code, but not with the scrutiny I'd give a high-stakes production project. Use it at your own risk.
-
+>I built this project with AI coding agents. Claude Opus 5.5 decoded the remote's Bluetooth protocol, using the [bluetooth-proxy](https://esphome.io/components/bluetooth_proxy/) to capture its messages during pairing and button presses. Codex did further development, and Opus did the refactoring and final implementation. I'm a software developer. I wrote the specifications and reviewed the code, but not with the scrutiny I'd give a high-stakes production project. Use it at your own risk.
 ## What it does
 
 <p>
@@ -213,13 +212,13 @@ settings and pairing. You do not need to pair again.
 
 ### When is the install done?
 
-Device Builder builds the firmware first. The first build takes several
+Device Builder builds the firmware first. The first build can take up to 15
 minutes, and longer on a small device such as a Raspberry Pi. Its window never
 says that it has finished. Check the add-on page instead: it says "The install
 is complete" when the proxy is back with the new firmware. In the Device Builder
 log, the install is done when the build messages stop and the proxy's own
 messages scroll by. Each of those starts with the time and a letter, such as
-`[12:00:01][D]`. You can close the window then.
+`[12:00:01.234][D]`. You can close the window then.
 
 ## Bluetooth Proxy
 

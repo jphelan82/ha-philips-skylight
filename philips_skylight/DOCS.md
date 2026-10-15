@@ -54,13 +54,13 @@ is done.
    Then install the firmware in ESPHome Device Builder: open the proxy, then
    **⋮ → Install → Wirelessly**. The page continues when the proxy is back.
 
-   Device Builder builds the firmware first. The first build takes several
+   Device Builder builds the firmware first. The first build can take up to 15
    minutes, and longer on a small device such as a Raspberry Pi. Its window never
    says that it has finished. Check the add-on page instead: it says "The install
    is complete" when the proxy is back with the new firmware. In the Device Builder
    log, the install is done when the build messages stop and the proxy's own
    messages scroll by. Each of those starts with the time and a letter, such as
-   `[12:00:01][D]`. You can close the window then.
+   `[12:00:01.234][D]`. You can close the window then.
 
    The package turns on the proxy's API actions, scans for Bluetooth all the
    time so that no remote press is missed, and turns off Wi-Fi roaming. A proxy
