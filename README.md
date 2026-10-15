@@ -188,7 +188,8 @@ integration for you.
 2. On the add-on page, select **Install**. When it is installed, turn on
    **Start on boot**, select **Start**, then select **Open Web UI**.
 3. If the page asks you to restart Home Assistant, select **Restart Home
-   Assistant**.
+   Assistant**. A restart takes a few minutes. The page shows that Home
+   Assistant is restarting, and continues by itself when it is back.
 4. Follow the setup checklist on the page. Each step gets a ✓ when it is done.
    1. **Prepare your [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/).** The step first checks what it needs:
       ESPHome Device Builder, a Bluetooth proxy in it, and Home Assistant's

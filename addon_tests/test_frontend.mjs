@@ -40,6 +40,7 @@ async function page(source) {
         posts.push(JSON.parse(init.body));
         return {ok: true, json: async () => ({ok: true})};
       }
+      if (source.offline) throw new Error("Failed to fetch");
       return {ok: true, json: async () => structuredClone(source)};
     },
   });
@@ -330,4 +331,46 @@ test("a pending restart leaves the restart and install buttons usable", async ()
   assert.equal(context.buttonDisabled("restart", {connected: false, restart_required: true}), true);
   assert.equal(context.buttonDisabled("install", {connected: false}), false);
   assert.equal(context.buttonDisabled("pair", {connected: true, restart_required: false}), false);
+});
+
+
+test("the page shows a restart under way, through failed requests, until it is done", async () => {
+  const source = {...base(), installed: true, restart_required: true};
+  const {element, posts, press, poll} = await page(source);
+  assert.equal(element("restart").hidden, false);
+  assert.equal(element("restart-status").hidden, true); // Needed, not started yet.
+  await press({action: "restart"});
+  assert.equal(posts.at(-1).action, "restart");
+  assert.equal(element("restart-status").hidden, false);
+  // Home Assistant goes away: requests fail, and the page shows no error.
+  source.offline = true;
+  await poll();
+  await setImmediate();
+  assert.equal(element("restart-status").hidden, false);
+  assert.equal(element("notice").textContent, "");
+  // It comes back with the integration loaded.
+  source.offline = false;
+  source.restart_required = false;
+  await poll();
+  await setImmediate();
+  assert.equal(element("installation").hidden, true);
+  assert.equal(element("notice").textContent, "Home Assistant has restarted. The Skylight integration is loaded.");
+});
+
+test("a restart request that Home Assistant drops still counts as a restart", async () => {
+  const source = {...base(), installed: true, restart_required: true};
+  const {element, press, context} = await page(source);
+  context.fetch = async (url, init) => {
+    if (init?.method === "POST") throw new Error("Failed to fetch");
+    return {ok: true, json: async () => structuredClone(source)};
+  };
+  await press({action: "restart"});
+  assert.equal(element("restart-status").hidden, false);
+  assert.equal(element("notice").textContent, "");
+});
+
+test("a restart started outside the page shows too", async () => {
+  const source = {...base(), installed: true, restart_required: true, connected: false};
+  const {element} = await page(source);
+  assert.equal(element("restart-status").hidden, false);
 });

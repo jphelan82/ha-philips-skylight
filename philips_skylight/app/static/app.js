@@ -3,6 +3,9 @@ const base = document.querySelector("base").href;
 const csrf = document.querySelector('meta[name="csrf"]').content;
 let busy = false;
 let state = null;
+// A restart is under way: the page asked for it, or Home Assistant went away
+// while a restart was pending. Either way, failed requests are expected.
+let restarting = false;
 let pairStage = "pair";
 let lastRemaining = 0;
 let preparedNode = null;
@@ -149,6 +152,12 @@ function render(data) {
   show("installation", needsInstall);
   show("install", !data.installed);
   show("restart", data.installed && data.restart_required);
+  if (data.restart_required && !data.connected) restarting = true;
+  if (restarting && data.connected && !data.restart_required) {
+    restarting = false;
+    notice("Home Assistant has restarted. The Skylight integration is loaded.");
+  }
+  show("restart-status", restarting && data.restart_required);
   el("install-message").textContent = data.installed
     ? "Restart Home Assistant to load the Skylight integration."
     : "Install the Skylight integration to continue.";
@@ -244,13 +253,20 @@ async function get(path) {
 async function refresh() {
   followTheme();  // The theme can change while the page is open.
   try { render(await get("api/status")); }
-  catch (error) { if (!busy) notice(error.message, true); }
+  catch (error) {
+    // During a restart the page's requests fail too, because they pass through Home Assistant.
+    if (restarting || state?.restart_required) {
+      restarting = true;
+      show("restart-status", true);
+      notice("");
+    } else if (!busy) notice(error.message, true);
+  }
 }
 const messages = {
   test: "Sending…",
 };
 const results = {
-  restart: () => "Home Assistant is restarting. This page reconnects by itself.",
+  restart: () => { restarting = true; return ""; },
   prepare_firmware: () => "",
   allow_tracking: () => "",
   pair: () => "",
@@ -294,7 +310,11 @@ async function action(body) {
     if (body.action === "unpair_all") el("unpair-confirm").checked = false;
     if (body.action === "start_over") pairStage = "pair";
     if (body.action === "add_card") await loadViews();
-  } catch (error) { notice(error.message, true); }
+  } catch (error) {
+    // Home Assistant can drop the request as it shuts down for the restart.
+    if (body.action === "restart") { restarting = true; notice(""); }
+    else notice(error.message, true);
+  }
   finally { busy = false; await refresh(); }
 }
 async function loadViews() {

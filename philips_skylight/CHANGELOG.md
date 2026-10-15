@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.12
+
+- While Home Assistant restarts, the add-on page says so below **Restart Home
+  Assistant**: "Home Assistant is restarting. That can take a few minutes."
+  This also works for a restart started from Home Assistant's own menu.
+- During the restart, the page shows no errors for requests that fail because
+  Home Assistant is down. When Home Assistant is back, the page says "Home
+  Assistant has restarted."
+
 ## 0.4.11
 
 - **Restart Home Assistant** on the add-on page works again. While a restart was
