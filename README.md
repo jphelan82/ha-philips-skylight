@@ -170,7 +170,7 @@ Install the add-on from Home Assistant's own app store, not from HACS (the Home
 Assistant Community Store). HACS cannot install add-ons. The add-on installs the
 integration for you.
 
-1. Select this button:
+1. Select the blue **Show app on My HA** button:
 
    <!-- ee6ebc3d is the first 8 hex digits of the SHA-1 of the repository address,
    which is how Home Assistant names the repository. Change it if the address changes. -->
