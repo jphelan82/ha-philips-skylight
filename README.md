@@ -170,17 +170,20 @@ Install the add-on from Home Assistant's own app store, not from HACS (the Home
 Assistant Community Store). HACS cannot install add-ons. The add-on installs the
 integration for you.
 
-1. Add this repository to Home Assistant's app store. Open **Settings → Apps**,
-   select **Install app** at the bottom right, then **⋮** at the top right **→
-   Repositories**. Add `https://github.com/jphelan82/ha-philips-skylight`. On
-   older versions, **Apps** is called **Add-ons**, and **Install app** is called
-   **Add-on store**.
+1. Select this button:
 
-   [![Add the repository to your Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjphelan82%2Fha-philips-skylight)
+   <!-- ee6ebc3d is the first 8 hex digits of the SHA-1 of the repository address,
+   which is how Home Assistant names the repository. Change it if the address changes. -->
+   [![Open the Philips Skylight add-on in your Home Assistant](https://my.home-assistant.io/badges/supervisor_app.svg)](https://my.home-assistant.io/redirect/supervisor_app/?app=ee6ebc3d_philips_skylight&repository_url=https%3A%2F%2Fgithub.com%2Fjphelan82%2Fha-philips-skylight)
 
-   The button is a shortcut that opens the same dialog with the address filled
-   in. In Home Assistant 2026.6, it only opens the app store. Then use the menu
-   steps above.
+   Home Assistant asks to add this repository. Select **Add**. It then shows the
+   **Philips Skylight** add-on.
+
+   Or add the repository by hand: open **Settings → Apps**, select **Install
+   app** at the bottom right, then **⋮** at the top right **→ Repositories**.
+   Add `https://github.com/jphelan82/ha-philips-skylight`. On older versions,
+   **Apps** is called **Add-ons**, and **Install app** is called **Add-on
+   store**.
 2. Install **Philips Skylight**. Turn on **Start on boot**, start it, and open
    its web page.
 3. If the page asks you to restart Home Assistant, select **Restart Home
