@@ -170,14 +170,17 @@ Install the add-on from Home Assistant's own app store, not from HACS (the Home
 Assistant Community Store). HACS cannot install add-ons. The add-on installs the
 integration for you.
 
-[![Add the repository to your Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjphelan82%2Fha-philips-skylight)
+1. Add this repository to Home Assistant's app store. Open **Settings → Apps**,
+   select **Install app** at the bottom right, then **⋮** at the top right **→
+   Repositories**. Add `https://github.com/jphelan82/ha-philips-skylight`. On
+   older versions, **Apps** is called **Add-ons**, and **Install app** is called
+   **Add-on store**.
 
-1. Select the button above. It opens your Home Assistant and offers to add this
-   repository. Or add it by hand: open **Settings → Apps**, select **Install
-   app** at the bottom right, then **⋮** at the top right **→ Repositories**.
-   Add `https://github.com/jphelan82/ha-philips-skylight`. On older versions,
-   **Apps** is called **Add-ons**, and **Install app** is called **Add-on
-   store**.
+   [![Add the repository to your Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjphelan82%2Fha-philips-skylight)
+
+   The button is a shortcut that opens the same dialog with the address filled
+   in. In Home Assistant 2026.6, it only opens the app store. Then use the menu
+   steps above.
 2. Install **Philips Skylight**. Turn on **Start on boot**, start it, and open
    its web page.
 3. If the page asks you to restart Home Assistant, select **Restart Home
