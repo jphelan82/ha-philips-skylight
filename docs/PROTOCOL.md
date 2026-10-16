@@ -146,6 +146,15 @@ the remote second. Nobody knows why "remote, then Home Assistant" worked on
 2026-10-15 with a newer ESPHome Device Builder and Skylight firmware 2. Nobody
 has measured whether that changes how many times each request goes out.
 
+On 2026-10-16, the remote's pairing packets from the 2026-10-12 capture were
+compared field by field with the packet that the integration builds. They
+match in everything except the sender address: destination `0xFFFF`, TTL 5,
+31-byte adverts, the same keys, and the same command bytes. Both raise the
+sequence number and `TT` by one per request. The remote's hold sent 32 requests
+in 15.4 seconds. So the packet is not the cause of the dropped remote. Two
+differences remain untested: the sender address, and the number of radio
+copies of each request.
+
 The panel relays packets with TTL 4, from paired and unpaired senders alike. On
 2026-10-13 it relayed the remote's toggles after the remote had been dropped,
 but it did not act on them. A relay shows only that the panel heard a packet.
