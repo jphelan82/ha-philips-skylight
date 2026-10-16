@@ -480,3 +480,45 @@ async def test_card_script_is_served_and_loaded_on_every_page(hass, monkeypatch)
     assert Path(config.path).name == "philips-skylight-card.js"
     assert Path(config.path).is_file()
     assert hass.data[DATA_EXTRA_MODULE_URL].urls == {f"{CARD_URL}?v={VERSION}"}
+
+
+async def test_the_light_keeps_its_last_power_and_mode_across_a_restart(hass, monkeypatch):
+    from homeassistant.core import State
+    from homeassistant.helpers import restore_state
+    from homeassistant.util import dt as dt_util
+
+    await restore_state.async_load(hass)
+    # What Home Assistant saved when it stopped: on, in Focus.
+    restore_state.async_get(hass).last_states = {
+        "light.philips_skylight": restore_state.StoredState(
+            State("light.philips_skylight", "on", {"assumed_effect": "Focus"}),
+            None,
+            dt_util.utcnow(),
+        )
+    }
+    entry, calls = await setup_entry(hass, monkeypatch)
+    state = hass.states.get("light.philips_skylight")
+    assert (state.state, state.attributes["effect"]) == ("on", "Focus")
+    assert state.attributes["power_synchronized"] is True
+    recorded_scene = er.async_get(hass).async_get_entity_id(
+        "select", DOMAIN, "factory_mesh_7ffe_recorded_scene"
+    )
+    assert hass.states.get(recorded_scene).state == "Focus"
+    assert not calls  # Restoring sends nothing to the panel.
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_an_unknown_or_unavailable_last_state_stays_unknown(hass, monkeypatch):
+    from homeassistant.core import State
+    from homeassistant.helpers import restore_state
+    from homeassistant.util import dt as dt_util
+
+    await restore_state.async_load(hass)
+    restore_state.async_get(hass).last_states = {
+        "light.philips_skylight": restore_state.StoredState(
+            State("light.philips_skylight", "unavailable"), None, dt_util.utcnow()
+        )
+    }
+    entry, _ = await setup_entry(hass, monkeypatch)
+    assert hass.states.get("light.philips_skylight").state == "unknown"
+    await hass.config_entries.async_unload(entry.entry_id)

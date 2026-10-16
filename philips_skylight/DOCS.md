@@ -213,7 +213,9 @@ Home Assistant never sends a command because of a received press.
 
 The record goes wrong after a missed press, a power cut, a wall switch, or a
 proxy or Home Assistant outage. A proxy reconnect within 60 seconds keeps the
-record. A longer outage clears it. Then use **Correct** on the card.
+record. A longer proxy outage clears it. A Home Assistant restart keeps the
+last record, but Home Assistant cannot hear the remote while it is down. In
+each case, use **Correct** on the card.
 
 Leave the wall switch on. Control the panel with its remotes or Home Assistant.
 If the panel's power runs through a smart switch in Home Assistant, an

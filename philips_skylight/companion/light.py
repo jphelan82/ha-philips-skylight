@@ -4,6 +4,7 @@ from homeassistant.components.light import ATTR_EFFECT, ColorMode, LightEntity, 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import EFFECTS, VERSION
 from .controller import SkylightConfigEntry
@@ -19,7 +20,7 @@ async def async_setup_entry(
     async_add_entities([SkylightLight(entry.runtime_data, entry)])
 
 
-class SkylightLight(SkylightEntity, LightEntity):
+class SkylightLight(SkylightEntity, LightEntity, RestoreEntity):
     _attr_name = None
     _attr_icon = "mdi:wall-sconce-flat"
     _attr_unique_id = "factory_mesh_7ffe_light"
@@ -28,6 +29,22 @@ class SkylightLight(SkylightEntity, LightEntity):
     _attr_supported_color_modes = {ColorMode.ONOFF}
     _attr_supported_features = LightEntityFeature.EFFECT
     _attr_effect_list = list(EFFECTS)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        state = self.controller.state
+        if state.is_on is not None or self.controller.pairing_until:
+            return
+        last = await self.async_get_last_state()
+        if last is None or last.state not in ("on", "off"):
+            return
+        # Keep the last known power and mode across a restart or a reload. Home
+        # Assistant cannot see remote presses while it is down, so this stays a guess.
+        state.is_on = last.state == "on"
+        effect = last.attributes.get("assumed_effect")
+        if effect in EFFECTS:
+            state.effect = effect
+        self.controller.notify()
 
     @property
     def is_on(self):

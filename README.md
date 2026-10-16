@@ -273,16 +273,19 @@ If you don't already have a Bluetooth proxy, creating one is relatively simple. 
      misses remote presses in that time. See
      [When is the install done?](#when-is-the-install-done)
    - If the firmware did not change, the page shows nothing.
-4. **Update the card, if the page asks.** A card on a dashboard never changes
-   by itself. If a dashboard holds an older Skylight card, the page shows
-   **Update the card**. It replaces only the Skylight card and leaves the rest
-   of the dashboard as it is.
+4. **Update the card, if the page asks.** The Skylight card from the card
+   picker updates by itself. An older full copy of the card does not. If a
+   dashboard holds one, the page shows **Update the card**. It replaces only
+   that card, with the one from the card picker, and leaves the rest of the
+   dashboard as it is.
 
 The page shows a step only when its part changed. An update never needs a new
 pairing, and it keeps your settings and the command counter.
 
-After a restart that takes longer than 60 seconds, the recorded power and mode
-are unknown. A remote press, a mode button, or **Correct** sets them again.
+After a Home Assistant restart, the light comes back with the power and mode
+that it last recorded. Home Assistant cannot hear the remote while it is down.
+So if someone used the remote during the restart, use **Correct**, or press
+any mode.
 
 ## Pairing
 

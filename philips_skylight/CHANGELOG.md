@@ -23,6 +23,9 @@ browser reload.
   the unpair came in time, and the panel stays on.
 - If the card cannot load its settings, such as during a restart, it tries again
   every 10 seconds.
+- Integration 0.5.0 keeps the light's last power and mode across a Home
+  Assistant restart and an integration reload. Before, both were unknown after
+  each restart. If someone used the remote during the restart, use **Correct**.
 
 ## 0.5.1
 

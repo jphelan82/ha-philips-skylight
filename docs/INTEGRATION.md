@@ -29,7 +29,8 @@ A scene command also turns an off panel on, in that scene. The owner confirmed
 this for Relax on 2026-10-13. After any scene command, sent from HA or received
 from a remote, the integration records power as on.
 
-Power starts unknown. Before you use `light.turn_off`, or `light.turn_on`
+Power starts unknown on a new install. After a restart or a reload, the light
+keeps the power and mode that it last recorded. Before you use `light.turn_off`, or `light.turn_on`
 without an effect, synchronize power. A request for the power that Home Assistant
 already shows sends nothing.
 `light.turn_on` with an effect sends only that scene command, whatever the
@@ -101,8 +102,9 @@ data:
 
 This records power without sending anything. Standard on/off actions then use
 that recorded state. Scene buttons and `light.turn_on` with an effect send the
-scene command and record power as on. Synchronize again after a Home Assistant
-restart, a panel power cycle or a missed remote press. A proxy reconnect within
+scene command and record power as on. Synchronize again after a panel power
+cycle, a missed remote press, or a remote press during a Home Assistant
+restart. A proxy reconnect within
 60 seconds keeps the record. A longer outage clears it. A successful action means
 that the proxy accepted the request. The panel sends no acknowledgment.
 
