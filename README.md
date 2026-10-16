@@ -1,7 +1,7 @@
 # Philips Skylight for Home Assistant
 
 
-> **Work in progress.** Early stage alpha. Back up your Home Assistant and only install on a [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) you are willing to reset if necessary. Currently, I am the only person who has tried this. 
+> **Work in progress.** Early stage alpha. Back up your Home Assistant and only install on a [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) you are willing to reset if necessary.
 >
 > **One Skylight only.** I have tested this with one Skylight panel. Support for
 > several Skylights is not built and not tested. 
@@ -112,8 +112,9 @@ This is an experimental project. Please read these limits before you install it.
   reports its level. So Home Assistant shows no brightness slider, and
   Home Assistant ignores a brightness in `light.turn_on`. Color temperature
   has no command either.
-- **It is tested on one setup.** One owner tested it with the NatureConnect/BioUp
-  17.7 × 25.6 inch panel and an ESP32-C3 proxy. Other models are unknown.
+- **Two owners have tried it.** One tested it with the NatureConnect/BioUp
+  17.7 × 25.6 inch panel and an ESP32-C3 proxy. The second owner's panel and
+  proxy models are unknown. Nobody has reported on other models yet.
 - **The add-on needs Home Assistant OS or Supervised.** For Container or Core
   installs, use the [integration-only guide](docs/INTEGRATION.md).
 
