@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.6.0
+
+This version needs a Home Assistant restart for integration 0.5.0, then one
+browser reload.
+
+- **The Skylight card is in Home Assistant's card picker.** Edit a dashboard,
+  select **Add card**, and search for **Philips Skylight**. The integration
+  ships the card, so it also works without the add-on. It needs no HACS and no
+  download.
+- A dashboard stores the card as one line, `type: custom:philips-skylight-card`.
+  Each integration update changes the card everywhere, and the card finds
+  renamed entities by itself.
+- **Create a Skylight dashboard** uses the new card. **Update the card**
+  replaces older full copies with it.
+- The add-on page no longer has **Add to a dashboard** or its dashboard and view
+  choices. It says where to find the card instead. **Download the card instead**
+  still gives the full card as YAML.
+- While the power is unknown, the add-on's controls show **Panel is on** and
+  **Panel is off** right under the state.
+- In **Unpair remotes**, **It blinked** records the panel as on. A blink means
+  the unpair came in time, and the panel stays on.
+- If the card cannot load its settings, such as during a restart, it tries again
+  every 10 seconds.
+
 ## 0.5.1
 
 - On a first install, the remote step after pairing now opens with a check:

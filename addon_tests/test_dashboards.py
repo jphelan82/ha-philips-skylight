@@ -2,12 +2,7 @@ import copy
 
 import pytest
 from skylight_addon import dashboards
-from skylight_addon.dashboards import (
-    add_card,
-    create_dashboard,
-    editable_views,
-    revision,
-)
+from skylight_addon.dashboards import create_dashboard
 from skylight_addon.ha import HAError
 
 
@@ -54,51 +49,6 @@ async def test_optional_create_preserves_existing_dashboard_and_does_not_retry()
         await create_dashboard(ha, card)
     assert sum(kind == "lovelace/config/save" for kind, _ in ha.calls) == 1
     assert not any("delete" in kind for kind, _ in ha.calls)
-
-
-@pytest.mark.parametrize("view_type", ["sections", "masonry", "sidebar"])
-async def test_add_card_preserves_views_and_user_config_and_is_idempotent(view_type):
-    view = {"title": "Living room", "path": "living", "type": view_type, "theme": "Custom"}
-    existing = {"type": "tile", "entity": "switch.other"}
-    if view_type == "sections":
-        view["sections"] = [{"type": "grid", "cards": [existing], "column_span": 2}]
-    else:
-        view["cards"] = [existing]
-    original = {"background": {"image": "/local/bg.jpg"}, "views": [view, {"title": "Other"}]}
-    ha = DashboardHA(copy.deepcopy(original))
-    card = {"type": "vertical-stack", "cards": [{"type": "tile", "entity": "light.skylight"}]}
-    result = await add_card(ha, "my-home", 0, revision(original), card)
-    assert result == {"url": "/my-home/living", "added": True}
-    assert ha.config["views"][1] == original["views"][1]
-    assert ha.config["background"] == original["background"]
-    if view_type == "sections":
-        assert ha.config["views"][0]["sections"][0] == view["sections"][0]
-    else:
-        assert ha.config["views"][0]["cards"][0] == existing
-    ha.calls.clear()
-    result = await add_card(ha, "my-home", 0, revision(ha.config), card)
-    assert not result["added"]
-    assert not any(kind.endswith("/save") for kind, _ in ha.calls)
-
-
-async def test_stale_strategy_panel_yaml_and_invalid_targets_never_save():
-    ha = DashboardHA({"views": [{"title": "Home", "type": "sections"}]})
-    with pytest.raises(ValueError, match="changed"):
-        await add_card(ha, "my-home", 0, "old revision", {})
-    for config in (
-        {"strategy": {"type": "original-states"}, "views": []},
-        {"views": [{"strategy": {"type": "custom:generated"}}]},
-        {"views": [{"type": "panel", "cards": []}]},
-    ):
-        ha.config = config
-        assert editable_views(config) == []
-        with pytest.raises(ValueError, match="editable view"):
-            await add_card(ha, "my-home", 0, revision(config), {})
-    with pytest.raises(ValueError, match="editable storage"):
-        await add_card(ha, "missing-dashboard", 0, revision(ha.config), {})
-    with pytest.raises(ValueError, match="dashboard from"):
-        await add_card(ha, "//evil.example", 0, revision(ha.config), {})
-    assert not any(kind.endswith("/save") for kind, _ in ha.calls)
 
 
 SWITCH = "switch.skylight_correction"
@@ -160,12 +110,14 @@ class ManyDashboardsHA:
 
 
 async def test_older_cards_are_found_and_replaced_in_place():
-    new = skylight_card("new")
+    new = dashboards.CARD
     other = {"type": "tile", "entity": "light.kitchen"}
+    # The user gave this copy of the one-line card a width of its own.
+    resized = {**new, "grid_options": {"columns": 6}}
     configs = {
         None: {"views": [{"cards": [other, skylight_card("old", heading=True)]}]},
         "kitchen": {"views": [{"sections": [{"cards": [skylight_card("old"), other]}]}]},
-        "skylight-control": {"views": [{"sections": [{"cards": [new]}]}]},
+        "skylight-control": {"views": [{"sections": [{"cards": [new, resized]}]}]},
     }
     ha = ManyDashboardsHA(configs)
     found = await dashboards.outdated_cards(ha, SWITCH, new)
@@ -178,6 +130,7 @@ async def test_older_cards_are_found_and_replaced_in_place():
     assert ha.saved == [None, "kitchen"]
     assert configs[None]["views"][0]["cards"] == [other, new]
     assert configs["kitchen"]["views"][0]["sections"][0]["cards"] == [new, other]
+    assert configs["skylight-control"]["views"][0]["sections"][0]["cards"] == [new, resized]
     assert await dashboards.outdated_cards(ha, SWITCH, new) == []
 
 
@@ -190,29 +143,19 @@ async def test_only_the_skylight_card_shape_matches():
     tile_first["cards"].insert(0, {"type": "tile", "entity": "light.kitchen"})
     assert not dashboards.is_skylight_card(tile_first, SWITCH)
     assert not dashboards.is_skylight_card({"type": "vertical-stack", "cards": []}, SWITCH)
+    # The integration's one-line card is the current Skylight card, with any options.
+    assert dashboards.is_skylight_card(dashboards.CARD, SWITCH)
+    assert dashboards.is_skylight_card({**dashboards.CARD, "view_layout": {}}, "switch.other")
+    assert not dashboards.is_skylight_card({"type": "custom:other-card"}, SWITCH)
 
 
 async def test_automatic_dashboards_are_skipped():
     ha = ManyDashboardsHA({None: {"strategy": {"type": "original-states"}}})
-    assert await dashboards.outdated_cards(ha, SWITCH, skylight_card("new")) == []
-
-
-async def test_a_view_with_sections_but_no_type_gets_a_new_section():
-    # Home Assistant shows such a view as sections and hides its old card list.
-    view = {"title": "Home", "sections": [{"type": "grid", "cards": []}]}
-    ha = DashboardHA({"views": [view]})
-    card = {"type": "tile", "entity": "light.skylight"}
-    result = await add_card(ha, "my-home", 0, revision(ha.config), card)
-    assert result["added"] is True
-    saved = ha.config["views"][0]
-    assert "cards" not in saved
-    assert saved["sections"][-1] == {"type": "grid", "cards": [card]}
-    assert dashboards.view_type({"cards": []}) == "masonry"
-    assert dashboards.view_type({"type": "panel", "sections": []}) == "panel"
+    assert await dashboards.outdated_cards(ha, SWITCH, dashboards.CARD) == []
 
 
 async def test_a_yaml_default_dashboard_is_skipped_and_a_failed_save_blocks_nothing():
-    new = skylight_card("new")
+    new = dashboards.CARD
 
     def configs():
         return {

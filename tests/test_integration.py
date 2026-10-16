@@ -1,26 +1,33 @@
 """Exercise the real light platform, entity actions, and unload lifecycle."""
 
 import asyncio
+import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import voluptuous as vol
 from homeassistant import loader
+from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL, UrlManager
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_NAME
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
+from custom_components.philips_skylight import card
 from custom_components.philips_skylight.config_flow import SkylightConfigFlow
+from custom_components.philips_skylight.const import CARD_ENTITIES as INTEGRATION_CARD_ENTITIES
 from custom_components.philips_skylight.const import (
+    CARD_URL,
     CONF_PROXY_ENTITY,
     CONF_TRANSMIT_SERVICE,
     DOMAIN,
     EFFECTS,
     RECEIVE_EVENT,
     RHYTHM_START,
+    VERSION,
 )
 from custom_components.philips_skylight.protocol import (
     MeshCodec,
@@ -412,3 +419,64 @@ async def test_unload_stops_a_running_burst_and_dim_hold(hass, monkeypatch):
         await hass.services.async_call(
             DOMAIN, "dim", {"entity_id": light, "direction": "up"}, blocking=True
         )
+
+
+class Connection:
+    """Records what a websocket command sends back."""
+
+    def __init__(self):
+        self.sent = []
+
+    def send_result(self, msg_id, result=None):
+        self.sent.append((msg_id, result))
+
+    def send_error(self, msg_id, code, message):
+        self.sent.append((msg_id, code, message))
+
+
+async def test_card_command_resolves_renamed_entities_and_names_a_missing_one(hass, monkeypatch):
+    await setup_entry(hass, monkeypatch)
+    # The integration and the add-on find the card's entities through the same table.
+    assert INTEGRATION_CARD_ENTITIES == CARD_ENTITIES
+    assert hass.data["websocket_api"]["philips_skylight/card"][0] is card.websocket_card
+    registry = er.async_get(hass)
+    registry.async_update_entity("light.philips_skylight", new_entity_id="light.living_room")
+    connection = Connection()
+    card.websocket_card(hass, connection, {"id": 1, "type": "philips_skylight/card"})
+    ((msg_id, result),) = connection.sent
+    assert msg_id == 1
+    template = (Path(card.__file__).parent / "card.json").read_text()
+    expected = json.loads(template.replace('"light.philips_skylight"', '"light.living_room"'))
+    assert result == {"card": expected}
+    assert "light.philips_skylight\"" not in json.dumps(result)
+
+    switch = "switch.philips_skylight_state_correction"
+    registry.async_update_entity(switch, disabled_by=er.RegistryEntryDisabler.USER)
+    card.websocket_card(hass, connection, {"id": 2, "type": "philips_skylight/card"})
+    msg_id, code, message = connection.sent[-1]
+    assert (msg_id, code) == (2, "not_found")
+    assert f"entity {switch}. Enable it" in message
+    registry.async_update_entity(switch, disabled_by=None)
+
+    registry.async_remove("button.philips_skylight_dim_up")
+    card.websocket_card(hass, connection, {"id": 3, "type": "philips_skylight/card"})
+    msg_id, code, message = connection.sent[-1]
+    assert (msg_id, code) == (3, "not_found")
+    assert "button.philips_skylight_dim_up" in message
+
+
+async def test_card_script_is_served_and_loaded_on_every_page(hass, monkeypatch):
+    registered = []
+
+    async def register(configs):
+        registered.extend(configs)
+
+    hass.http = SimpleNamespace(async_register_static_paths=register)
+    hass.config.components.add("frontend")
+    hass.data[DATA_EXTRA_MODULE_URL] = UrlManager(lambda *args: None, [])
+    await setup_entry(hass, monkeypatch)
+    (config,) = registered
+    assert config.url_path == CARD_URL == "/philips_skylight/philips-skylight-card.js"
+    assert Path(config.path).name == "philips-skylight-card.js"
+    assert Path(config.path).is_file()
+    assert hass.data[DATA_EXTRA_MODULE_URL].urls == {f"{CARD_URL}?v={VERSION}"}

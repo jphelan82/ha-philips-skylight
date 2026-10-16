@@ -192,6 +192,15 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   assert.equal(element("control").hidden, false);
   assert.equal(element("dashboard").hidden, false);
   assert.equal(element("state-text").textContent, "On · Energize");
+  assert.equal(element("power-unknown").hidden, true); // Known power needs no answer.
+  source.state = "unknown";
+  await poll();
+  assert.equal(element("state-text").textContent, "State unknown");
+  assert.equal(element("power-unknown").hidden, false); // Ask right under the state.
+  await press({action: "sync_power", on: "no"});
+  assert.deepEqual(posts.at(-1), {action: "sync_power", is_on: false});
+  source.state = "on";
+  await poll();
   assert.equal(element("connection").textContent, "Proxy online");
 });
 
@@ -465,11 +474,11 @@ test("dashboard results show next to the dashboard buttons", async () => {
   assert.equal(element("dashboard-result").hidden, false);
   assert.equal(element("dashboard-result").textContent, "Dashboard created.");
   context.fetch = async (url, init) => init?.method === "POST"
-    ? reply({ok: false, error: "Dashboard changed. Refresh the dashboard choices before adding the card"}, 400)
+    ? reply({ok: false, error: "Wait for Home Assistant to reconnect"}, 400)
     : reply(structuredClone(source));
   await press({action: "create_dashboard"});
   assert.equal(element("dashboard-result").className, "result error");
-  assert.match(element("dashboard-result").textContent, /Dashboard changed/);
+  assert.match(element("dashboard-result").textContent, /reconnect/);
 });
 
 const setupSource = () => ({...base(), configured: true, first_setup: true, entity_id: "light.skylight",
@@ -517,7 +526,7 @@ test("answers that are not JSON show a plain message, and a good poll clears onl
 test("Unpair remotes shows each result at its step, then hands over to the setup checklist", async () => {
   const source = {...base(), configured: true, entity_id: "light.skylight", tracking: true,
     proxies: [{entity_id: "sensor.p", name: "P", node: "p", transmit_service: "p_adv_svc_v1"}]};
-  const {element, press, poll, context} = await page(source);
+  const {element, press, poll, context, posts} = await page(source);
   const unpair = async () => {
     element("unpair-confirm").checked = true;
     await press({action: "unpair_all"});
@@ -546,6 +555,7 @@ test("Unpair remotes shows each result at its step, then hands over to the setup
   await setImmediate();
   await press({action: "unpair_blinked", blinked: "yes"});
   assert.equal(element("unpair-3").className, "");
+  assert.equal(posts.at(-1).action, "unpair_blinked"); // A blink records the panel as on.
   const normal = context.fetch;
   context.fetch = async (url, init) => init?.method === "POST"
     ? reply({ok: false, error: "Home Assistant is not connected"}, 400) : normal(url, init);

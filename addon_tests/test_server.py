@@ -301,7 +301,9 @@ async def test_card_export_and_initial_matching_never_send_light_commands(panel,
     assert response.status == 200
     card = yaml.safe_load(await response.text())
     assert len(card["cards"]) == 2
-    assert card == panel.card_config()
+    # The download keeps the standard cards. Dashboards get the integration's card.
+    assert card == json.loads((ROOT / "static/skylight-cards.json").read_text())["card"]
+    assert panel.card_config() == {"type": "custom:philips-skylight-card"}
     await panel.perform({"action": "sync_state", "power": "off", "effect": "Unknown"})
     assert panel.ha.calls == [
         (("button", "press", "button.philips_skylight_record_panel_off"), {}),
@@ -737,6 +739,41 @@ async def test_a_card_that_fails_to_save_is_reported_and_not_offered_again(panel
     assert panel.outdated_cards == ["Hall"]
 
 
+async def test_dashboards_get_the_integrations_one_line_card(panel, monkeypatch, aiohttp_client):
+    from skylight_addon import dashboards
+    from skylight_addon.server import CARD_ENTITIES
+
+    panel.ha.registry = [
+        {"entity_id": entity, "unique_id": unique, "platform": "philips_skylight"}
+        for entity, unique in CARD_ENTITIES.items()
+    ]
+    panel.ha.states = {"light.philips_skylight": panel.ha.states["light.renamed"]}
+    given = []
+
+    async def create_dashboard(ha, card):
+        given.append(("create", card))
+        return {"url": "/skylight-control/panel", "created": True}
+
+    async def update_cards(ha, switch, card):
+        given.append(("update", switch, card))
+        return {"updated": ["Kitchen"], "failed": []}
+
+    monkeypatch.setattr(dashboards, "create_dashboard", create_dashboard)
+    monkeypatch.setattr(dashboards, "update_cards", update_cards)
+    await panel.perform({"action": "create_dashboard"})
+    await panel.perform({"action": "update_card"})
+    card = {"type": "custom:philips-skylight-card"}
+    assert given == [
+        ("create", card),
+        ("update", "switch.philips_skylight_state_correction", card),
+    ]
+    # The card picker replaced the dashboard and view choosers.
+    with pytest.raises(ValueError, match="Unknown action"):
+        await panel.perform({"action": "add_card"})
+    client = await aiohttp_client(panel.app())
+    assert (await client.get("/api/dashboards")).status == 404
+
+
 async def test_setup_checks_report_device_builder_proxy_and_connection(setup_panel, tmp_path):
     ha = setup_panel.ha
     setup_panel.esphome_dir = tmp_path / "esphome"
@@ -830,3 +867,11 @@ def test_a_snapshot_reads_the_esphome_folder_once(setup_panel, monkeypatch):
     )
     setup_panel.snapshot()
     assert len(reads) == 1
+
+
+async def test_it_blinked_records_the_panel_as_on(panel):
+    await panel.perform({"action": "unpair_blinked"})
+    assert panel.ha.calls[-1] == (
+        ("philips_skylight", "set_assumed_power", "light.renamed"),
+        {"is_on": True},
+    )

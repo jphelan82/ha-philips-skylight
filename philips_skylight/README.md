@@ -5,7 +5,7 @@ dimming. Your own remote keeps working, and Home Assistant follows its presses.
 
 You need Home Assistant OS or Supervised (2026.6 or newer) and an ESPHome
 Bluetooth proxy near the panel. You do not need an MQTT broker, a cloud account
-or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
+or HACS. The integration includes its own dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
 25.6 inch panel and an ESP32-C3 proxy.
 
 ## Before you start
@@ -43,7 +43,9 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
       switch the panel's power off and on, and hold the remote's power button
       for 10 seconds. Then select **The remote works**, **Skip – my remote is
       already working**, or **I have no remote**. Last, choose a mode.
-4. Optional: add the Skylight card to a dashboard.
+4. Optional: add the Skylight card to a dashboard. Edit the dashboard, select
+   **Add card**, and search for **Philips Skylight**. If the card is not in the
+   list, reload the page in your browser.
 
 To update, update the add-on in **Settings → Apps**, then open its page. A
 **Needs attention** section lists any step left: a Home Assistant restart, new

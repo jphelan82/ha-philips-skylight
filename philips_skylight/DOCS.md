@@ -84,8 +84,8 @@ again.
    have no remote**. Last, choose a mode. A
    mode switches the panel on in that mode, so Home Assistant then knows both.
 
-After setup, the page shows the panel's recorded state, controls, the
-dashboard tools, and **Settings and fixes**.
+After setup, the page shows the panel's recorded state, controls, **The
+Skylight card**, and **Settings and fixes**.
 
 If you already use the Philips Skylight integration, the add-on keeps your
 entities, settings and pairing.
@@ -129,10 +129,12 @@ The proxy reports its firmware number as the **Skylight firmware** diagnostic
 sensor. Firmware from before add-on 0.4.0 has no number, so the page asks for
 one install after the update to 0.4.0.
 
-The add-on finds its card by its shape: a vertical stack that ends with the
-controls and the correction view of the state correction switch. It reads every
-editable dashboard, the default one included, when you open the page, and at
-most every 5 minutes after that.
+The add-on finds older copies of its card by their shape: a vertical stack that
+ends with the controls and the correction view of the state correction switch.
+**Update the card** replaces such a copy with the integration's one-line card,
+`type: custom:philips-skylight-card`. The add-on reads every editable
+dashboard, the default one included, when you open the page, and at most every
+5 minutes after that.
 
 ## Pairing and unpairing
 
@@ -174,12 +176,17 @@ harm, because nothing else sends as Home Assistant's address.
 
 ## The Skylight card
 
-**Create a Skylight dashboard** or **Add to a dashboard** places the card. The
-add-on uses Home Assistant's dashboard API. It checks the dashboard's version
-before it adds the card, and it does not add the same card twice. For YAML
-dashboards, generated dashboards and panel views, use **Download the card
-instead** and paste it into **Edit dashboard → Add card → Manual**. The card
-uses only built-in Home Assistant cards.
+The integration includes the card. It needs no HACS and no download. To add
+it, edit a dashboard, select **Add card**, and search for **Philips Skylight**.
+Home Assistant loads the card when a browser opens Home Assistant. If the card
+is not in the card picker after the first install, reload the page in your
+browser.
+
+The card shows built-in Home Assistant cards, with your real entity IDs. On the
+add-on page, **Create a Skylight dashboard** makes a dashboard with the card.
+If one already exists, the add-on opens it and changes nothing. To change the
+layout, use **Download the card instead** and paste it into **Edit dashboard →
+Add card → Manual**.
 
 The card uses the remote's icons and colors:
 

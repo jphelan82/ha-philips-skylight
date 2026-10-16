@@ -73,6 +73,19 @@ Requires Home Assistant 2026.6 or newer. Firmware was compiled with ESPHome
    ESPHome integration options. This lets its firmware publish raw receive
    events for remote tracking. Sending from HA does not require this permission.
 
+## Dashboard card
+
+The integration includes its own dashboard card, **Philips Skylight**. It works
+the same as with the add-on, and it needs no extra download from HACS. To add
+it, edit a dashboard, select **Add card**, and search for **Philips Skylight**.
+Its YAML is one line: `type: custom:philips-skylight-card`.
+
+Home Assistant loads the card when a browser opens Home Assistant. If the card
+is not in the card picker after the first install, reload the page in your
+browser. The card finds the entities by their unique IDs, so renamed entities
+keep working. If an entity that the card uses is disabled, the card names it.
+The [dashboard guide](DASHBOARD.md) explains the layout.
+
 ## Synchronize power
 
 Check whether the physical panel is illuminated, then run
@@ -200,6 +213,7 @@ python -m venv .venv
 .venv/bin/pip install homeassistant==2026.6.0 pytest pytest-asyncio ruff
 .venv/bin/python -m pytest -q
 .venv/bin/ruff check .
+node --test tests/test_card.mjs
 ```
 
 Tests cover capture decryption, authentication failures, durable reservations,

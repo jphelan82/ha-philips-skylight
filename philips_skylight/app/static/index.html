@@ -128,6 +128,10 @@
 
   <section id="control" hidden>
     <p class="state"><span id="state-text">Unknown</span><span class="hint" id="state-note">Shown state is a best guess</span></p>
+    <div id="power-unknown" hidden>
+      <p>Home Assistant does not know whether the panel is on. Look at the panel and tell it.</p>
+      <div class="row"><button data-action="sync_power" data-on="yes">Panel is on</button><button data-action="sync_power" data-on="no">Panel is off</button></div>
+    </div>
     <button data-action="toggle" class="wide">Power on/off</button>
     <div class="modes" id="modes"></div>
     <div class="row"><button id="dim-down" data-action="dim_down" data-hold="down">Dim −</button><button id="dim-up" data-action="dim_up" data-hold="up">Dim +</button></div>
@@ -139,13 +143,9 @@
   </section>
 
   <section id="dashboard" hidden>
-    <h2>Add to a dashboard</h2>
-    <div class="row"><button data-action="create_dashboard">Create a Skylight dashboard</button><button id="choose-dashboard">Add to a dashboard</button></div>
-    <div id="dashboard-target" hidden>
-      <label>Dashboard<select id="dashboard-choice"></select></label>
-      <label>View<select id="view-choice"></select></label>
-      <button id="add-card" class="primary">Add the card</button>
-    </div>
+    <h2>The Skylight card</h2>
+    <p>The Skylight card is in Home Assistant's card picker. To add it, edit a dashboard, select <strong>Add card</strong>, and search for <strong>Philips Skylight</strong>. If the card is not in the list, reload the page in your browser.</p>
+    <div class="row"><button data-action="create_dashboard">Create a Skylight dashboard</button></div>
     <p class="result" id="dashboard-result" hidden></p>
     <p><a id="dashboard-link" target="_top" hidden>Open the dashboard</a></p>
     <p><a id="card-download" href="api/dashboard-card" download>Download the card instead</a></p>

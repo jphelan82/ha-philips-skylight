@@ -35,6 +35,7 @@ FIRMWARE_SENSOR = re.compile(r"sensor\.\w*skylight_firmware(?:_\d+)?")
 
 LIGHT_ID = unique_id("light")
 SCENE_ID = unique_id("recorded_scene")
+# Mirrors the integration's const.CARD_ENTITIES; tests/test_integration.py checks parity.
 CARD_ENTITIES = {
     "light.philips_skylight": LIGHT_ID,
     "select.philips_skylight_recorded_scene": SCENE_ID,
@@ -121,7 +122,6 @@ class Panel:
         # Actions that need a loaded, current integration. Each takes (entity, body).
         self.light_actions = {
             "create_dashboard": self._create_dashboard,
-            "add_card": self._add_card,
             "sync_state": self._sync_state,
             "sync_mode": self._sync_mode,
             "sync_power": self._sync_power,
@@ -134,6 +134,7 @@ class Panel:
             "dim_hold": self._dim_hold,
             "pair": self._pair,
             "unpair_all": self._unpair_all,
+            "unpair_blinked": self._unpair_blinked,
             "start_over": self._start_over,
             "skip_sequence": self._skip_sequence,
             "test": self._test,
@@ -585,16 +586,6 @@ class Panel:
             )
         return result
 
-    async def _add_card(self, entity, body):
-        self._cards_checked = NEVER
-        return await dashboards.add_card(
-            self.ha,
-            body.get("url_path"),
-            body.get("view_index"),
-            body.get("revision"),
-            self.card_config(),
-        )
-
     async def _sync_state(self, entity, body):
         power, effect = body.get("power"), body.get("effect")
         if power not in ("on", "off") or effect not in (*EFFECTS, "Unknown"):
@@ -647,6 +638,11 @@ class Panel:
         if body.get("confirm") is not True:
             raise ValueError("Tick the box first")
         await self.ha.call(DOMAIN, "unpair_all_remotes", entity, confirm=True)
+
+    async def _unpair_blinked(self, entity, body):
+        # The panel blinked, so the unpair came in time and the panel is on. A late
+        # request would have switched it off instead.
+        await self.ha.call(DOMAIN, "set_assumed_power", entity, is_on=True)
 
     async def _start_over(self, entity, body):
         # Unpair remotes made the panel forget every remote. The setup checklist now
@@ -782,17 +778,10 @@ class Panel:
         return replacements
 
     def card_config(self):
-        card = json.loads((self.root / "static/skylight-cards.json").read_text())["card"]
-        replacements = self.card_entities()
-
-        def replace(value):
-            if isinstance(value, dict):
-                return {key: replace(child) for key, child in value.items()}
-            if isinstance(value, list):
-                return [replace(child) for child in value]
-            return replacements.get(value, value) if isinstance(value, str) else value
-
-        return replace(card)
+        """The card that dashboards get. The integration fills in the controls."""
+        # Fails until Core runs the updated integration with every control entity enabled.
+        self.card_entities()
+        return dict(dashboards.CARD)
 
     async def dashboard_card(self, request):
         """Export standard cards using registry IDs, including renamed entities."""
@@ -811,21 +800,6 @@ class Panel:
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
 
-    async def dashboard_choices(self, request):
-        try:
-            path = request.query.get("url_path")
-            if path is None:
-                result = {"dashboards": await dashboards.list_dashboards(self.ha)}
-            else:
-                config = await dashboards.load_dashboard(self.ha, path)
-                result = {
-                    "views": dashboards.editable_views(config),
-                    "revision": dashboards.revision(config),
-                }
-            return web.json_response(result)
-        except (ValueError, HAError, aiohttp.ClientError, TimeoutError) as err:
-            return web.json_response({"error": str(err)[:400]}, status=400)
-
     def app(self):
         app = web.Application(middlewares=[self.access], client_max_size=8192)
         app.router.add_get("/", self.index)
@@ -833,7 +807,6 @@ class Panel:
         app.router.add_post("/api/action", self.action)
         app.router.add_get("/api/firmware", self.firmware)
         app.router.add_get("/api/dashboard-card", self.dashboard_card)
-        app.router.add_get("/api/dashboards", self.dashboard_choices)
         app.router.add_get("/health", self.health)
         app.router.add_static("/static/", self.root / "static")
         return app

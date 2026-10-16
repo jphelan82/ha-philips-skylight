@@ -1,7 +1,7 @@
 """Configuration and protocol constants."""
 
 DOMAIN = "philips_skylight"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 CONF_TRANSMIT_SERVICE = "transmit_service"
 CONF_PROXY_ENTITY = "proxy_entity"
 RECEIVE_EVENT = "esphome.ble_adv.raw_adv"
@@ -38,3 +38,21 @@ PAIRING_BURST = 10
 PAIRING_RATE = 2
 # Keep the recorded power and mode if the proxy comes back within this many seconds.
 OUTAGE_GRACE = 60
+# The dashboard card's default entity IDs, each with the registry unique ID that
+# finds the entity after a rename. The add-on's server keeps the same table.
+UNIQUE_ID_PREFIX = "factory_mesh_7ffe_"
+CARD_ENTITIES = {
+    "light.philips_skylight": UNIQUE_ID_PREFIX + "light",
+    "select.philips_skylight_recorded_scene": UNIQUE_ID_PREFIX + "recorded_scene",
+    "switch.philips_skylight_state_correction": UNIQUE_ID_PREFIX + "state_correction",
+    **{
+        "button.philips_skylight_" + slug: UNIQUE_ID_PREFIX + slug
+        for slug in (
+            name.lower().replace(" ", "_")
+            for name in ("dim_down", "dim_up", *EFFECTS, "record_panel_on", "record_panel_off")
+        )
+    },
+    "button.philips_skylight_set_auto_rhythm_start": UNIQUE_ID_PREFIX + RHYTHM_START,
+}
+# The card script's address. The frontend loads it on every page.
+CARD_URL = f"/{DOMAIN}/philips-skylight-card.js"

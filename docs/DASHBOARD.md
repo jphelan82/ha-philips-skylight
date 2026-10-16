@@ -1,8 +1,11 @@
 # Skylight dashboard card
 
-The Skylight card is built from Home Assistant's own tiles, grids, headings and
-conditional cards. It needs no HACS card, dashboard resource, helper or
-automation. The Skylight integration supplies the entities.
+The Skylight integration includes its own card, **Philips Skylight**. The card
+shows Home Assistant's own tiles, grids, headings and conditional cards. It
+needs no HACS (the Home Assistant Community Store), no download, no dashboard
+resource, no helper and no automation. The integration supplies the entities
+and the card. The card finds each entity by its unique ID in the entity
+registry, so renamed entities keep working.
 
 ## The layout
 
@@ -43,22 +46,36 @@ commands and never reports its level.
 
 ## Add the card
 
-On the add-on page:
+Use Home Assistant's card picker:
+
+1. Open a dashboard, then select **Edit dashboard**.
+2. Select **Add card**.
+3. Search for **Philips Skylight**, then select it.
+4. Select **Save**.
+
+The card needs no options. Its YAML is one line:
+
+```yaml
+type: custom:philips-skylight-card
+```
+
+Home Assistant loads the card's script when a browser opens Home Assistant. If
+the card is not in the card picker after the first install, reload the page in
+your browser.
+
+The add-on page also has two shortcuts:
 
 - **Create a Skylight dashboard** makes a dashboard with the card. If one
   already exists, the add-on opens it and changes nothing.
-- **Add to a dashboard** adds the card to a view you choose and keeps the rest
-  of that dashboard. A sections view gets a new section.
+- **Download the card instead** saves the standard cards as YAML, with your
+  real entity IDs. Use it to change the layout. Select **Edit dashboard → Add
+  card → Manual** and paste it. The generated
+  [card](../philips_skylight/app/static/skylight-card.yaml) is also in this
+  repository.
 
-The add-on does not add the same card twice. If the dashboard changed since you
-chose the view, choose it again first. Do not edit the same dashboard in another
-window while the add-on adds the card.
-
-For YAML dashboards, panel views and generated dashboards, select **Download the
-card instead**. Then use **Edit dashboard → Add card → Manual** and paste it.
-The download fills in your real entity IDs, renamed ones included. The
-generated [card](../philips_skylight/app/static/skylight-card.yaml) is also in
-this repository.
+Older versions of the add-on put the full stack of standard cards on a
+dashboard. If a dashboard holds such a copy, the add-on page shows **Update the
+card**. It replaces that copy with the one-line card.
 
 ## Correct the state
 
@@ -90,5 +107,5 @@ You can also add the entities to your own cards:
 | State correction | Switches the card between controls and correction. Sends nothing. |
 
 The correction entities appear in the device's **Configuration** section. Keep
-them enabled. Otherwise the card download names the missing entity instead of
-making a broken card.
+them enabled. If an entity that the card uses is disabled, the card names that
+entity instead of showing broken controls. The card download does the same.

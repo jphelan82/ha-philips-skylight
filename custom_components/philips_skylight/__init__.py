@@ -5,6 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
+from .card import async_setup_card
 from .const import DOMAIN
 from .controller import SkylightConfigEntry, SkylightController
 from .services import async_setup_services
@@ -15,6 +16,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async_setup_services(hass)
+    await async_setup_card(hass)
     return True
 
 

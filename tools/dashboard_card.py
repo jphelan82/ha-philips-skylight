@@ -28,6 +28,8 @@ EDIT = "switch.philips_skylight_state_correction"
 RHYTHM_START = "button.philips_skylight_set_auto_rhythm_start"
 OUTPUT = ROOT / "philips_skylight/app/static/skylight-card.yaml"
 JSON_OUTPUT = OUTPUT.with_name("skylight-cards.json")
+# The integration's own card fills in this template with the registry's entity IDs.
+INTEGRATION_OUTPUT = ROOT / "custom_components/philips_skylight/card.json"
 
 
 def action(service, entity, **data):
@@ -244,6 +246,7 @@ def generated_files():
     return {
         OUTPUT: rendered_card(),
         JSON_OUTPUT: json.dumps({"card": build_card()}, indent=2) + "\n",
+        INTEGRATION_OUTPUT: json.dumps(build_card(), indent=2) + "\n",
     }
 
 

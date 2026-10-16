@@ -18,8 +18,6 @@ let modeTimer = null;
 // What the last status showed, so the page can say when an install has finished.
 let lastProxyReady = null;
 let lastFirmware = null;
-let dashboardRevision = null;
-let dashboardRead = 0;
 const el = (id) => document.getElementById(id);
 const show = (id, visible) => { el(id).hidden = !visible; };
 // Home Assistant shows this page in a frame from its own address, so the page can
@@ -300,6 +298,8 @@ function render(data) {
   el("card-dashboards").textContent = cards.join(", ");
   el("state-text").textContent = data.state === "on" ? "On" + (data.effect ? " · " + data.effect : "")
     : data.state === "off" ? "Off" : "State unknown";
+  // While the power is unknown, the answer sits right under it, not only in Settings and fixes.
+  show("power-unknown", data.state !== "on" && data.state !== "off");
   modeButtons("modes", "scene", data.effects);
   modeButtons("setup-modes", "finish_setup", data.effects);
   options("observed-mode", ["Unknown", ...data.effects]);
@@ -310,7 +310,6 @@ function render(data) {
   for (const button of document.querySelectorAll("button")) {
     button.disabled = buttonDisabled(button.dataset.action, data);
   }
-  el("add-card").disabled ||= !dashboardRevision || !el("view-choice").value;
 }
 // The add-on answers in JSON. Plain text comes from its access check, which refuses
 // an old action session after the add-on restarts. An HTML page comes from Home Assistant.
@@ -358,7 +357,6 @@ const results = {
   finish_setup: () => "Setup is complete.",
   setup: () => "",
   create_dashboard: (body, result) => result.created ? "Dashboard created." : "You already have a Skylight dashboard.",
-  add_card: (body, result) => result.added ? "Card added." : "That view already has the card.",
   skip_sequence: () => "Counter moved forward. Try the power button above.",
   unpair_all: () => "",
   start_over: () => "Home Assistant pairs next. Follow the setup steps at the top of this page.",
@@ -368,7 +366,7 @@ const results = {
 };
 // The notice bar sits at the top of the page. A result from further down also
 // shows next to the button that caused it, where the user is looking.
-const BESIDE = {create_dashboard: "dashboard-result", add_card: "dashboard-result",
+const BESIDE = {create_dashboard: "dashboard-result",
   unpair_all: "unpair-1-result", start_over: "unpair-3-result", skip_sequence: "skip-result",
   update_card: "card-result"};
 function besideButton(kind, message, error) {
@@ -412,7 +410,6 @@ async function action(body) {
     if (body.action === "unpair_all") { el("unpair-confirm").checked = false; unpairStage = "wait"; unpairSeen = false; unpairStarted = Date.now(); }
     // The setup checklist shows only after the next status, so scroll after the refresh.
     if (body.action === "start_over") { pairStage = "pair"; unpairStage = "ready"; clearUnpairResults(); scrollToSetup = true; }
-    if (body.action === "add_card") await loadViews();
   } catch (error) {
     // Home Assistant can drop the request as it shuts down for the restart.
     if (body.action === "restart") { restarting = true; notice(""); }
@@ -424,31 +421,6 @@ async function action(body) {
     keepFocus(focused);
     if (scrollToSetup && !el("setup").hidden) el("setup").scrollIntoView({behavior: "smooth"});
   }
-}
-async function loadViews() {
-  const read = ++dashboardRead;
-  dashboardRevision = null;
-  options("view-choice", [], "Choose a view");
-  if (state) render(state);
-  const path = el("dashboard-choice").value;
-  if (!path) return;
-  try {
-    const result = await get("api/dashboards?url_path=" + encodeURIComponent(path));
-    if (read !== dashboardRead) return;
-    dashboardRevision = result.revision;
-    options("view-choice", result.views.map((view) => ({value: String(view.index), name: view.title})), "Choose a view");
-    if (!result.views.length) notice("That dashboard has no views that can be changed. Create a Skylight dashboard instead.", true);
-  } catch (error) { if (read === dashboardRead) notice(error.message, true); }
-  if (state) render(state);
-}
-async function chooseDashboard() {
-  try {
-    const result = await get("api/dashboards");
-    options("dashboard-choice", result.dashboards.map((item) => ({value: item.url_path, name: item.title})), "Choose a dashboard");
-    el("dashboard-target").hidden = false;
-    if (!result.dashboards.length) notice("No dashboard can be changed. Create a Skylight dashboard instead.", true);
-    await loadViews();
-  } catch (error) { notice(error.message, true); }
 }
 function connectBody(button) {
   if (button.dataset.from === "advanced") {
@@ -520,9 +492,6 @@ document.addEventListener("click", (event) => {
   if (!button || button.disabled) return;
   // Pointer presses on dim buttons are handled above; a keyboard press is one step.
   if (button.dataset.hold && event.detail !== 0) return;
-  if (button.id === "choose-dashboard") return chooseDashboard();
-  if (button.id === "add-card") return action({action: "add_card", url_path: el("dashboard-choice").value,
-    view_index: Number(el("view-choice").value), revision: dashboardRevision});
   const kind = button.dataset.action;
   if (!kind) return;
   if (kind === "restart" && !confirm("Restart Home Assistant now?")) return;
@@ -542,7 +511,10 @@ document.addEventListener("click", (event) => {
     clearUnpairResults();
     besideButton("unpair_all", blinked ? "" : "The panel did not unpair. Switch the power off and on, wait until it is back on, then select Unpair all straight away.", !blinked);
     if (state) render(state);
-    return keepFocus(focused);
+    keepFocus(focused);
+    // A blink means the request came in time, so the panel is on. Record that.
+    if (blinked) action({action: "unpair_blinked"});
+    return;
   }
   if (kind === "connect") return action(connectBody(button));
   if (kind === "prepare_firmware") return el("node-choice").value
@@ -564,7 +536,5 @@ el("observed-mode").addEventListener("change", () => {
   clearTimeout(modeTimer);
   modeTimer = setTimeout(sendMode, 600);
 });
-el("dashboard-choice").addEventListener("change", loadViews);
-el("view-choice").addEventListener("change", () => state && render(state));
 refresh();
 setInterval(refresh, 2000);

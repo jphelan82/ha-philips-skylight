@@ -30,7 +30,7 @@ I have tried to make the setup of this as easy as possible, although it required
 
 <p>
   <img src="docs/images/dashboard.png" width="320" alt="The Skylight card on a Home Assistant dashboard. The top tile shows the panel on in Auto rhythm, and glows purple. Below are the six mode buttons, then Correct, Rhythm set, Dim minus and Dim plus.">
-  <img src="docs/images/addon-controls.png" width="400" alt="The add-on page after setup: the shown state, On and Relax, with buttons for power, the six modes and dimming, then dashboard tools and Settings and fixes.">
+  <img src="docs/images/addon-controls.png" width="400" alt="The add-on page after setup: the shown state, On and Relax, with buttons for power, the six modes and dimming, then the Skylight card section and Settings and fixes.">
 </p>
 
 - **A light entity.** The Skylight appears in Home Assistant as a light, with
@@ -52,10 +52,10 @@ I have tried to make the setup of this as easy as possible, although it required
   every remote and pair them again, from the add-on page or the integration's
   settings.
 - **A ready-made dashboard card.** It uses the remote's icons and colors, and
-  the top tile glows in the current mode's color. It is built from Home
-  Assistant's own cards, so it needs no custom card or HACS (the Home Assistant
-  Community Store). The add-on creates a Skylight dashboard or adds the card to
-  one of yours.
+  the top tile glows in the current mode's color. The integration includes the
+  card, so it needs no HACS (the Home Assistant Community Store) and no
+  download. Find it in Home Assistant's card picker: search for **Philips
+  Skylight**. The add-on can also create a Skylight dashboard for you.
 - **Guided setup.** A setup checklist adds the Skylight firmware to your [ESPHome
   Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/), with backups, connects it, pairs the panel and tests it.
 - **Guided updates.** After an update, the add-on page lists any step left: a
@@ -222,8 +222,10 @@ setup. The setup checklist has a step for it.
       remote**.
       Finally, choose a mode. The panel switches on in that mode, so Home
       Assistant knows its state.
-5. Optional: create a Skylight dashboard, or add the Skylight card to one of
-   your dashboards. You can also use the entities in your own cards.
+5. Optional: add the Skylight card to a dashboard. Edit the dashboard, select
+   **Add card**, and search for **Philips Skylight**. If the card is not in the
+   list, reload the page in your browser. The add-on page can also create a
+   Skylight dashboard. You can also use the entities in your own cards.
 
 <p>
   <img src="docs/images/addon-setup.png" width="400" alt="The add-on's setup checklist, step 1: choose a Bluetooth proxy and select Add Skylight firmware. Steps 2 to 4 follow.">
@@ -374,7 +376,8 @@ changed.
 | No proxy appears | The setup checklist lists the [Bluetooth proxies](https://esphome.io/components/bluetooth_proxy/) in your ESPHome folder. If none is listed, set up a [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/) first. |
 | Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
 | The dashboard shows Unknown, or the wrong power or mode | Use **Correct** and record what you see. |
-| The card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
+| The card or the card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
+| The card picker has no Philips Skylight card | Reload the page in your browser. Home Assistant loads the card when the page opens. |
 | Your wall remote stops working after setup | Pair your wall remote again first: switch the panel's power off and on at its light switch or breaker, wait until it is back on, then hold the remote's power button for 10 seconds until the panel blinks. Home Assistant keeps working. If that does not help, use **Settings and fixes → Unpair remotes** on the add-on page. It unpairs every remote, then pairs Home Assistant and your wall remote again, in that order. |
 | The panel ignores every command | Check that the proxy is online. If the panel still ignores Home Assistant, use **Settings and fixes → Unpair remotes** on the add-on page. Do not pair Home Assistant a second time: the panel can drop your remote. |
 | Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |

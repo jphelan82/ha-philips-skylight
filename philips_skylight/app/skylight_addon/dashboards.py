@@ -1,23 +1,12 @@
 """Optional, additive dashboard setup through the native Lovelace API."""
 
 import copy
-import hashlib
-import json
-import re
 
 from .ha import HAError
 
 PATH = "skylight-control"
-
-
-def revision(config):
-    return hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
-
-
-def validate_path(path):
-    if not isinstance(path, str) or not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", path):
-        raise ValueError("Choose a dashboard from the list")
-    return path
+# The integration's own card. It builds the controls from the registry's entity IDs.
+CARD = {"type": "custom:philips-skylight-card"}
 
 
 async def list_dashboards(ha):
@@ -28,32 +17,6 @@ async def list_dashboards(ha):
         {"url_path": item["url_path"], "title": item.get("title", item["url_path"])}
         for item in dashboards
         if item.get("mode") == "storage"
-    ]
-
-
-async def load_dashboard(ha, path):
-    validate_path(path)
-    if path not in {item["url_path"] for item in await list_dashboards(ha)}:
-        raise ValueError("Choose an editable storage dashboard")
-    return await ha.request("lovelace/config", url_path=path, force=True)
-
-
-def view_type(view):
-    """The view's layout. Home Assistant treats a view with sections as a sections
-    view even when it names no type, so the card must go into a section there."""
-    if view.get("type"):
-        return view["type"]
-    return "sections" if "sections" in view else "masonry"
-
-
-def editable_views(config):
-    if config.get("strategy"):
-        return []  # Never take control of an automatically generated dashboard.
-    return [
-        {"index": index, "title": view.get("title", f"View {index + 1}")}
-        for index, view in enumerate(config.get("views", []))
-        if not view.get("strategy")
-        and view_type(view) in ("sections", "masonry", "sidebar")
     ]
 
 
@@ -94,41 +57,16 @@ async def create_dashboard(ha, card):
     return {"url": f"/{PATH}/panel", "created": True}
 
 
-async def add_card(ha, path, index, expected_revision, card):
-    config = await load_dashboard(ha, path)
-    if not expected_revision or revision(config) != expected_revision:
-        raise ValueError("Dashboard changed. Refresh the dashboard choices before adding the card")
-    if type(index) is not int or index not in {view["index"] for view in editable_views(config)}:
-        raise ValueError("Choose an editable view; strategy and panel views use manual card setup")
-    updated = copy.deepcopy(config)
-    view = updated["views"][index]
-
-    def contains(value):
-        if value == card:
-            return True
-        if isinstance(value, dict):
-            return any(contains(child) for child in value.values())
-        if isinstance(value, list):
-            return any(contains(child) for child in value)
-        return False
-
-    if contains(view):
-        return {"url": f"/{path}/{view.get('path', index)}", "added": False}
-    if view_type(view) == "sections":
-        view.setdefault("sections", []).append({"type": "grid", "cards": [card]})
-    else:
-        view.setdefault("cards", []).append(card)
-    await ha.request("lovelace/config/save", url_path=path, config=updated)
-    return {"url": f"/{path}/{view.get('path', index)}", "added": True}
-
-
 def is_skylight_card(value, switch):
-    """Whether a card is the add-on's card, in any version.
+    """Whether a card is the Skylight card, in any version.
 
-    Every version is a vertical stack that ends with two conditional cards. They
-    show the controls or the correction view from the state correction switch.
-    The older Full card has a heading before them.
+    The current card is the integration's one-line card. Every older version is a
+    vertical stack that ends with two conditional cards. They show the controls or
+    the correction view from the state correction switch. The older Full card has a
+    heading before them.
     """
+    if isinstance(value, dict) and value.get("type") == CARD["type"]:
+        return True
     if not isinstance(value, dict) or value.get("type") != "vertical-stack":
         return False
     cards = value.get("cards")
@@ -154,10 +92,11 @@ def replace_cards(config, switch, card):
     def walk(value):
         nonlocal replaced
         if is_skylight_card(value, switch):
-            if value != card:
-                replaced += 1
-                return copy.deepcopy(card)
-            return value
+            # The one-line card is never outdated, even with the user's own options.
+            if value == card or value.get("type") == CARD["type"]:
+                return value
+            replaced += 1
+            return copy.deepcopy(card)
         if isinstance(value, dict):
             return {key: walk(child) for key, child in value.items()}
         if isinstance(value, list):
