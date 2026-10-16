@@ -380,6 +380,26 @@ Tested on 2026-10-15 on the owner's panel, with integrations 0.3.3 and 0.3.4.
 - Pairing Home Assistant first and the remote second left both working, each
   time it was tried. Add-on 0.4.23 uses that order.
 
+## Add-on 0.6.0 and 0.6.1
+
+Tested on 2026-10-16 on the owner's Home Assistant, with integration 0.5.0 and
+Skylight firmware 3.
+
+- The proxy reported firmware 3 after its install from Device Builder.
+- Home Assistant served the card script, and its page loaded it. The browser
+  defined `philips-skylight-card` and listed it first in the card picker. The
+  console showed no errors.
+- **Add card** opens on **By entity**, which lists entities only. On **By
+  card**, a search for "Skylight" showed **Philips Skylight** with a live
+  preview of the full card. Version 0.6.1 names the tab in the instructions.
+- The Skylight dashboard held the one-line card, and it drew the full card.
+- A page and the Android app that loaded before the restart showed a
+  configuration error for the card. A reload, and a reset of the app's
+  frontend cache, fixed it.
+- The first restart after the update did not keep the light's state. The light
+  ran integration 0.4.0 at shutdown, and that version did not save a state to
+  restore. Later restarts save it.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store

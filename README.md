@@ -385,6 +385,7 @@ changed.
 | The panel ignores every command | Check that the proxy is online. If the panel still ignores Home Assistant, use **Settings and fixes → Unpair remotes** on the add-on page. Do not pair Home Assistant a second time: the panel can drop your remote. |
 | Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
 | An update asks for a restart | Restart Home Assistant from the add-on page. |
+| A dashboard shows "Configuration error" or "Custom element doesn't exist" for the Skylight card | The page loaded before the update. Reload the page. In the Home Assistant app, go to **Settings → Companion app → Troubleshooting** and select **Reset frontend cache**. |
 | An install or update fails with "not enough free space" | Home Assistant needs about 2 GB free to install any app. Delete old local backups. |
 
 ## Ideas for later
