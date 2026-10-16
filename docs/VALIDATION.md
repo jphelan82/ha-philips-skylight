@@ -399,6 +399,10 @@ Skylight firmware 3.
 - The first restart after the update did not keep the light's state. The light
   ran integration 0.4.0 at shutdown, and that version did not save a state to
   restore. Later restarts save it.
+- An integration reload tested the restore. The record was set to on and
+  Refresh. The light was unavailable for 17 ms during the reload, then came
+  back on, in Refresh. The recorded scene also came back as Refresh. Nothing
+  went to the panel.
 
 ## Rollback
 
