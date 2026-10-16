@@ -177,7 +177,7 @@ harm, because nothing else sends as Home Assistant's address.
 ## The Skylight card
 
 The integration includes the card. It needs no HACS and no download. To add
-it, edit a dashboard, select **Add card**, and search for **Philips Skylight**.
+it, edit a dashboard, select **Add card**, open the **By card** tab, and search for **Philips Skylight**.
 Home Assistant loads the card when a browser opens Home Assistant. If the card
 is not in the card picker after the first install, reload the page in your
 browser.

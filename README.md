@@ -223,7 +223,7 @@ setup. The setup checklist has a step for it.
       Finally, choose a mode. The panel switches on in that mode, so Home
       Assistant knows its state.
 5. Optional: add the Skylight card to a dashboard. Edit the dashboard, select
-   **Add card**, and search for **Philips Skylight**. If the card is not in the
+   **Add card**, open the **By card** tab, and search for **Philips Skylight**. If the card is not in the
    list, reload the page in your browser. The add-on page can also create a
    Skylight dashboard. You can also use the entities in your own cards.
 

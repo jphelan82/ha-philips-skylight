@@ -78,7 +78,7 @@ Requires Home Assistant 2026.6 or newer. Firmware was compiled with ESPHome
 
 The integration includes its own dashboard card, **Philips Skylight**. It works
 the same as with the add-on, and it needs no extra download from HACS. To add
-it, edit a dashboard, select **Add card**, and search for **Philips Skylight**.
+it, edit a dashboard, select **Add card**, open the **By card** tab, and search for **Philips Skylight**.
 Its YAML is one line: `type: custom:philips-skylight-card`.
 
 Home Assistant loads the card when a browser opens Home Assistant. If the card

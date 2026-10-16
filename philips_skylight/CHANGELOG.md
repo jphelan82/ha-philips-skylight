@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1
+
+- The add-on page and the docs say to open the **By card** tab in **Add card**.
+  The dialog opens on **By entity**, which lists entities only, so a search
+  there does not find the Skylight card.
+
 ## 0.6.0
 
 This version needs a Home Assistant restart for integration 0.5.0, then one

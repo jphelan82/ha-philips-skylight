@@ -50,8 +50,10 @@ Use Home Assistant's card picker:
 
 1. Open a dashboard, then select **Edit dashboard**.
 2. Select **Add card**.
-3. Search for **Philips Skylight**, then select it.
-4. Select **Save**.
+3. Open the **By card** tab. The dialog opens on **By entity**, which lists
+   entities only.
+4. Search for **Philips Skylight**, then select it.
+5. Select **Save**.
 
 The card needs no options. Its YAML is one line:
 

@@ -44,7 +44,7 @@ or HACS. The integration includes its own dashboard card. It was tested with the
       for 10 seconds. Then select **The remote works**, **Skip – my remote is
       already working**, or **I have no remote**. Last, choose a mode.
 4. Optional: add the Skylight card to a dashboard. Edit the dashboard, select
-   **Add card**, and search for **Philips Skylight**. If the card is not in the
+   **Add card**, open the **By card** tab, and search for **Philips Skylight**. If the card is not in the
    list, reload the page in your browser.
 
 To update, update the add-on in **Settings → Apps**, then open its page. A
