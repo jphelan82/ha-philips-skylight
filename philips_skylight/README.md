@@ -38,10 +38,11 @@ or a custom dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
    3. **Let Home Assistant hear your remote.** Select **Allow**.
    4. **Pair Home Assistant with the panel.** Switch the panel's power off at
       its light switch or breaker, then on again. When the panel is back on,
-      select **Pair** straight away. The panel blinks. Then test it. Next, pair
-      your wall remote again: switch the panel's power off and on, and hold the
-      remote's power button for 10 seconds. Select **The remote works**, or **I
-      have no remote**. Last, choose a mode.
+      select **Pair** straight away. The panel blinks. Then test it. Next,
+      check that your wall remote still works. If it does not, pair it again:
+      switch the panel's power off and on, and hold the remote's power button
+      for 10 seconds. Then select **The remote works**, **Skip – my remote is
+      already working**, or **I have no remote**. Last, choose a mode.
 4. Optional: add the Skylight card to a dashboard.
 
 To update, update the add-on in **Settings → Apps**, then open its page. A

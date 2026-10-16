@@ -268,7 +268,7 @@ function render(data) {
   const afterUnpair = data.setup_after_unpair === true;
   el("pair-remote-text").textContent = afterUnpair
     ? "It works. Unpair all removed your wall remote too, so pair the remote again now."
-    : "It works. Pairing Home Assistant often unpairs your wall remote. Press the remote's power button. If the panel does not respond, pair the remote again:";
+    : "It works. Check that your wall remote still works. If it does not, pair it again here:";
   show("remote-skip", !afterUnpair);
   show("pair-mode", pairing && pairStage === "mode");
 

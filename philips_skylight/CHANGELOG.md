@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1
+
+- On a first install, the remote step after pairing now opens with a check:
+  "Check that your wall remote still works. If it does not, pair it again
+  here." The docs describe the step the same way.
+
 ## 0.5.0
 
 A review of all the code found the problems below. This version fixes them.

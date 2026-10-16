@@ -215,10 +215,11 @@ setup. The setup checklist has a step for it.
    4. **Pair Home Assistant with the panel.** See [Pairing](#pairing). The page
       shows "Pairing…" for 10 seconds. Then select **Switch the panel on or
       off**, and say what the panel did.
-      Next, pair your wall remote again. It stopped working when Home
-      Assistant paired. Switch the panel's power off and on, wait until it is
-      back on, and hold the remote's power button for 10 seconds. Then select
-      **The remote works**, or **I have no remote**.
+      Next, check that your wall remote still works. If it does not, pair it
+      again: switch the panel's power off and on, wait until it is back on, and
+      hold the remote's power button for 10 seconds. Then select **The remote
+      works**, **Skip – my remote is already working**, or **I have no
+      remote**.
       Finally, choose a mode. The panel switches on in that mode, so Home
       Assistant knows its state.
 5. Optional: create a Skylight dashboard, or add the Skylight card to one of
@@ -291,9 +292,9 @@ Updates do not need it.
 2. Wait until the panel is back on. That can take up to 30 seconds.
 3. Select **Pair** straight away. Home Assistant sends the pairing request for
    10 seconds, and the panel blinks.
-4. Pair your wall remote again: switch the power off and on, wait until the
-   panel is back on, then hold the remote's power button for 10 seconds until
-   the panel blinks.
+4. Check that your wall remote still works. If it does not, pair it again:
+   switch the power off and on, wait until the panel is back on, then hold the
+   remote's power button for 10 seconds until the panel blinks.
 
 Step 4 matters. Pairing Home Assistant can make the panel drop your remote.
 Pairing the remote afterward keeps both working. The setup checklist on the

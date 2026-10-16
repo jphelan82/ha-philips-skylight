@@ -176,7 +176,7 @@ test("setup checklist walks from firmware to a passed pairing test", async () =>
   assert.equal(element("pair-remote").hidden, false); // Pair the wall remote after Home Assistant.
   // A first install: the remote often still works, so the user can skip.
   assert.equal(element("remote-skip").hidden, false);
-  assert.match(element("pair-remote-text").textContent, /often unpairs your wall remote/);
+  assert.match(element("pair-remote-text").textContent, /Check that your wall remote still works/);
   const sent = posts.length;
   await press({action: "remote_paired"});
   assert.equal(posts.length, sent); // Nothing goes to the panel.

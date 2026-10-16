@@ -77,10 +77,11 @@ again.
    changes it through the ESPHome integration's own settings dialog.
 5. **Pair Home Assistant with the panel.** See [Pairing](#pairing-and-unpairing).
    Then select **Switch the panel on or off**, and say what the panel did. That
-   answer records the real power. Next, pair your wall remote again. It stopped
-   working when Home Assistant paired. Switch the panel's power off and on, wait
+   answer records the real power. Next, check that your wall remote still works.
+   If it does not, pair it again: switch the panel's power off and on, wait
    until it is back on, and hold the remote's power button for 10 seconds. Then
-   select **The remote works**, or **I have no remote**. Last, choose a mode. A
+   select **The remote works**, **Skip – my remote is already working**, or **I
+   have no remote**. Last, choose a mode. A
    mode switches the panel on in that mode, so Home Assistant then knows both.
 
 After setup, the page shows the panel's recorded state, controls, the
@@ -142,12 +143,12 @@ The panel accepts a pairing request only for a short time after it comes back on
 2. Wait until the panel is back on. That can take up to 30 seconds.
 3. Select **Pair** straight away. Home Assistant sends the request for 10
    seconds, and the panel blinks.
-4. Pair your wall remote again: switch the power off and on, wait until the
-   panel is back on, then hold the remote's power button for 10 seconds until
-   the panel blinks.
+4. Check that your wall remote still works. If it does not, pair it again:
+   switch the power off and on, wait until the panel is back on, then hold the
+   remote's power button for 10 seconds until the panel blinks.
 
 Pairing Home Assistant can make the panel drop your remote. Pairing the remote
-afterward keeps both working, so the setup checklist has you do it. Pairing
+afterward keeps both working, so the setup checklist has you check it. Pairing
 never happens by itself.
 
 If your wall remote stops working later, pair the remote again first: switch
