@@ -112,9 +112,9 @@ This is an experimental project. Please read these limits before you install it.
   reports its level. So Home Assistant shows no brightness slider, and
   Home Assistant ignores a brightness in `light.turn_on`. Color temperature
   has no command either.
-- **Two owners have tried it.** One tested it with the NatureConnect/BioUp
-  17.7 × 25.6 inch panel and an ESP32-C3 proxy. The second owner's panel and
-  proxy models are unknown. Nobody has reported on other models yet.
+- **A few owners have tried it.** One tested it with the NatureConnect/BioUp
+  17.7 × 25.6 inch panel and an ESP32-C3 proxy. The other owners' panel and
+  proxy models are unknown.
 - **The add-on needs Home Assistant OS or Supervised.** For Container or Core
   installs, use the [integration-only guide](docs/INTEGRATION.md).
 
