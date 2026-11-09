@@ -51,6 +51,10 @@ ACTIONS = {
         },
         lambda controller, data: controller.async_dim(data["direction"], data["hold"]),
     ),
+    "test_onoff_get": (
+        {},
+        lambda controller, data: controller.async_test_onoff_get(),
+    ),
     "skip_sequence": (
         _confirm(SKIP_CONFIRM),
         lambda controller, data: controller.async_skip_sequence(),
