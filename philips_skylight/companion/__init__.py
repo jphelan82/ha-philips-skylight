@@ -31,6 +31,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SkylightConfigEntry) -> 
     entry.async_on_unload(controller.async_stop)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await controller.async_setup_receiver()
+    # The panel reports its power when asked. Unload cancels this task.
+    controller.async_start_status()
     return True
 
 

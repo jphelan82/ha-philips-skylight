@@ -58,7 +58,7 @@ class SkylightLight(SkylightEntity, LightEntity, RestoreEntity):
     def extra_state_attributes(self):
         return {
             "integration_version": VERSION,
-            "state_feedback": "assumed; panel does not report state",
+            "state_feedback": "power reported by the panel when asked; mode assumed",
             "last_command": self.controller.state.last_command,
             "power_synchronized": self.is_on is not None,
             "assumed_effect": self.controller.state.effect,

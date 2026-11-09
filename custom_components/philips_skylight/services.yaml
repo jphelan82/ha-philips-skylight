@@ -1,6 +1,13 @@
+refresh_power:
+  name: Refresh power
+  description: Ask the panel whether it is on or off. The panel answers within about a second, and Home Assistant records the answer. Does not change the light. Home Assistant also asks after setup, after a toggle, after a proxy outage, and every five minutes.
+  target:
+    entity:
+      integration: philips_skylight
+      domain: light
 set_assumed_power:
   name: Set assumed power
-  description: Tell Home Assistant the physical light's current power state without sending a command. Required after restart or a proxy outage before using turn_off, or turn_on without an effect.
+  description: Tell Home Assistant the physical light's current power state without sending a command. Use this only if the panel does not answer refresh_power.
   target:
     entity:
       integration: philips_skylight

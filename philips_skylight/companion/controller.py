@@ -1,6 +1,7 @@
 """Serialize commands and forward authenticated packets to an ESPHome proxy."""
 
 import asyncio
+import contextlib
 import logging
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -17,15 +18,27 @@ from .const import (
     CONF_PROXY_ENTITY,
     CONF_TRANSMIT_SERVICE,
     DOMAIN,
+    EFFECTS,
     HOLD_INTERVAL,
     OUTAGE_GRACE,
     PAIRING_BURST,
     PAIRING_RATE,
     RECEIVE_EVENT,
+    SOURCE,
+    STATUS_DELAY,
+    STATUS_INTERVAL,
+    STATUS_WINDOW,
     STORAGE_KEY,
 )
 from .model import AssumedState, RemoteTracker
-from .protocol import MeshCodec, command_payload, pairing_payload, unpair_all_payload
+from .protocol import (
+    ONOFF_GET,
+    MeshCodec,
+    command_payload,
+    onoff_status,
+    pairing_payload,
+    unpair_all_payload,
+)
 from .sequence import SequenceAllocator
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,6 +65,12 @@ class SkylightController:
         # Background sends and setup calls that unload cancels.
         self.tasks: set[asyncio.Task] = set()
         self.stopped = False
+        # Counts sends and remote presses that can change the power. A status
+        # answer counts only if this count did not change after its request.
+        self.power_changes = 0
+        self.status_request: tuple[int, asyncio.Future[bool]] | None = None
+        self.status_due = monotonic() + STATUS_DELAY
+        self.status_wake = asyncio.Event()
 
     @property
     def transmitter_ready(self) -> bool:
@@ -90,10 +109,38 @@ class SkylightController:
         except ValueError:
             return
         for message in self.codec.decode(advertisement):
+            if message.destination == SOURCE:
+                self._receive_status(message.source, message.payload)
+                continue
             command = self.remote.accept(message)
             if command is not None:
+                if command == "toggle" or command in EFFECTS:
+                    self.power_changes += 1
                 self.state.apply(command)
                 self.notify()
+                if command == "toggle":
+                    self.request_status(STATUS_DELAY)
+
+    @callback
+    def _receive_status(self, source: int, payload: bytes) -> None:
+        """Apply the panel's answer to the open Generic OnOff Get, if any."""
+        power = onoff_status(payload)
+        request = self.status_request
+        if power is None or request is None or not 1 <= source <= 0x7FFF or source == SOURCE:
+            return
+        changes, answer = request
+        if answer.done():
+            return
+        if changes != self.power_changes:
+            # The answer can describe the power from before the newer command.
+            answer.set_result(False)
+            return
+        _LOGGER.debug("Skylight panel 0x%04X reports power %s", source, "on" if power else "off")
+        answer.set_result(True)
+        if self.stopped or self.pairing_until:
+            return
+        self.state.is_on = power
+        self.notify()
 
     async def _async_transmit_locked(
         self, payload_builder: Callable[[int], bytes], repeat: int = 3
@@ -123,9 +170,12 @@ class SkylightController:
 
     async def async_send_locked(self, command: str) -> None:
         """Caller holds lock, including power decision. Never retry a toggle."""
+        self.power_changes += 1
         await self._async_transmit_locked(lambda transaction: command_payload(command, transaction))
         self.state.apply(command)
         self.notify()
+        if command == "toggle":
+            self.request_status(STATUS_DELAY)
         # The API action enqueues packets; leave time for its three advertising bursts.
         await asyncio.sleep(0.45)
 
@@ -180,6 +230,7 @@ class SkylightController:
                 "Cannot reach the Skylight proxy. Check that the proxy is online, then try again."
             )
         self.stop_pairing()
+        self.power_changes += 1
         self.pairing_burst += 1
         self.pairing_until = dt_util.utcnow() + timedelta(seconds=duration)
         self.state.is_on = None
@@ -220,6 +271,7 @@ class SkylightController:
                 self.state.is_on = None
                 self.state.effect = None
                 self.notify()
+                self.request_status(STATUS_DELAY)
 
     @callback
     def stop_pairing(self) -> None:
@@ -249,6 +301,15 @@ class SkylightController:
         return start
 
     async def async_power(self, on: bool, effect: str | None = None) -> None:
+        if (
+            self.state.is_on is None
+            and effect is None
+            and not self.pairing_until
+            and self.transmitter_ready
+        ):
+            # Ask the panel first. If it does not answer, the error below explains.
+            with contextlib.suppress(HomeAssistantError):
+                await self.async_refresh_power()
         async with self.lock:
             if on and effect is not None:
                 # A mode command turns the panel on in that mode, whatever its power.
@@ -256,7 +317,8 @@ class SkylightController:
                 return
             if self.state.is_on is None:
                 raise HomeAssistantError(
-                    "Skylight power is unknown. Check the physical light, then call "
+                    "Skylight power is unknown, and the panel did not report it. "
+                    "Check the physical light, then call "
                     f"{DOMAIN}.set_assumed_power with its current power state, "
                     "or turn it on with an effect."
                 )
@@ -276,6 +338,65 @@ class SkylightController:
                 )
             except HomeAssistantError:
                 _LOGGER.warning("Could not initialize Skylight remote reception", exc_info=True)
+
+    async def async_refresh_power(self) -> bool:
+        """Ask the panel for its power. True if it answered and the power is now known."""
+        answer: asyncio.Future[bool] = self.hass.loop.create_future()
+        async with self.lock:
+            if not self.transmitter_ready:
+                raise HomeAssistantError(
+                    "Cannot reach the Skylight proxy. Check that the proxy is online, "
+                    "then try again."
+                )
+            # Open the request before sending: the answer can arrive during the send.
+            self.status_request = (self.power_changes, answer)
+            try:
+                await self._async_transmit_locked(lambda transaction: ONOFF_GET)
+            except BaseException:
+                self.status_request = None
+                raise
+        try:
+            async with asyncio.timeout(STATUS_WINDOW):
+                return await answer
+        except TimeoutError:
+            return False
+        finally:
+            if self.status_request is not None and self.status_request[1] is answer:
+                self.status_request = None
+
+    @callback
+    def request_status(self, delay: float) -> None:
+        """Ask for the power after `delay` seconds. This replaces an earlier time."""
+        self.status_due = monotonic() + delay
+        self.status_wake.set()
+
+    @callback
+    def async_start_status(self) -> None:
+        """Ask for the power soon after setup, then every STATUS_INTERVAL seconds."""
+        self._track(
+            self.hass.async_create_background_task(
+                self._async_status_loop(), "Skylight power status"
+            )
+        )
+
+    async def _async_status_loop(self) -> None:
+        while not self.stopped:
+            self.status_wake.clear()
+            wait = self.status_due - monotonic()
+            if wait > 0:
+                # A toggle or reconnect wakes the loop with a new time.
+                with contextlib.suppress(TimeoutError):
+                    async with asyncio.timeout(wait):
+                        await self.status_wake.wait()
+                continue
+            self.status_due = monotonic() + STATUS_INTERVAL
+            if self.pairing_until or not self.transmitter_ready:
+                continue
+            try:
+                if not await self.async_refresh_power():
+                    _LOGGER.debug("Skylight panel did not report its power")
+            except HomeAssistantError as err:
+                _LOGGER.debug("Skylight power request not sent: %s", err)
 
     @callback
     def async_subscribe(self) -> Callable[[], None]:
@@ -308,6 +429,7 @@ class SkylightController:
             self._track(
                 self.hass.async_create_task(self.async_setup_receiver(), "Skylight receiver setup")
             )
+            self.request_status(STATUS_DELAY)
         self.notify()
 
 

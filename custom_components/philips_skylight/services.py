@@ -4,7 +4,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, ENTITY_MATCH_ALL
 from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_extract_entity_ids
@@ -26,6 +26,14 @@ SKIP_CONFIRM = (
 )
 
 
+async def _async_refresh_power(controller: SkylightController) -> None:
+    if not await controller.async_refresh_power():
+        raise HomeAssistantError(
+            "The Skylight panel did not report its power. Check that the panel has "
+            "mains power and is in range of the proxy, then try again."
+        )
+
+
 def _confirm(message: str) -> dict:
     # Reject a missing confirmation in the schema, so the REST API answers 400.
     return {vol.Required("confirm"): vol.All(cv.boolean, vol.IsTrue(message))}
@@ -39,6 +47,7 @@ ACTIONS = {
         {vol.Required("is_on"): cv.boolean},
         lambda controller, data: controller.async_set_assumed_power(data["is_on"]),
     ),
+    "refresh_power": ({}, lambda controller, data: _async_refresh_power(controller)),
     "pair_transmitter": (_confirm(PAIR_CONFIRM), lambda controller, data: controller.async_pair()),
     "unpair_all_remotes": (
         _confirm(UNPAIR_CONFIRM),

@@ -89,8 +89,22 @@ The [dashboard guide](DASHBOARD.md) explains the layout.
 
 ## Synchronize power
 
-Check whether the physical panel is illuminated, then run
-`philips_skylight.set_assumed_power` in Developer Tools → Actions:
+Home Assistant asks the panel whether it is on or off. It asks after setup,
+5 seconds after a toggle, after a proxy outage, after a pairing burst, and
+every five minutes. The panel answers within about a second. If the power is
+unknown, an on or off action asks the panel first.
+
+To ask now, run `philips_skylight.refresh_power` in Developer Tools → Actions:
+
+```yaml
+action: philips_skylight.refresh_power
+target:
+  entity_id: light.philips_skylight
+```
+
+If the panel does not answer, the action fails with an error. The panel cannot
+answer when its mains power is off. Then check the physical panel and record
+its power with `philips_skylight.set_assumed_power`:
 
 ```yaml
 action: philips_skylight.set_assumed_power
@@ -100,13 +114,11 @@ data:
   is_on: true
 ```
 
-This records power without sending anything. Standard on/off actions then use
-that recorded state. Scene buttons and `light.turn_on` with an effect send the
-scene command and record power as on. Synchronize again after a panel power
-cycle, a missed remote press, or a remote press during a Home Assistant
-restart. A proxy reconnect within
-60 seconds keeps the record. A longer outage clears it. A successful action means
-that the proxy accepted the request. The panel sends no acknowledgment.
+This records power without sending anything. The panel reports its power only,
+not its mode. Scene buttons and `light.turn_on` with an effect send the scene
+command and record the mode. A remote press that the proxy did not hear leaves
+the recorded mode wrong. A proxy reconnect within 60 seconds keeps the record.
+A longer outage clears it.
 
 ## Dimming
 

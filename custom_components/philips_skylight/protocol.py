@@ -1,7 +1,8 @@
 """The captured, unsegmented Bluetooth Mesh access messages.
 
 This intentionally is not a provisioning client or a general mesh stack. The
-factory mesh has fixed keys and IV index; only captured commands are emitted.
+factory mesh has fixed keys and IV index. It emits the captured commands and
+the standard Generic OnOff Get, which the panel answers.
 """
 
 from dataclasses import dataclass
@@ -67,15 +68,25 @@ class MeshCodec:
         self.nid, self.encryption_key, self.privacy_key = k2(NETWORK_KEY)
         self.aid = k4(APPLICATION_KEY)
 
-    def encode(self, payload: bytes, sequence: int) -> bytes:
-        """Return a complete advertising data structure (length, 0x2A, PDU)."""
+    def encode(
+        self,
+        payload: bytes,
+        sequence: int,
+        source: int | None = None,
+        destination: int | None = None,
+    ) -> bytes:
+        """Return a complete advertising data structure (length, 0x2A, PDU).
+
+        Home Assistant always sends as SOURCE to DESTINATION. Tests use other
+        addresses to build the panel's replies.
+        """
         if not 0 <= sequence <= 0xFFFFFF:
             raise ValueError("Mesh sequence exhausted; never wrap or reset it")
         if not 1 <= len(payload) <= 11:
             raise ValueError("Only unsegmented access payloads up to 11 bytes are supported")
         seq = sequence.to_bytes(3, "big")
-        src = SOURCE.to_bytes(2, "big")
-        dst = DESTINATION.to_bytes(2, "big")
+        src = (SOURCE if source is None else source).to_bytes(2, "big")
+        dst = (DESTINATION if destination is None else destination).to_bytes(2, "big")
         iv = IV_INDEX.to_bytes(4, "big")
         header = b"\x05" + seq + src  # CTL=0, TTL=5
         app_nonce = b"\x01\x00" + seq + src + dst + iv
@@ -133,6 +144,23 @@ class MeshCodec:
             header[0] & 0x7F,
             payload,
         )
+
+
+# Bluetooth Mesh Generic OnOff Get. It has no transaction byte.
+ONOFF_GET = b"\x82\x01"
+
+
+def onoff_status(payload: bytes) -> bool | None:
+    """The power in a Generic OnOff Status, or None for any other message.
+
+    The short form carries the present power. The long form also carries the
+    target power and the remaining transition time. Use the target, because it
+    is the power that the panel is changing to.
+    """
+    if payload[:2] != b"\x82\x04" or len(payload) not in (3, 5):
+        return None
+    power = payload[-2] if len(payload) == 5 else payload[2]
+    return None if power > 1 else power == 1
 
 
 def command_payload(command: str, transaction: int) -> bytes:

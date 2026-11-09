@@ -38,6 +38,14 @@ PAIRING_BURST = 10
 PAIRING_RATE = 2
 # Keep the recorded power and mode if the proxy comes back within this many seconds.
 OUTAGE_GRACE = 60
+# The panel answers a Generic OnOff Get within about a second. Wait this long.
+STATUS_WINDOW = 3
+# Ask the panel for its power this many seconds after a toggle, setup, reconnect
+# or pairing burst.
+STATUS_DELAY = 5
+# Otherwise ask every five minutes. Each request uses one of the sender's 16.7
+# million sequence numbers: about 105,000 a year at this rate.
+STATUS_INTERVAL = 300
 # The dashboard card's default entity IDs, each with the registry unique ID that
 # finds the entity after a rename. The add-on's server keeps the same table.
 UNIQUE_ID_PREFIX = "factory_mesh_7ffe_"

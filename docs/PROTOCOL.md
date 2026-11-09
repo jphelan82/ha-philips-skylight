@@ -4,7 +4,7 @@ This document contains protocol research, implementation notes and developer
 instructions moved out of the README files. For installation and everyday use,
 start with the [end-user README](../README.md).
 
-The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7 x 25.6 in). Philips sells it as remote-only: no app, no Hue, no Matter, no Wi-Fi. Inside, it runs standard Bluetooth Mesh, and its remote uses factory-default keys. This file records what we decoded on 2026-10-12 and 2026-10-13, so Home Assistant can send the same commands as the remote.
+The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7 x 25.6 in). Philips sells it as remote-only: no app, no Hue, no Matter, no Wi-Fi. Inside, it runs standard Bluetooth Mesh, and its remote uses factory-default keys. This file records what we decoded on 2026-10-12 and 2026-10-13, so Home Assistant can send the same commands as the remote. It also records what another owner found on 2026-11-09: the panel reports its power when asked, and a Vita-Up panel has a UV command.
 
 ## The hardware
 
@@ -43,6 +43,7 @@ Each command is a vendor message with company ID `0x0211` (Telink Semiconductor)
 | Rest | `C9 11 02 TT 04 FF 05 41` | |
 | Auto rhythm | `C9 11 02 TT 04 FF 06 41` | |
 | Set auto rhythm start (hold Auto rhythm and Relax together) | `E0 11 02 TT 00` | Opcode `E0` with one parameter byte. The remote sent it three times in about a second, each with a new `TT`, and the panel relayed each one. The panel blinks. The manual says this sets the current time as the start of the Auto rhythm schedule. One command from `0x7FFE` is enough. Captured and tested 2026-10-13. |
+| Vita-Up UV-B on/off (reported, not tested here) | `E0 11 02 TT 01` | Reported on 2026-11-09 by roy1uno, the author of [pull request 9](https://github.com/jphelan82/ha-philips-skylight/pull/9). The capture came from a Skylight Daylight Lamp Vita-Up Large (`929004709601`). The owner pressed only the UV button, on and off, many times. Each press sent these same bytes, so the command is a toggle. It uses the same opcode `E0` as the rhythm start. Only the last byte differs. Home Assistant does not send it. A remote press of it changes nothing in Home Assistant. See [Vita-Up UV](#vita-up-uv). |
 | Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11` | The remote repeats it about twice a second, with a new `TT` each time, for the whole hold. Six `11` parameter bytes follow `01`. The complete access payload is 11 bytes. Home Assistant sends it the same way: twice a second for 10 seconds, 20 requests. A capture on 2026-10-12 showed the remote's hold at about two requests a second. |
 | Unpair all (no remote gesture known) | `CF 11 02 TT 02 11 11 11 11 11 11` | The pairing request with `02` in place of `01`. Inside the pairing window, it makes the panel blink and forget every paired sender. Outside the window, it switches the panel off and changes no pairing. Tested 2026-10-13. |
 | Nothing found | `CF 11 02 TT 00 11 11 11 11 11 11` | No visible effect and no change to pairing, both right after power-on and at other times. Tested 2026-10-13. |
@@ -56,6 +57,70 @@ takes the panel off the schedule until Auto rhythm is pressed again.
 A mode command (`C9`) also turns an off panel on, in that mode. On 2026-10-13,
 with the panel off, one Relax command from `0x7FFE` turned it on in Relax. The
 other five modes were not tested from off.
+
+## Power status
+
+The panel answers a standard Bluetooth Mesh Generic OnOff Get. This is the one
+way that Home Assistant can read the panel. roy1uno found it and reported it in
+[pull request 9](https://github.com/jphelan82/ha-philips-skylight/pull/9) on
+2026-11-09.
+
+| Message | Payload | Sender to destination |
+|---|---|---|
+| Generic OnOff Get | `82 01` | Home Assistant `0x7FFE` to `0xFFFF` (all nodes) |
+| Generic OnOff Status, off | `82 04 00` | The panel's own unicast address to `0x7FFE` |
+| Generic OnOff Status, on | `82 04 01` | The panel's own unicast address to `0x7FFE` |
+
+- Both messages are standard Mesh messages, not Telink vendor messages. The Get
+  has no `TT` byte. The same factory keys encrypt both.
+- The panel sends the status to the address that asked. So the integration
+  hears it only because the proxy hears the panel.
+- On roy1uno's panel, the status came from `0x3CC2`. That address is the
+  panel's own mesh address. Nobody knows whether other panels use the same
+  address. The integration accepts a status from any unicast address
+  (`0x0001` through `0x7FFF`) except its own.
+- The Mesh standard also has a long status form: present power, target power
+  and remaining transition time (5 bytes). Nobody has seen the panel send it.
+  If it does, the integration uses the target power.
+- The status has no request number. A status that arrives late cannot be
+  matched to its Get with certainty. So the integration counts a status only
+  inside a 3-second window after its Get, and only if no toggle or mode
+  command went out after the Get.
+- If the panel has no mains power, it cannot answer. Silence does not mean off.
+- Each Get uses one sequence number from the sender's 24-bit counter, which
+  holds about 16.7 million. A Get every 30 seconds uses about 1 million a year.
+  A Get every five minutes uses about 105,000 a year.
+
+roy1uno tested the exchange on their own panel on 2026-11-09, with an
+ESP32-S3 proxy (Heltec WiFi LoRa 32 V3) and ESPHome 2026.10.2. A Get
+corrected a deliberately wrong record in both directions: off to on, and on to
+off. A Get 5 seconds after a toggle also worked. Nobody has tested it on the
+panel described in this file yet.
+
+A panel that answers a Generic OnOff Get runs a standard Generic OnOff Server.
+That server normally also accepts Generic OnOff Set (`82 02`, with an answer)
+and Set Unacknowledged (`82 03`, no answer). Each one carries the wanted power
+(`00` or `01`) and a transaction byte. If the panel accepts them, Home Assistant
+gets true on and off commands in place of the toggle. This is untested.
+
+## Vita-Up UV
+
+The Vita-Up model is a different model from the BioUp panel in this file. It
+adds a UV-B (ultraviolet B) light, and its remote has a UV control. The BioUp
+remote has no UV control. Nobody knows whether a BioUp panel accepts the UV
+command.
+
+roy1uno reported the Vita-Up remote's UV command on 2026-11-09:
+`E0 11 02 TT 01`, a toggle (see [The commands](#the-commands)). The
+integration does not send it, and it has no UV control. Reasons:
+
+- A toggle needs a known state. Nobody knows how to read the UV state.
+- Nobody knows what safety limits the panel puts on UV, such as a timer.
+- UV-B light can harm skin and eyes. If Home Assistant shows the wrong state,
+  the UV can stay on with nobody present.
+
+roy1uno gave the same caution with the report. A first owner request for a UV
+switch came in issue 5, from an owner of the same Vita-Up model.
 
 ## Pairing
 
@@ -78,7 +143,8 @@ other five modes were not tested from off.
 - **Never send as the remote's address `0x7FFF`.**
   A mesh node drops any packet whose sequence number is not higher than the last one from the same sender. If Home Assistant sends as `0x7FFF` with a high sequence number, the panel ignores the real remote until the remote catches up. Use a separate unicast address, such as `0x7FFE`, and keep its own sequence counter.
 - **Store the sequence counter.** It must only go up, across restarts.
-- **The panel sends no status.** Home Assistant has no way to read the light's state. It can track the remote's presses through the proxy, because it can decrypt them.
+- **Ask for the power, not the mode.** The panel reports its power when it gets a Generic OnOff Get. See [Power status](#power-status). Nobody knows how to read the mode. Home Assistant tracks the mode from its own commands and from the remote's presses, which it can decrypt.
+- **Keep the Get rare.** Each Get uses a sequence number, and the counter never goes back. The integration asks after setup, 5 seconds after a toggle, after a proxy outage, after a pairing burst, and every five minutes.
 
 ## Tracking external controls
 
@@ -87,8 +153,13 @@ The integration accepts recognized, authenticated access commands addressed to
 its own `0x7FFE` sender even when those packets return through a panel relay.
 A power toggle flips a known power state. A scene command records the mode and
 records power as on. A dim tap or hold and the rhythm start (`E0`) update only
-the last command. A toggle or dim command leaves unknown power unknown. No
-receive event sends an additional command.
+the last command. A toggle or dim command leaves unknown power unknown. A
+remote toggle makes Home Assistant ask the panel for its power 5 seconds later.
+No other receive event sends a command.
+
+A Generic OnOff Status addressed to `0x7FFE` is not a remote command. The
+integration handles it apart from the commands above. See
+[Power status](#power-status).
 
 Duplicate identities use sender and Mesh sequence; rapid repeats with new Mesh
 sequences use sender and complete access payload, including transaction byte.
@@ -109,7 +180,10 @@ panel, Home Assistant tracked the owner's one remote (`0x7FFF`).
 - Why does a long stream of pairing requests drop the other remote? A short burst does not. One guess: each accepted request counts as a new pairing in one of only two places.
 - Do the other five modes turn an off panel on, as Relax does? Untested.
 - Does every remote of this model send as `0x7FFF`?
-- Do separate on and off codes exist? Candidates to try: `03 00 41` and `03 02 41`.
+- Do separate on and off codes exist? Try the standard Generic OnOff Set Unacknowledged first: `82 03 00 TT` and `82 03 01 TT`. See [Power status](#power-status). Vendor candidates: `03 00 41` and `03 02 41`.
+- Does every panel answer the Generic OnOff Get, and from which address? Only one panel has answered so far, from `0x3CC2`.
+- Does the panel answer other standard Get messages? Light Lightness Get (`82 4B`) can report brightness.
+- How does a Vita-Up panel report its UV state, and what limits does it put on UV? Unknown.
 - Relative dim down/up with `0x14` physically worked after transmitter pairing. The exact increment and behavior of other step values remain unmeasured.
 
 ## Paired senders
@@ -190,13 +264,16 @@ offers pairing and unpair all, and so do the `pair_transmitter` and
 `unpair_all_remotes` actions. Separate
 on/off BLE commands remain unverified: HA's normal on/off actions decide whether
 to send the captured toggle using synchronized power. Same-state requests do
-nothing; uncertain toggle requests are never automatically retried. The panel
-provides no status feedback, and an exact dim increment remains unmeasured.
+nothing. Uncertain toggle requests are never automatically retried. If the
+power is unknown, an on or off action asks the panel first. The
+`refresh_power` action asks the panel on demand. The panel reports power only.
+The mode stays assumed, and an exact dim increment remains unmeasured.
 
 Existing integration users retain their entity IDs, config entry, pairing and
-sequence Store. Power/effect assumptions are invalidated on restart or proxy
-outage. State-correction entities change only those assumptions; the view switch
-changes only the dashboard mode. Neither path transmits a BLE command.
+sequence Store. A long proxy outage clears the recorded power and mode. Home
+Assistant then asks the panel for its power, after a restart too.
+State-correction entities change only the recorded power and mode. The view
+switch changes only the dashboard mode. Neither path transmits a BLE command.
 
 Retain the sequence Store across removal or reinstallation. Never reset it,
 restore an older counter, or run another sender using `0x7FFE`. Commands go to every

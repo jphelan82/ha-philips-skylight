@@ -211,16 +211,22 @@ The card uses the remote's icons and colors:
 
 ## The recorded state
 
-The panel never reports its state. Home Assistant records the power and mode from
-its own commands and from the remote presses it hears through the proxy. Each
-remote press updates the record. A mode press also records the power as on.
-Home Assistant never sends a command because of a received press.
+The panel reports its power when Home Assistant asks. It does not report its
+mode. Home Assistant asks after setup, 5 seconds after a toggle, after a proxy
+outage, after a pairing burst, and every five minutes. The
+`philips_skylight.refresh_power` action asks at once.
 
-The record goes wrong after a missed press, a power cut, a wall switch, or a
-proxy or Home Assistant outage. A proxy reconnect within 60 seconds keeps the
-record. A longer proxy outage clears it. A Home Assistant restart keeps the
-last record, but Home Assistant cannot hear the remote while it is down. In
-each case, use **Correct** on the card.
+Home Assistant records the mode from its own commands and from the remote
+presses that it hears through the proxy. Each remote press updates the record.
+A mode press also records the power as on. A remote toggle makes Home Assistant
+ask the panel for its power 5 seconds later. No other received press makes
+Home Assistant send anything.
+
+The recorded mode goes wrong after a missed press or a Home Assistant outage.
+A panel with no mains power cannot answer, so the recorded power stays wrong
+until the power returns. A proxy reconnect within 60 seconds keeps the record.
+A longer proxy outage clears it, and Home Assistant then asks for the power. If
+the record is wrong, use **Correct** on the card.
 
 Leave the wall switch on. Control the panel with its remotes or Home Assistant.
 If the panel's power runs through a smart switch in Home Assistant, an
