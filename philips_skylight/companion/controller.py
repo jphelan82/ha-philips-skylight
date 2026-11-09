@@ -22,6 +22,7 @@ from .const import (
     PAIRING_BURST,
     PAIRING_RATE,
     RECEIVE_EVENT,
+    SOURCE,
     STORAGE_KEY,
 )
 from .model import AssumedState, RemoteTracker
@@ -30,6 +31,13 @@ from .sequence import SequenceAllocator
 
 _LOGGER = logging.getLogger(__name__)
 OFFLINE = ("unavailable", "unknown")
+
+# Enable after validating manual GET against deliberately incorrect assumed power.
+ENABLE_BACKGROUND_QUERIES = True
+STATUS_SOURCE = 0x3CC2
+POLL_INTERVAL_SECONDS = 30
+VERIFY_AFTER_TOGGLE_SECONDS = 5
+STATUS_RESPONSE_WINDOW_SECONDS = 3
 
 
 class SkylightController:
@@ -52,6 +60,14 @@ class SkylightController:
         # Background sends and setup calls that unload cancels.
         self.tasks: set[asyncio.Task] = set()
         self.stopped = False
+        self._poll_task: asyncio.Task | None = None
+        self._verification_task: asyncio.Task | None = None
+        self._status_response_deadline = 0.0
+        self._next_status_query_at = 0.0
+        self._verify_not_before = 0.0
+        self._last_status_sequence = -1
+        self._last_status_query_at = -1.0
+        self._command_generation = 0
 
     @property
     def transmitter_ready(self) -> bool:
@@ -90,10 +106,30 @@ class SkylightController:
         except ValueError:
             return
         for message in self.codec.decode(advertisement):
+            if (
+                message.source == STATUS_SOURCE
+                and message.destination == SOURCE
+                and message.payload in (b"\x82\x04\x00", b"\x82\x04\x01")
+            ):
+                # Track even unsolicited/late replies so they cannot be replayed
+                # inside a later response window. The codec uses a fixed IV index.
+                if message.sequence <= self._last_status_sequence:
+                    continue
+                self._last_status_sequence = message.sequence
+                now = monotonic()
+                if not self.stopped and now < self._status_response_deadline:
+                    self._status_response_deadline = 0.0
+                    self.state.is_on = message.payload[-1] == 1
+                    self.notify()
+                    _LOGGER.debug("Skylight confirmed power: %s", self.state.is_on)
+                continue
             command = self.remote.accept(message)
             if command is not None:
+                self._invalidate_pending_status()
                 self.state.apply(command)
                 self.notify()
+                if command == "toggle":
+                    self._schedule_toggle_verification()
 
     async def _async_transmit_locked(
         self, payload_builder: Callable[[int], bytes], repeat: int = 3
@@ -123,9 +159,13 @@ class SkylightController:
 
     async def async_send_locked(self, command: str) -> None:
         """Caller holds lock, including power decision. Never retry a toggle."""
+        self._invalidate_pending_status()
         await self._async_transmit_locked(lambda transaction: command_payload(command, transaction))
+        self._invalidate_pending_status()
         self.state.apply(command)
         self.notify()
+        if command == "toggle":
+            self._schedule_toggle_verification()
         # The API action enqueues packets; leave time for its three advertising bursts.
         await asyncio.sleep(0.45)
 
@@ -154,6 +194,7 @@ class SkylightController:
     async def _async_hold(self, command: str, hold: float) -> None:
         for _ in range(max(1, round(hold / HOLD_INTERVAL))):
             async with self.lock:
+                self._invalidate_pending_status()
                 await self._async_transmit_locked(
                     lambda transaction: command_payload(command + "_hold", transaction)
                 )
@@ -180,6 +221,7 @@ class SkylightController:
                 "Cannot reach the Skylight proxy. Check that the proxy is online, then try again."
             )
         self.stop_pairing()
+        self._invalidate_pending_status()
         self.pairing_burst += 1
         self.pairing_until = dt_util.utcnow() + timedelta(seconds=duration)
         self.state.is_on = None
@@ -229,6 +271,7 @@ class SkylightController:
     async def async_stop(self) -> None:
         """Unload: stop every background send and send nothing more."""
         self.stopped = True
+        self._status_response_deadline = 0.0
         tasks = tuple(self.tasks)
         for task in tasks:
             task.cancel()
@@ -238,6 +281,7 @@ class SkylightController:
     async def async_set_assumed_power(self, is_on: bool) -> None:
         """Record the observed power without sending a command."""
         async with self.lock:
+            self._status_response_deadline = 0.0
             self.state.is_on = is_on
             self.notify()
 
@@ -277,8 +321,82 @@ class SkylightController:
             except HomeAssistantError:
                 _LOGGER.warning("Could not initialize Skylight remote reception", exc_info=True)
 
+    def _invalidate_pending_status(self) -> None:
+        """Invalidate before yielding to any power-changing transmission."""
+        self._status_response_deadline = 0.0
+        self._verify_not_before = monotonic() + VERIFY_AFTER_TOGGLE_SECONDS
+        self._command_generation += 1
+
+    @callback
+    def _schedule_toggle_verification(self) -> None:
+        if self.stopped or not ENABLE_BACKGROUND_QUERIES:
+            return
+        # One worker follows the latest deadline; never cancel an in-flight send.
+        if self._verification_task is None or self._verification_task.done():
+            self._verification_task = self._track(
+                self.hass.async_create_background_task(
+                    self._async_verify_after_toggle(), "Skylight verify toggle"
+                )
+            )
+
+    async def _async_verify_after_toggle(self) -> None:
+        while not self.stopped:
+            await asyncio.sleep(max(0, self._verify_not_before - monotonic()))
+            if self._last_status_query_at >= self._verify_not_before:
+                return
+            generation = self._command_generation
+            try:
+                if await self.async_test_onoff_get():
+                    if generation == self._command_generation:
+                        return
+                    continue
+                # A periodic/manual query already covers this verification.
+                if self._status_response_deadline > monotonic():
+                    return
+                await asyncio.sleep(max(0.01, self._next_status_query_at - monotonic()))
+            except HomeAssistantError as err:
+                _LOGGER.debug("Skylight toggle verification skipped: %s", err)
+                return
+
+    async def _async_poll_loop(self) -> None:
+        while not self.stopped:
+            await asyncio.sleep(POLL_INTERVAL_SECONDS)
+            try:
+                await self.async_test_onoff_get()
+            except HomeAssistantError as err:
+                _LOGGER.debug("Skylight periodic query skipped: %s", err)
+
+    async def async_test_onoff_get(self) -> bool:
+        """Send one GET; return False when a recent command/query defers it."""
+        async with self.lock:
+            if self.stopped or not self.transmitter_ready:
+                raise HomeAssistantError("Skylight transmitter is unavailable")
+            now = monotonic()
+            if now < max(self._verify_not_before, self._next_status_query_at):
+                _LOGGER.debug("Skylight GET deferred: recent command or query")
+                return False
+            if self._status_response_deadline:
+                _LOGGER.debug("Skylight previous GET expired without confirmation")
+            # Arm before the service call: receive() can run while it awaits.
+            self._status_response_deadline = now + STATUS_RESPONSE_WINDOW_SECONDS
+            self._next_status_query_at = self._status_response_deadline
+            try:
+                await self._async_transmit_locked(lambda transaction: b"\x82\x01", repeat=1)
+            except BaseException:
+                self._status_response_deadline = 0.0
+                raise
+            _LOGGER.debug("Skylight Generic OnOff GET sent")
+            self._last_status_query_at = now
+            return True
+
     @callback
     def async_subscribe(self) -> Callable[[], None]:
+        if ENABLE_BACKGROUND_QUERIES and (self._poll_task is None or self._poll_task.done()):
+            self._poll_task = self._track(
+                self.hass.async_create_background_task(
+                    self._async_poll_loop(), "Skylight power polling"
+                )
+            )
         return self.hass.bus.async_listen(RECEIVE_EVENT, self.receive)
 
     @callback
