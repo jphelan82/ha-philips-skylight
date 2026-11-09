@@ -4,6 +4,8 @@ The controller processes `820400` / `820401` from Mesh source `0x3CC2`, addresse
 
 ## Enabling and Testing
 
+This branch currently enables background queries. Set `ENABLE_BACKGROUND_QUERIES = False` before performing the isolated manual tests below.
+
 Setting `ENABLE_BACKGROUND_QUERIES = False` in `controller.py` disables automatic queries. Manual calls to `philips_skylight.test_onoff_get` still process responses.
 
 1. Back up the currently deployed controller for rollback, then replace it with the updated controller.
