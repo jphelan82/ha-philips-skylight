@@ -460,6 +460,12 @@ from `0x3CC2`, so the address differs between panels.
   on each time. The acknowledged form got the reply `82 04 01 00 41`, with
   target off. The panel never reached that target. PROTOCOL.md has the table.
   The test action was removed.
+- **Other standard messages, an experiment.** A temporary probe asked every
+  standard lighting Get, in all six modes and with the panel off. No value
+  showed the mode. Light Lightness followed the remote's dim commands. Light
+  Lightness Set changed only the reported value: in Energize, a Set to 20 %
+  read back as 20 % while the light stayed at full. The reported value was
+  set back to 100 % and the probe was removed. PROTOCOL.md has the details.
 - **Not tested:** a mains power cut. A dashboard page open on
   `homeassistant.local` showed "Configuration error" after the restarts. A
   fresh browser drew every Skylight dashboard correctly. Clearing the page's

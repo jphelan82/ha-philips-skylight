@@ -12,7 +12,7 @@
 The Philips LED Skylight panel comes with a remote and (famously) no smart functionality. It has no app, no Wi-Fi and no Hue support. This project lets Home Assistant act as a
 second remote. You get a power toggle, the six modes and dim buttons on your
 dashboard and in automations. Your original remote keeps working.
-This allows Home Assistant to treat the device as a light entity, enabling you to include your Skylight in your automations, scenes, and more. The add-on also does its best to mirror the current state of your light, including whether it's powered on and its current scene (see limitations below). 
+This allows Home Assistant to treat the device as a light entity, enabling you to include your Skylight in your automations, scenes, and more. Home Assistant asks the panel whether it is on or off, so the shown power matches the real panel. The panel does not report its mode, so Home Assistant tracks the mode from its own commands and your remote's presses (see limitations below).
 Home Assistant talks to the panel through an [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/). 
 
 The Skylight uses encrypted Bluetooth Mesh with replay protection, so a simple
@@ -26,6 +26,42 @@ component, from the same `ble_adv` project.
 I have tried to make the setup of this as easy as possible, although it required a rather elaborate solution for a relatively simple problem. A setup wizard guides you through the process of installing a custom firmware on your [bluetooth-proxy](https://esphome.io/components/bluetooth_proxy/) and will guide you through all the requisite steps necessary to get the add-on set up.
 
 >I built this project with AI coding agents. Claude Opus 5.5 decoded the remote's Bluetooth protocol, using the [bluetooth-proxy](https://esphome.io/components/bluetooth_proxy/) to capture its messages during pairing and button presses. Codex did further development, and Opus did the refactoring and final implementation. I'm a software developer. I wrote the specifications and reviewed the code, but not with the scrutiny I'd give a high-stakes production project. Use it at your own risk.
+
+## What's new
+
+**Real power state.** Home Assistant now asks the panel whether it is on or
+off, and the panel answers. Before, Home Assistant only guessed the power from
+the commands it sent and the remote presses it heard. Now:
+
+- Home Assistant asks after it starts, 5 seconds after any toggle, after the
+  proxy reconnects, and once a minute. A wrong power fixes itself within a
+  minute.
+- If the power is unknown, "turn on" and "turn off" ask the panel first,
+  instead of stopping with an error.
+- The new **Philips Skylight: Refresh power** action
+  (`philips_skylight.refresh_power`) asks the panel at once.
+- No new firmware and no new pairing. The proxy you have already works.
+
+Many thanks to [roy1uno](https://github.com/roy1uno), who found that the panel
+answers the standard Bluetooth Mesh "Get" question and sent the first version
+in [pull request 9](https://github.com/jphelan82/ha-philips-skylight/pull/9).
+roy1uno also reported the remote command for the Vita-Up model's UV light. The
+[protocol notes](docs/PROTOCOL.md#vita-up-uv) record it. Home Assistant does
+not send it, for safety reasons that the notes explain.
+
+Testing on my panel also showed these limits and one new lead:
+
+- **The panel reports its power, but not its mode.** The mode is still
+  tracked from commands and remote presses.
+- **Power is still a toggle.** The panel answers the standard Bluetooth Mesh
+  "on" and "off" commands, but its light does not follow them. So Home
+  Assistant still sends the remote's toggle. Because Home Assistant now knows
+  the real power, it toggles only when the panel needs to change.
+- **The panel also reports its brightness.** The standard "set brightness"
+  command changes only the reported value, not the light. But the reported
+  value follows the remote's dim commands. A later version can use that to
+  dim to a chosen level in steps. See [Ideas for later](#ideas-for-later).
+
 ## What it does
 
 <p>
@@ -37,6 +73,8 @@ I have tried to make the setup of this as easy as possible, although it required
   the six modes as its effects.
 - **Power.** Switch the panel on and off from a dashboard, a voice assistant or
   an automation.
+- **Real power state.** Home Assistant asks the panel whether it is on or off,
+  and the panel answers. A wrong power fixes itself within a minute.
 - **All six modes.** Auto rhythm, Refresh, Energize, Focus, Relax and Rest each
   get a button. A mode button also switches the panel on.
 - **Dimming.** Dim down and Dim up, one step per tap, or longer with a hold. Setting absolute brightness percentage levels is not supported due to limitations of the device, but I'm considering a hacky way to support this in the future. 
@@ -44,7 +82,7 @@ I have tried to make the setup of this as easy as possible, although it required
   schedule, like holding Auto rhythm and Relax on the remote.
 - **Your remote keeps working.** Home Assistant hears its presses and updates
   the shown power and mode.
-- **State correction.** If the shown state is wrong, tell Home Assistant what
+- **State correction.** If the shown mode is wrong, tell Home Assistant what
   you see. This changes only the record and sends nothing to the panel.
 - **Automations, scripts and scenes.** Use the light, the mode buttons and the
   `philips_skylight.dim` action like any other device.
@@ -67,16 +105,29 @@ I have tried to make the setup of this as easy as possible, although it required
 
 This is an experimental project. Please read these limits before you install it.
 
-- **The panel never reports what it is doing.** Home Assistant guesses the power
-  and mode from the commands it sends and the remote presses it hears. The guess
-  is often right, but it is still a guess.
-- **The guess goes wrong sometimes.** A missed remote press, a wall switch, a
-  power cut, or a restart of Home Assistant or the proxy all put it out of step.
-  When that happens, you look at the panel and tell Home Assistant what you see. **You can always use the power toggle and modes without relying on accurate state information.**
+- **The panel reports its power, but not its mode.** Home Assistant asks the
+  panel whether it is on or off: after it starts, 5 seconds after a toggle,
+  after the proxy reconnects, and once a minute. Nobody knows how to read the
+  mode. Home Assistant tracks the mode from the commands it sends and the
+  remote presses it hears.
+- **The mode can go out of step.** A missed remote press, or a remote press
+  while Home Assistant or the proxy is down, leaves the shown mode wrong. When
+  that happens, you look at the panel and tell Home Assistant what you see.
+  **You can always use the power toggle and modes without relying on accurate
+  state information.**
+- **The panel cannot answer without power.** If a wall switch or a power cut
+  turns the panel off, it cannot answer, and Home Assistant keeps showing the
+  last power. When the power comes back, Home Assistant corrects it within a
+  minute.
+- **The panel misses some questions.** On my panel, about one question in four
+  got no answer. Home Assistant asks a second time when that happens, so a
+  miss rarely matters.
 - **Power is a toggle.** The panel has one power command. It switches the panel
   off if it is on, and on if it is off. Everything this project gives you uses
   it: the remote's power button, the card's **Skylight** tile and the add-on
-  page. Those always work.
+  page. Those always work. The panel also answers the standard Bluetooth Mesh
+  "on" and "off" commands, but its light does not follow them. They were
+  tested on 2026-11-09.
 
   Home Assistant also adds separate "turn on" and "turn off" commands to every
   light. You get them without asking, in these places:
@@ -86,11 +137,12 @@ This is an experimental project. Please read these limits before you install it.
     every light,
   - scenes, and Apple Home through HomeKit.
 
-  The panel has no separate on and off, so Home Assistant decides from the shown
-  state. If the shown state is wrong, these commands do the wrong thing. For
-  example, if Home Assistant shows the panel as on while it is off, "turn off
-  all lights" switches the Skylight **on**. A mode button always leaves the
-  panel on, in that mode.
+  For these commands, Home Assistant decides from the power that the panel
+  reports. It sends the toggle only when the panel needs to change. If the
+  power is unknown, it asks the panel first. These commands go wrong only if
+  the shown power is wrong. That can happen for up to a minute after a remote
+  press that the proxy missed. A mode button always leaves the panel on, in
+  that mode.
 - **It supports one Skylight.** It was built and tested with one panel.
   Support for several panels is not built yet. A panel obeys only the senders
   it has paired with. So any panel that paired with Home Assistant responds to
@@ -107,11 +159,11 @@ This is an experimental project. Please read these limits before you install it.
 - **Setup needs the panel's power switched off and on once**, at its light switch
   or breaker. Use a phone or a portable computer for setup, so you can take it
   with you.
-- **You cannot set a brightness level.** The panel takes only "dim down" and
-  "dim up" commands. It has no command for a level such as 40%, and it never
-  reports its level. So Home Assistant shows no brightness slider, and
-  Home Assistant ignores a brightness in `light.turn_on`. Color temperature
-  has no command either.
+- **You cannot set a brightness level yet.** The panel's light follows only
+  "dim down" and "dim up" commands. The standard command for a level such as
+  40% changes the panel's reported value but not the light. So Home Assistant
+  shows no brightness slider, and Home Assistant ignores a brightness in
+  `light.turn_on`. Color temperature has no working command either.
 - **A few owners have tried it.** One tested it with the NatureConnect/BioUp
   17.7 × 25.6 inch panel and an ESP32-C3 proxy. The other owners' panel and
   proxy models are unknown.
@@ -124,18 +176,21 @@ This is an experimental project. Please read these limits before you install it.
 
 
 
-I do not advise using the Skylight with a light switch. If you use the Skylight with an ordinary light switch, this automation will not be able to preserve the state, such as the on/off state or the currently selected scene. If you do have such a switch leave the panel's wall switch on. Control the panel with its wall
-remote or Home Assistant. A panel with no power cannot answer Home Assistant.
-So after a wall switch cuts the power, Home Assistant keeps showing the last
-state. When power returns, Home Assistant asks the panel within a minute
-and corrects the power. It cannot correct the mode. You need the wall switch or
-the breaker only for pairing.
+I do not advise using the Skylight with an ordinary light switch. If you have
+one, leave it on. Control the panel with its wall remote or Home Assistant. You
+need the wall switch or the breaker only for pairing.
+
+A panel with no power cannot answer Home Assistant. So after a wall switch
+cuts the power, Home Assistant keeps showing the last power. When the power
+returns, the panel switches on by itself, and Home Assistant sees that within a
+minute. The mode cannot be read, so it stays as Home Assistant last recorded
+it.
 
 If the panel's power runs through a **smart** light switch in Home Assistant, an
-automation can keep the record in step. Home Assistant records the power with
-the **Philips Skylight: Set assumed power** action. It sets the shown power and
-sends nothing to the panel. This example follows a switch named
-`switch.skylight_wall`:
+automation can show the "off" at once, instead of the last power. Home
+Assistant records the power with the **Philips Skylight: Set assumed power**
+action. It sets the shown power and sends nothing to the panel. This example
+follows a switch named `switch.skylight_wall`:
 
 ```yaml
 triggers:
@@ -286,9 +341,10 @@ The page shows a step only when its part changed. An update never needs a new
 pairing, and it keeps your settings and the command counter.
 
 After a Home Assistant restart, the light comes back with the power and mode
-that it last recorded. Home Assistant cannot hear the remote while it is down.
-So if someone used the remote during the restart, use **Correct**, or press
-any mode.
+that it last recorded. A few seconds later, Home Assistant asks the panel for
+its power and corrects it. Home Assistant cannot hear the remote while it is
+down. So if someone changed the mode with the remote during the restart, use
+**Correct**, or press any mode.
 
 ## Pairing
 
@@ -338,7 +394,7 @@ The Skylight card uses the remote's icons and colors.
 
 | Control | What it does |
 |---|---|
-| **Skylight** | Toggles the panel, like the remote's power button. It shows the recorded power and mode, and glows in the mode's color while the panel is on. |
+| **Skylight** | Toggles the panel, like the remote's power button. It shows the power that the panel reports and the recorded mode, and glows in the mode's color while the panel is on. |
 | Mode buttons | Auto rhythm, Refresh, Energize, Focus, Relax and Rest. A mode button also switches the panel on. The recorded mode lights up in the remote's color. |
 | **Correct** | Opens a view to fix Home Assistant's guess. |
 | **Rhythm set** | Makes the current time the start of the Auto rhythm schedule. The panel blinks. Auto rhythm does nothing until a start is set. |
@@ -346,7 +402,10 @@ The Skylight card uses the remote's icons and colors.
 
 ## Tell Home Assistant what you see
 
-Do this any time the card does not match the panel.
+Do this any time the card shows the wrong mode. A wrong power fixes itself
+within a minute. To fix it at once, run **Philips Skylight: Refresh power**.
+Record the power by hand only if the panel has no mains power, because then it
+cannot answer.
 
 <img src="docs/images/card-correct.png" width="320" alt="The card's correction view: Panel is on and Panel is off, the six modes, Mode unknown and Done, with a note that this changes only what Home Assistant shows.">
 
@@ -357,22 +416,28 @@ Do this any time the card does not match the panel.
 4. On the card, select **Done**.
 
 This changes only Home Assistant's record. It does not send anything to the
-light. A mode press on your remote also updates the record by itself.
+light. A mode press on your remote also updates the record by itself. If you
+record the wrong power, the next check, within a minute, puts it right.
 
-## Automations: use commands, not the guess
+## Automations
 
-The safest automations send a command and do not depend on the recorded state:
+These commands work the same whatever Home Assistant shows:
 
 - `light.toggle` toggles the power.
 - `button.press` on a mode button selects that mode, and switches the panel on.
 - `philips_skylight.dim` with `direction: down` or `up` dims by one step. Add
   `hold: 3` to dim like a 3-second hold on the remote.
+- `philips_skylight.refresh_power` asks the panel for its power. It fails with
+  an error if the panel does not answer twice in a row.
 
-`light.turn_on` and `light.turn_off` decide whether to toggle from the recorded
-power. If the record is wrong, they do the wrong thing. `light.turn_on` with an
-effect is the exception: it always sends that mode. Do not use the recorded
-state as a trigger or a condition. Do not treat it as proof that the panel
-changed.
+`light.turn_on` and `light.turn_off` decide whether to toggle from the power
+that the panel reports. If the power is unknown, they ask the panel first.
+`light.turn_on` with an effect always sends that mode.
+
+The light's on and off state follows the panel, so you can use it as a trigger
+or a condition. It can be wrong while the panel has no mains power, and for up
+to a minute after a remote press that the proxy missed. Do not use the recorded
+mode as a trigger or a condition. Nobody can read the mode from the panel.
 
 ## Troubleshooting
 
@@ -381,24 +446,35 @@ changed.
 | The add-on is not in the store | Check that you can open the repository, and that an add-on release exists. Otherwise, use the local installation. |
 | No proxy appears | The setup checklist lists the [Bluetooth proxies](https://esphome.io/components/bluetooth_proxy/) in your ESPHome folder. If none is listed, set up a [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/) first. |
 | Remote presses do not update the dashboard | Check step 3 of the setup checklist. Move the proxy closer to the panel. Then correct the state. |
-| The dashboard shows Unknown, or the wrong power or mode | Use **Correct** and record what you see. |
+| The dashboard shows the wrong power | Wait a minute, or run **Philips Skylight: Refresh power**. If the panel has no mains power, it cannot answer: use **Correct**. |
+| The dashboard shows Unknown, or the wrong mode | Use **Correct** and record what you see. |
+| **Refresh power** fails with "did not report its power" | The panel has no mains power, or the proxy cannot hear it. Check the panel's switch and the proxy, then try again. Move the proxy closer to the panel if it happens often. |
 | The card or the card download says that a control is missing | Turn the Skylight entities back on in **Settings → Devices & services**. |
 | The card picker has no Philips Skylight card | Reload the page in your browser. Home Assistant loads the card when the page opens. |
 | Your wall remote stops working after setup | Pair your wall remote again first: switch the panel's power off and on at its light switch or breaker, wait until it is back on, then hold the remote's power button for 10 seconds until the panel blinks. Home Assistant keeps working. If that does not help, use **Settings and fixes → Unpair remotes** on the add-on page. It unpairs every remote, then pairs Home Assistant and your wall remote again, in that order. |
 | The panel ignores every command | Check that the proxy is online. If the panel still ignores Home Assistant, use **Settings and fixes → Unpair remotes** on the add-on page. Do not pair Home Assistant a second time: the panel can drop your remote. |
 | Commands stopped after a Home Assistant rebuild or an older backup restore | On the add-on page, use **Settings and fixes → The panel ignores Home Assistant after a backup restore**. It fixes the command counter without pairing again. |
 | An update asks for a restart | Restart Home Assistant from the add-on page. |
-| A dashboard shows "Configuration error" or "Custom element doesn't exist" for the Skylight card | The page loaded before the update. Reload the page. In the Home Assistant app, go to **Settings → Companion app → Troubleshooting** and select **Reset frontend cache**. |
+| A dashboard shows "Configuration error" or "Custom element doesn't exist" for the Skylight card | The page loaded before the update. Reload the page. In the Home Assistant app, go to **Settings → Companion app → Troubleshooting** and select **Reset frontend cache**. If a browser still shows the error after a reload, clear the site data for your Home Assistant address. In Chrome, open the developer tools, then **Application → Storage → Clear site data**. |
 | An install or update fails with "not enough free space" | Home Assistant needs about 2 GB free to install any app. Delete old local backups. |
 
 ## Ideas for later
 
-- **Maybe: a brightness level.** To reach a level, Home Assistant dims the
-  panel all the way down, then dims it up in timed steps. This needs a
-  measured step size and a known lowest level. It is slow, and the panel shows
-  every step. Only a maybe.
+- **A brightness level, with feedback.** The panel reports its real
+  brightness, and the value follows the dim commands. To reach a level, Home
+  Assistant reads the brightness, sends one dim step toward the target, and
+  reads again, until it is within one step. The steps are uneven, about 10 to
+  23 percentage points each, and each one takes about a second. The panel
+  shows every step. Still to check: whether a mode change resets the
+  brightness, and whether Auto rhythm changes it during the day.
 - During setup, offer to link a smart wall switch to the recorded state with an
   automation.
+- **A "Refresh power" button on the card.** Today the action is in Developer
+  Tools and automations only.
+- **Maybe: a UV switch for the Vita-Up model.** Its remote command is known.
+  Home Assistant needs a way to read the UV state first, and the panel's own
+  safety limits on UV are unknown. See the
+  [protocol notes](docs/PROTOCOL.md#vita-up-uv).
 - Start the pairing burst by itself when the panel comes back on. The panel
   sends a Bluetooth beacon all the time, so the proxy can tell when its power
   goes off and comes back. Then nobody needs to select **Pair** at the right

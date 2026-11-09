@@ -141,6 +141,60 @@ it. The panel has no second element at `0x1677`. Home Assistant keeps the
 captured toggle for power, and it toggles only when the reported power differs
 from the wanted power. The test code was not kept.
 
+### Other standard lighting messages
+
+Later on 2026-11-09, a temporary probe sent the panel every standard Get in
+the table below, to `0xFFFF`. The panel answered from `0x1676`. Values are
+little-endian. A question without an answer was asked at least twice, so it is
+very likely unsupported.
+
+| Get | Opcode | Reply, panel on at full brightness | Meaning |
+|---|---|---|---|
+| Generic OnOff | `82 01` | `82 04 01` | on |
+| Generic Level | `82 05` | `82 08 00 00 00 00 01` | level 0, never changes |
+| Generic OnPowerUp | `82 11` | `82 12 00` | "stay off", although the panel turns on when power returns |
+| Time | `82 37` | `5d 00 00 00 00 00` | clock not set |
+| Scene | `82 41` | `5e 00 00 00` | current scene 0, none |
+| Light Lightness | `82 4b` | `82 4e ff ff` | **brightness 65535, follows dimming** |
+| Light Lightness Linear | `82 4f` | `82 52 00 00` | 0, never changes |
+| Light Lightness Last | `82 53` | `82 54 ff ff` | follows the brightness |
+| Light Lightness Default | `82 55` | `82 56 00 00` | 0 |
+| Light Lightness Range | `82 57` | `82 58 00 00 00 00 00` | 0 to 0 |
+| Light CTL | `82 5d` | `82 60 ff ff a0 28` | brightness 65535, 10,400 K |
+| Light CTL Temperature | `82 61` | `82 66 a0 28 00 00 a0 28 00 00 01` | 10,400 K |
+| Light CTL Temperature Range | `82 62` | `82 63 00 00 00 00 00` | 0 to 0 |
+| Light CTL Default | `82 67` | `82 68 00 00 00 00 00 00` | 0 |
+| Light HSL | `82 6d` | `82 78 cc cc 00 00 00 00` | lightness 52428, hue 0, saturation 0 |
+
+No answer came to Generic Default Transition Time (`82 0d`), Generic Power
+Level (`82 15`), Scene Register (`82 44`), Scheduler (`82 48`), Light xyL
+(`82 83`) or Light LC Mode (`82 91`).
+
+**The mode cannot be read.** The probe selected each of the six modes, waited
+3 seconds, and asked again. Every value stayed the same in all six modes. The
+color temperature read 10,400 K even in Relax and Rest, which are clearly
+warmer. With the panel off, Light Lightness and the CTL brightness read 0.
+
+**Light Lightness reports the real brightness.** It follows the remote's dim
+commands. After a 3-second dim-down hold it read 0 while the panel was on.
+Single dim-up taps from there gave 3668 (5.6 %), then a missed answer, then
+30767 (46.9 %), 41482 (63.3 %), 56786 (86.6 %) and 64188 (97.9 %). A dim tap
+is not a fixed step on this scale.
+
+**Light Lightness Set does not change the light.** In Auto rhythm, a Set to
+50 % (`82 4c 00 80 TT`) and then 100 % changed the reported value, but the
+owner saw no change. In Energize, a Set to 20 % (`82 4c 33 33 TT`) made the
+panel report exactly 20 %, and the light stayed at full brightness. A Set to
+100 % then put the reported value back. So a Lightness Set makes the reported
+brightness wrong. Home Assistant must never send it if it reads the
+brightness.
+
+**A brightness level is possible in steps.** Home Assistant can read Light
+Lightness, send the remote's dim up or dim down, and read again, until it is
+within one step of a target. This is untested. Open points: whether a mode
+change resets the brightness, and whether Auto rhythm changes it during the
+day.
+
 ## Vita-Up UV
 
 The Vita-Up model is a different model from the BioUp panel in this file. It
@@ -224,7 +278,8 @@ panel, Home Assistant tracked the owner's one remote (`0x7FFF`).
 - Why does the check right after a Core restart miss more often? It missed both questions once on 2026-11-09, while the proxy connection was new. The once-a-minute check fixed the power a minute later.
 - Does the panel answer other standard Get messages? Light Lightness Get (`82 4B`) can report brightness.
 - How does a Vita-Up panel report its UV state, and what limits does it put on UV? Unknown.
-- Relative dim down/up with `0x14` physically worked after transmitter pairing. The exact increment and behavior of other step values remain unmeasured.
+- Relative dim down/up with `0x14` physically worked after transmitter pairing. Light Lightness shows that a tap is not a fixed step. See [Other standard lighting messages](#other-standard-lighting-messages).
+- Does a mode change reset the brightness? Does Auto rhythm change it during the day? Light Lightness can answer both.
 
 ## Paired senders
 
