@@ -155,9 +155,9 @@ very likely unsupported.
 | Generic OnPowerUp | `82 11` | `82 12 00` | "stay off", although the panel turns on when power returns |
 | Time | `82 37` | `5d 00 00 00 00 00` | clock not set |
 | Scene | `82 41` | `5e 00 00 00` | current scene 0, none |
-| Light Lightness | `82 4b` | `82 4e ff ff` | **brightness 65535, follows dimming** |
+| Light Lightness | `82 4b` | `82 4e ff ff` | 65535, a counter of dim commands, not the real brightness |
 | Light Lightness Linear | `82 4f` | `82 52 00 00` | 0, never changes |
-| Light Lightness Last | `82 53` | `82 54 ff ff` | follows the brightness |
+| Light Lightness Last | `82 53` | `82 54 ff ff` | follows the counter |
 | Light Lightness Default | `82 55` | `82 56 00 00` | 0 |
 | Light Lightness Range | `82 57` | `82 58 00 00 00 00 00` | 0 to 0 |
 | Light CTL | `82 5d` | `82 60 ff ff a0 28` | brightness 65535, 10,400 K |
@@ -175,25 +175,57 @@ Level (`82 15`), Scene Register (`82 44`), Scheduler (`82 48`), Light xyL
 color temperature read 10,400 K even in Relax and Rest, which are clearly
 warmer. With the panel off, Light Lightness and the CTL brightness read 0.
 
-**Light Lightness reports the real brightness.** It follows the remote's dim
-commands. After a 3-second dim-down hold it read 0 while the panel was on.
-Single dim-up taps from there gave 3668 (5.6 %), then a missed answer, then
-30767 (46.9 %), 41482 (63.3 %), 56786 (86.6 %) and 64188 (97.9 %). A dim tap
-is not a fixed step on this scale.
+**Light Lightness is a counter, not the real brightness.** The value moves
+with the remote's dim commands, but it knows nothing about the light. Measured
+on 2026-11-09:
+
+- It counts in whole percent from 1 to 100. A dim command with step byte N,
+  the byte after the direction (`0x14` from the remote), moves it by exactly
+  N − 1 points. So the remote's taps move it 19 points each: 100, 81, 62, 43,
+  24, 5, then 1. Steps of 2, 3, 5, 8, 10, 49, 50, 60 and 100 all followed the
+  same rule.
+- Power off sets it to 0. A mode command does not change it. With the panel
+  off, then on in each of the six modes, it read 0 the whole time.
+- So after a mode command, the value and the light disagree. At a reported
+  25 %, Relax and then Energize left the value at 25 %, and the owner saw the
+  panel at full brightness.
+
+**The light follows only the remote's own step.** The owner watched while
+Home Assistant sent dim commands. Three taps with `0x14` dimmed the light three
+times. A tap with `0x0A` did nothing visible. Step `0x64` down made the light
+slightly brighter, and step `0x32` up then did nothing visible. So the step
+byte changes the counter, but the light uses its own fixed steps.
 
 **Light Lightness Set does not change the light.** In Auto rhythm, a Set to
 50 % (`82 4c 00 80 TT`) and then 100 % changed the reported value, but the
 owner saw no change. In Energize, a Set to 20 % (`82 4c 33 33 TT`) made the
 panel report exactly 20 %, and the light stayed at full brightness. A Set to
-100 % then put the reported value back. So a Lightness Set makes the reported
-brightness wrong. Home Assistant must never send it if it reads the
-brightness.
+100 % then put the reported value back.
 
-**A brightness level is possible in steps.** Home Assistant can read Light
-Lightness, send the remote's dim up or dim down, and read again, until it is
-within one step of a target. This is untested. Open points: whether a mode
-change resets the brightness, and whether Auto rhythm changes it during the
-day.
+**Two calibration runs with a light sensor.** An Aqara FP300 presence sensor
+in the same room measured the light in the dark, 45 seconds after each
+command, first with its light sampling on Low and then on High. Both runs gave
+the same readings:
+
+| Command | Office reading |
+|---|---|
+| Panel off | 0 to 1 lux |
+| Energize, Focus | 8 lux |
+| Relax, Rest, Auto rhythm | 2 lux |
+| From Energize at full: `0x14` taps down until the reading dropped | 3 taps, to 2 lux |
+| From the bottom after 8 taps down: `0x14` taps up until it rose | 8 taps, to 8 lux |
+| One tap down with `0x14`, `0x0A`, `0x28` or `0x02`, from Energize at full | no change seen |
+
+The sensor reported only those two levels in the dark, so it did not show the
+light's separate steps. The light has more than the counter's five steps between
+full and the bottom: three taps crossed the boundary going down, and eight
+taps were needed to cross it again going up. Each mode also has its own
+brightness, and a mode command resets the light to it.
+
+**A brightness slider is parked.** Without a value that matches the light,
+Home Assistant can only count the remote's taps blind. Nobody knows how many
+steps the light has, and every mode command resets it. The dim buttons stay as
+they are.
 
 ## Vita-Up UV
 
@@ -278,8 +310,7 @@ panel, Home Assistant tracked the owner's one remote (`0x7FFF`).
 - Why does the check right after a Core restart miss more often? It missed both questions once on 2026-11-09, while the proxy connection was new. The once-a-minute check fixed the power a minute later.
 - Does the panel answer other standard Get messages? Light Lightness Get (`82 4B`) can report brightness.
 - How does a Vita-Up panel report its UV state, and what limits does it put on UV? Unknown.
-- Relative dim down/up with `0x14` physically worked after transmitter pairing. Light Lightness shows that a tap is not a fixed step. See [Other standard lighting messages](#other-standard-lighting-messages).
-- Does a mode change reset the brightness? Does Auto rhythm change it during the day? Light Lightness can answer both.
+- How many dim steps does the light have between full and its lowest level, and are they equal? The light follows only the remote's `0x14` step, and each mode resets the brightness. Light Lightness cannot answer this, because it only counts commands. See [Other standard lighting messages](#other-standard-lighting-messages).
 
 ## Paired senders
 

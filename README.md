@@ -49,7 +49,7 @@ roy1uno also reported the remote command for the Vita-Up model's UV light. The
 [protocol notes](docs/PROTOCOL.md#vita-up-uv) record it. Home Assistant does
 not send it, for safety reasons that the notes explain.
 
-Testing on my panel also showed these limits and one new lead:
+Testing on my panel also showed three limits:
 
 - **The panel reports its power, but not its mode.** The mode is still
   tracked from commands and remote presses.
@@ -57,10 +57,10 @@ Testing on my panel also showed these limits and one new lead:
   "on" and "off" commands, but its light does not follow them. So Home
   Assistant still sends the remote's toggle. Because Home Assistant now knows
   the real power, it toggles only when the panel needs to change.
-- **The panel also reports its brightness.** The standard "set brightness"
-  command changes only the reported value, not the light. But the reported
-  value follows the remote's dim commands. A later version can use that to
-  dim to a chosen level in steps. See [Ideas for later](#ideas-for-later).
+- **The panel does not report its real brightness.** Its brightness value
+  only counts dim commands, and the light ignores the standard "set
+  brightness" command. So a brightness slider is not possible yet. See
+  [Ideas for later](#ideas-for-later).
 
 ## What it does
 
@@ -159,9 +159,11 @@ This is an experimental project. Please read these limits before you install it.
 - **Setup needs the panel's power switched off and on once**, at its light switch
   or breaker. Use a phone or a portable computer for setup, so you can take it
   with you.
-- **You cannot set a brightness level yet.** The panel's light follows only
-  "dim down" and "dim up" commands. The standard command for a level such as
-  40% changes the panel's reported value but not the light. So Home Assistant
+- **You cannot set a brightness level.** The panel's light follows only the
+  remote's "dim down" and "dim up" steps. The standard command for a level
+  such as 40% changes a value that the panel reports, but not the light. That
+  value is only a count of dim commands, so it does not show the real
+  brightness either. Each mode also resets the brightness. So Home Assistant
   shows no brightness slider, and Home Assistant ignores a brightness in
   `light.turn_on`. Color temperature has no working command either.
 - **A few owners have tried it.** One tested it with the NatureConnect/BioUp
@@ -460,13 +462,11 @@ mode as a trigger or a condition. Nobody can read the mode from the panel.
 
 ## Ideas for later
 
-- **A brightness level, with feedback.** The panel reports its real
-  brightness, and the value follows the dim commands. To reach a level, Home
-  Assistant reads the brightness, sends one dim step toward the target, and
-  reads again, until it is within one step. The steps are uneven, about 10 to
-  23 percentage points each, and each one takes about a second. The panel
-  shows every step. Still to check: whether a mode change resets the
-  brightness, and whether Auto rhythm changes it during the day.
+- **Parked: a brightness level.** One way is for Home Assistant to count the
+  remote's dim steps from a known point, such as right after a mode command.
+  That needs the number of steps between full and the lowest level, and
+  whether they are equal. A light sensor in the dark showed only two levels, so that is still
+  unknown. See the [protocol notes](docs/PROTOCOL.md#other-standard-lighting-messages).
 - During setup, offer to link a smart wall switch to the recorded state with an
   automation.
 - **A "Refresh power" button on the card.** Today the action is in Developer
