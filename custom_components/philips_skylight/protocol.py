@@ -154,12 +154,12 @@ def onoff_status(payload: bytes) -> bool | None:
     """The power in a Generic OnOff Status, or None for any other message.
 
     The short form carries the present power. The long form also carries the
-    target power and the remaining transition time. Use the target, because it
-    is the power that the panel is changing to.
+    target power and the remaining transition time. Use the present power: on
+    2026-11-09 the panel named a target of off and stayed on.
     """
     if payload[:2] != b"\x82\x04" or len(payload) not in (3, 5):
         return None
-    power = payload[-2] if len(payload) == 5 else payload[2]
+    power = payload[2]
     return None if power > 1 else power == 1
 
 

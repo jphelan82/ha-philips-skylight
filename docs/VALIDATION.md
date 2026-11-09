@@ -455,6 +455,11 @@ from `0x3CC2`, so the address differs between panels.
   no extra questions.
 - **The regular check after the change to once a minute** ran at 3:32:44,
   3:33:44 and 3:34:44 PM.
+- **Generic OnOff Set, an experiment.** A temporary test action sent the
+  standard on/off command five ways while the panel was on. The panel stayed
+  on each time. The acknowledged form got the reply `82 04 01 00 41`, with
+  target off. The panel never reached that target. PROTOCOL.md has the table.
+  The test action was removed.
 - **Not tested:** a mains power cut. A dashboard page open on
   `homeassistant.local` showed "Configuration error" after the restarts. A
   fresh browser drew every Skylight dashboard correctly. Clearing the page's

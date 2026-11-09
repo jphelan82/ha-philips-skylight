@@ -33,9 +33,10 @@ PANEL = 0x3CC2
 def test_status_parser_reads_short_and_long_forms_only():
     assert onoff_status(b"\x82\x04\x01") is True
     assert onoff_status(b"\x82\x04\x00") is False
-    # Long form: present, target, remaining time. The target wins.
-    assert onoff_status(b"\x82\x04\x00\x01\x05") is True
-    assert onoff_status(b"\x82\x04\x01\x00\x05") is False
+    # Long form: present, target, remaining time. The present power wins,
+    # because the panel can name a target that it never reaches.
+    assert onoff_status(b"\x82\x04\x00\x01\x05") is False
+    assert onoff_status(b"\x82\x04\x01\x00\x41") is True
     for payload in (b"\x82\x04", b"\x82\x04\x02", b"\x82\x04\x01\x00", b"\x82\x01", b""):
         assert onoff_status(payload) is None
 

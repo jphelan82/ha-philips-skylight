@@ -48,7 +48,10 @@ Each command is a vendor message with company ID `0x0211` (Telink Semiconductor)
 | Unpair all (no remote gesture known) | `CF 11 02 TT 02 11 11 11 11 11 11` | The pairing request with `02` in place of `01`. Inside the pairing window, it makes the panel blink and forget every paired sender. Outside the window, it switches the panel off and changes no pairing. Tested 2026-10-13. |
 | Nothing found | `CF 11 02 TT 00 11 11 11 11 11 11` | No visible effect and no change to pairing, both right after power-on and at other times. Tested 2026-10-13. |
 
-Every `C8` and `C9` command ends in `0x41`. Its meaning is unknown.
+Every `C8` and `C9` command ends in `0x41`. It is very likely a Bluetooth Mesh
+transition time: one step of 1 second. The panel's own status reply used the
+same `0x41` for a 1-second fade on 2026-11-09. See
+[Generic OnOff Set](#generic-onoff-set).
 
 Auto rhythm (`C9 … 06`) is a mode: it makes the panel follow its daily
 schedule. It does nothing until a schedule start is set. Any other mode button
@@ -80,8 +83,10 @@ way that Home Assistant can read the panel. roy1uno found it and reported it in
   file answered from `0x1676`. So the integration accepts a status from any
   unicast address (`0x0001` through `0x7FFF`) except its own.
 - The Mesh standard also has a long status form: present power, target power
-  and remaining transition time (5 bytes). Nobody has seen the panel send it.
-  If it does, the integration uses the target power.
+  and remaining transition time (5 bytes). The panel sends it in reply to a
+  Generic OnOff Set. The integration uses the present power, because the
+  panel can name a target that it never reaches. See
+  [Generic OnOff Set](#generic-onoff-set).
 - The status has no request number. A status that arrives late cannot be
   matched to its Get with certainty. So the integration counts a status only
   inside a 3-second window after its Get, and only if no toggle or mode
@@ -112,11 +117,29 @@ restart, and the modes and dimming. A mains power cut was not tested. The
 [validation record](VALIDATION.md#power-status-branch-power-status) has the
 details.
 
-A panel that answers a Generic OnOff Get runs a standard Generic OnOff Server.
-That server normally also accepts Generic OnOff Set (`82 02`, with an answer)
-and Set Unacknowledged (`82 03`, no answer). Each one carries the wanted power
-(`00` or `01`) and a transaction byte. If the panel accepts them, Home Assistant
-gets true on and off commands in place of the toggle. This is untested.
+### Generic OnOff Set
+
+A standard Generic OnOff Server also accepts Generic OnOff Set (`82 02`, with
+an answer) and Set Unacknowledged (`82 03`, no answer). Each one carries the
+wanted power (`00` or `01`) and a transaction byte. On 2026-11-09 the panel in
+this file was on, and Home Assistant sent it "off" five ways. The owner
+watched the panel. It did not change for any of them:
+
+| Sent | Destination | Panel's reply |
+|---|---|---|
+| `82 03 00 TT`, no answer asked | `0xFFFF` | none |
+| `82 02 00 TT` | `0xFFFF`, twice | `82 04 01 00 41` |
+| `82 02 00 TT 00 00`, transition and delay 0 | `0xFFFF` | `82 04 01 00 41` |
+| `82 02 00 TT` | `0x1676`, the panel | `82 04 01 00 41` |
+| `82 02 00 TT` | `0x1677` | none |
+
+The reply `82 04 01 00 41` means: present power on, target power off, 1 second
+left. It ignores the transition time of 0 that Home Assistant asked for. A Get
+12 seconds later still answered `82 04 01`, on. So the panel's standard on/off
+server accepts the Set and reports the light, but the light does not follow
+it. The panel has no second element at `0x1677`. Home Assistant keeps the
+captured toggle for power, and it toggles only when the reported power differs
+from the wanted power. The test code was not kept.
 
 ## Vita-Up UV
 
@@ -195,9 +218,10 @@ panel, Home Assistant tracked the owner's one remote (`0x7FFF`).
 - Why does a long stream of pairing requests drop the other remote? A short burst does not. One guess: each accepted request counts as a new pairing in one of only two places.
 - Do the other five modes turn an off panel on, as Relax does? Untested.
 - Does every remote of this model send as `0x7FFF`?
-- Do separate on and off codes exist? Try the standard Generic OnOff Set Unacknowledged first: `82 03 00 TT` and `82 03 01 TT`. See [Power status](#power-status). Vendor candidates: `03 00 41` and `03 02 41`.
+- Do separate on and off codes exist? The standard Generic OnOff Set does not switch the light. See [Generic OnOff Set](#generic-onoff-set). Vendor candidates are untested: `C8 11 02 TT 03 00 41` and `C8 11 02 TT 03 02 41`.
 - Does every panel answer the Generic OnOff Get? Two panels have answered so far, from `0x3CC2` and `0x1676`.
 - Why does the panel miss about one Get in four? See [Power status](#power-status).
+- Why does the check right after a Core restart miss more often? It missed both questions once on 2026-11-09, while the proxy connection was new. The once-a-minute check fixed the power a minute later.
 - Does the panel answer other standard Get messages? Light Lightness Get (`82 4B`) can report brightness.
 - How does a Vita-Up panel report its UV state, and what limits does it put on UV? Unknown.
 - Relative dim down/up with `0x14` physically worked after transmitter pairing. The exact increment and behavior of other step values remain unmeasured.
