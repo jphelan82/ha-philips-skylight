@@ -75,10 +75,10 @@ way that Home Assistant can read the panel. roy1uno found it and reported it in
   has no `TT` byte. The same factory keys encrypt both.
 - The panel sends the status to the address that asked. So the integration
   hears it only because the proxy hears the panel.
-- On roy1uno's panel, the status came from `0x3CC2`. That address is the
-  panel's own mesh address. Nobody knows whether other panels use the same
-  address. The integration accepts a status from any unicast address
-  (`0x0001` through `0x7FFF`) except its own.
+- Each panel answers from its own mesh address, and the address differs
+  between panels. roy1uno's panel answered from `0x3CC2`. The panel in this
+  file answered from `0x1676`. So the integration accepts a status from any
+  unicast address (`0x0001` through `0x7FFF`) except its own.
 - The Mesh standard also has a long status form: present power, target power
   and remaining transition time (5 bytes). Nobody has seen the panel send it.
   If it does, the integration uses the target power.
@@ -87,15 +87,30 @@ way that Home Assistant can read the panel. roy1uno found it and reported it in
   inside a 3-second window after its Get, and only if no toggle or mode
   command went out after the Get.
 - If the panel has no mains power, it cannot answer. Silence does not mean off.
+- The panel misses some questions, even with mains power. On 2026-11-09 the
+  panel in this file answered 8 of 11 questions. The cause is unknown. One
+  guess: the proxy is still sending the Get, three times over about 300 ms,
+  when the panel answers, so the proxy does not hear the answer. So the
+  integration asks a second time if the first Get gets no answer. It also
+  logs a status that arrives after the 3-second wait, to learn whether the
+  missed answers are lost or only late.
 - Each Get uses one sequence number from the sender's 24-bit counter, which
   holds about 16.7 million. A Get every 30 seconds uses about 1 million a year.
-  A Get every five minutes uses about 105,000 a year.
+  A Get once a minute, with retries, uses about 657,000 a year, so the
+  counter lasts about 25 years. The owner chose once a minute on 2026-11-09.
+  By then this transmitter had used 5,120 numbers.
 
 roy1uno tested the exchange on their own panel on 2026-11-09, with an
 ESP32-S3 proxy (Heltec WiFi LoRa 32 V3) and ESPHome 2026.10.2. A Get
 corrected a deliberately wrong record in both directions: off to on, and on to
-off. A Get 5 seconds after a toggle also worked. Nobody has tested it on the
-panel described in this file yet.
+off. A Get 5 seconds after a toggle also worked.
+
+The panel in this file passed nine tests on 2026-11-09, with the ESP32-C3
+proxy. They cover a refresh, a wrong record in both directions, Home Assistant
+and remote toggles, fast toggles, the regular check, a proxy outage, a
+restart, and the modes and dimming. A mains power cut was not tested. The
+[validation record](VALIDATION.md#power-status-branch-power-status) has the
+details.
 
 A panel that answers a Generic OnOff Get runs a standard Generic OnOff Server.
 That server normally also accepts Generic OnOff Set (`82 02`, with an answer)
@@ -144,7 +159,7 @@ switch came in issue 5, from an owner of the same Vita-Up model.
   A mesh node drops any packet whose sequence number is not higher than the last one from the same sender. If Home Assistant sends as `0x7FFF` with a high sequence number, the panel ignores the real remote until the remote catches up. Use a separate unicast address, such as `0x7FFE`, and keep its own sequence counter.
 - **Store the sequence counter.** It must only go up, across restarts.
 - **Ask for the power, not the mode.** The panel reports its power when it gets a Generic OnOff Get. See [Power status](#power-status). Nobody knows how to read the mode. Home Assistant tracks the mode from its own commands and from the remote's presses, which it can decrypt.
-- **Keep the Get rare.** Each Get uses a sequence number, and the counter never goes back. The integration asks after setup, 5 seconds after a toggle, after a proxy outage, after a pairing burst, and every five minutes.
+- **Keep the Get rare.** Each Get uses a sequence number, and the counter never goes back. The integration asks after setup, 5 seconds after a toggle, after a proxy outage, after a pairing burst, and once a minute.
 
 ## Tracking external controls
 
@@ -181,7 +196,8 @@ panel, Home Assistant tracked the owner's one remote (`0x7FFF`).
 - Do the other five modes turn an off panel on, as Relax does? Untested.
 - Does every remote of this model send as `0x7FFF`?
 - Do separate on and off codes exist? Try the standard Generic OnOff Set Unacknowledged first: `82 03 00 TT` and `82 03 01 TT`. See [Power status](#power-status). Vendor candidates: `03 00 41` and `03 02 41`.
-- Does every panel answer the Generic OnOff Get, and from which address? Only one panel has answered so far, from `0x3CC2`.
+- Does every panel answer the Generic OnOff Get? Two panels have answered so far, from `0x3CC2` and `0x1676`.
+- Why does the panel miss about one Get in four? See [Power status](#power-status).
 - Does the panel answer other standard Get messages? Light Lightness Get (`82 4B`) can report brightness.
 - How does a Vita-Up panel report its UV state, and what limits does it put on UV? Unknown.
 - Relative dim down/up with `0x14` physically worked after transmitter pairing. The exact increment and behavior of other step values remain unmeasured.

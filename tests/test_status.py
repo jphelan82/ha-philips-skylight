@@ -1,6 +1,7 @@
 """The panel's Generic OnOff Status, with replies built by the real mesh codec."""
 
 import asyncio
+import logging
 
 import pytest
 from homeassistant.core import Event
@@ -49,6 +50,8 @@ class Rig:
         self.messages = []
         # Answer each Get with this power from this address, or stay silent.
         self.answer: bool | None = None
+        # Stay silent for this many Gets first, like a missed answer.
+        self.miss = 0
         self.answer_from = PANEL
         self.panel_sequence = 100
 
@@ -63,9 +66,13 @@ class Rig:
         message = self.controller.codec.decode(bytes.fromhex(call.data["raw"]))[0]
         self.messages.append(message)
         self.sent.append(message.payload)
-        if message.payload == ONOFF_GET and self.answer is not None:
-            # The panel answers while the proxy is still sending.
-            self.reply(self.answer, self.answer_from)
+        if message.payload != ONOFF_GET or self.answer is None:
+            return
+        if self.miss:
+            self.miss -= 1
+            return
+        # The panel answers while the proxy is still sending.
+        self.reply(self.answer, self.answer_from)
 
     def gets(self) -> int:
         return self.sent.count(ONOFF_GET)
@@ -194,7 +201,33 @@ async def test_turn_off_with_unknown_power_asks_the_panel_first(rig):
 async def test_turn_off_with_unknown_power_and_a_silent_panel_explains(rig):
     with pytest.raises(HomeAssistantError, match="did not report it"):
         await rig.controller.async_power(False)
-    assert rig.sent == [ONOFF_GET]
+    assert rig.sent == [ONOFF_GET] * module.STATUS_TRIES
+
+
+async def test_a_missed_answer_gets_one_more_question(rig):
+    controller = rig.controller
+    await controller.async_set_assumed_power(True)
+    rig.answer, rig.miss = False, 1
+    assert await controller.async_refresh_power() is True
+    assert rig.gets() == 2
+    assert controller.state.is_on is False
+    rig.sent.clear()
+    rig.miss = 2  # Both questions missed.
+    controller.state.is_on = True
+    assert await controller.async_refresh_power() is False
+    assert rig.gets() == 2
+    assert controller.state.is_on is True
+
+
+async def test_a_late_answer_is_logged_and_ignored(rig, caplog):
+    controller = rig.controller
+    await controller.async_set_assumed_power(True)
+    assert await controller.async_refresh_power() is False
+    caplog.set_level(logging.DEBUG, logger=module.__name__)
+    rig.reply(False)  # Arrives after the wait.
+    assert controller.state.is_on is True
+    assert "outside the wait; ignored" in caplog.text
+    assert "0x3CC2 reports power off" in caplog.text
 
 
 async def test_status_loop_asks_after_a_toggle_and_stops_on_unload(rig, monkeypatch):
@@ -228,4 +261,5 @@ async def test_status_loop_skips_while_the_proxy_is_offline(rig):
     controller.async_start_status()
     await asyncio.sleep(0.05)
     assert rig.sent == []
-    assert controller.status_due > module.monotonic() + 100
+    # A skipped check waits a full interval, not a short delay.
+    assert controller.status_due > module.monotonic() + module.STATUS_INTERVAL - 5

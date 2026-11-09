@@ -127,7 +127,7 @@ This is an experimental project. Please read these limits before you install it.
 I do not advise using the Skylight with a light switch. If you use the Skylight with an ordinary light switch, this automation will not be able to preserve the state, such as the on/off state or the currently selected scene. If you do have such a switch leave the panel's wall switch on. Control the panel with its wall
 remote or Home Assistant. A panel with no power cannot answer Home Assistant.
 So after a wall switch cuts the power, Home Assistant keeps showing the last
-state. When power returns, Home Assistant asks the panel within five minutes
+state. When power returns, Home Assistant asks the panel within a minute
 and corrects the power. It cannot correct the mode. You need the wall switch or
 the breaker only for pairing.
 

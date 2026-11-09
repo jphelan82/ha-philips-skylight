@@ -213,7 +213,7 @@ The card uses the remote's icons and colors:
 
 The panel reports its power when Home Assistant asks. It does not report its
 mode. Home Assistant asks after setup, 5 seconds after a toggle, after a proxy
-outage, after a pairing burst, and every five minutes. The
+outage, after a pairing burst, and once a minute. The
 `philips_skylight.refresh_power` action asks at once.
 
 Home Assistant records the mode from its own commands and from the remote

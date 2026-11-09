@@ -40,12 +40,16 @@ PAIRING_RATE = 2
 OUTAGE_GRACE = 60
 # The panel answers a Generic OnOff Get within about a second. Wait this long.
 STATUS_WINDOW = 3
+# The panel misses about one question in four (measured 2026-11-09: 3 of 11).
+# Ask again once if the first question gets no answer.
+STATUS_TRIES = 2
 # Ask the panel for its power this many seconds after a toggle, setup, reconnect
 # or pairing burst.
 STATUS_DELAY = 5
-# Otherwise ask every five minutes. Each request uses one of the sender's 16.7
-# million sequence numbers: about 105,000 a year at this rate.
-STATUS_INTERVAL = 300
+# Otherwise ask once a minute. Each request uses one of the sender's 16.7
+# million sequence numbers. With retries, that is about 657,000 a year, so the
+# counter lasts about 25 years. Chosen by the owner on 2026-11-09.
+STATUS_INTERVAL = 60
 # The dashboard card's default entity IDs, each with the registry unique ID that
 # finds the entity after a rename. The add-on's server keeps the same table.
 UNIQUE_ID_PREFIX = "factory_mesh_7ffe_"

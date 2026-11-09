@@ -27,6 +27,7 @@ from .const import (
     SOURCE,
     STATUS_DELAY,
     STATUS_INTERVAL,
+    STATUS_TRIES,
     STATUS_WINDOW,
     STORAGE_KEY,
 )
@@ -69,6 +70,8 @@ class SkylightController:
         # answer counts only if this count did not change after its request.
         self.power_changes = 0
         self.status_request: tuple[int, asyncio.Future[bool]] | None = None
+        # When the last question went out, for the debug log.
+        self.status_asked_at: float | None = None
         self.status_due = monotonic() + STATUS_DELAY
         self.status_wake = asyncio.Event()
 
@@ -125,17 +128,29 @@ class SkylightController:
     def _receive_status(self, source: int, payload: bytes) -> None:
         """Apply the panel's answer to the open Generic OnOff Get, if any."""
         power = onoff_status(payload)
+        if power is None or not 1 <= source <= 0x7FFF or source == SOURCE:
+            return
+        asked = self.status_asked_at
+        since = -1.0 if asked is None else monotonic() - asked
+        words = "on" if power else "off"
         request = self.status_request
-        if power is None or request is None or not 1 <= source <= 0x7FFF or source == SOURCE:
+        if request is None or request[1].done():
+            # A late answer, or another copy of one. Logged to learn why some are missed.
+            _LOGGER.debug(
+                "Skylight panel 0x%04X reports power %s %.2f s after the last question, "
+                "outside the wait; ignored",
+                source,
+                words,
+                since,
+            )
             return
         changes, answer = request
-        if answer.done():
-            return
         if changes != self.power_changes:
             # The answer can describe the power from before the newer command.
+            _LOGGER.debug("Skylight panel answer predates a newer command; ignored")
             answer.set_result(False)
             return
-        _LOGGER.debug("Skylight panel 0x%04X reports power %s", source, "on" if power else "off")
+        _LOGGER.debug("Skylight panel 0x%04X reports power %s after %.2f s", source, words, since)
         answer.set_result(True)
         if self.stopped or self.pairing_until:
             return
@@ -341,6 +356,14 @@ class SkylightController:
 
     async def async_refresh_power(self) -> bool:
         """Ask the panel for its power. True if it answered and the power is now known."""
+        for attempt in range(1, STATUS_TRIES + 1):
+            if await self._async_ask_power():
+                return True
+            _LOGGER.debug("Skylight panel did not answer question %s of %s", attempt, STATUS_TRIES)
+        return False
+
+    async def _async_ask_power(self) -> bool:
+        """Send one Generic OnOff Get and wait for the answer."""
         answer: asyncio.Future[bool] = self.hass.loop.create_future()
         async with self.lock:
             if not self.transmitter_ready:
@@ -350,6 +373,7 @@ class SkylightController:
                 )
             # Open the request before sending: the answer can arrive during the send.
             self.status_request = (self.power_changes, answer)
+            self.status_asked_at = monotonic()
             try:
                 await self._async_transmit_locked(lambda transaction: ONOFF_GET)
             except BaseException:

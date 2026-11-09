@@ -404,6 +404,68 @@ Skylight firmware 3.
   back on, in Refresh. The recorded scene also came back as Refresh. Nothing
   went to the panel.
 
+## Power status (branch power-status)
+
+Tested on 2026-11-09 on the owner's Home Assistant 2026.6.0, with the ESP32-C3
+proxy and Skylight firmware 3. The branch replaced integration 0.5.0 in
+`/config/custom_components/philips_skylight` by a direct copy, followed by a
+Core restart. The add-on was not restarted, because its start puts back its
+own bundled copy. Debug logging for `custom_components.philips_skylight`
+showed each question and answer.
+
+The panel answered a Generic OnOff Get from `0x1676`. roy1uno's panel answered
+from `0x3CC2`, so the address differs between panels.
+
+- **Misses.** Before the retry, the panel answered 8 of 11 questions, with mains
+  power on. Each answer came 0.11 to 0.29 seconds after the question. No answer
+  ever arrived after the 3-second wait, so the missed answers are lost, not
+  late. After the retry went in, every manual refresh got an answer, and the
+  retry rescued 3 missed first questions.
+- **A proxy drop.** The regular check at 3:35:47 PM missed both questions.
+  The proxy's connection to Home Assistant was down at the time. Home
+  Assistant noticed the drop only at 3:36:03 PM and reconnected 0.2 seconds
+  later. The record stayed on, because the outage was under 60 seconds. The
+  reconnect check asked 5 seconds later and got "on".
+- **Test 1, refresh with the panel off.** A wall-remote toggle turned the panel
+  off. Home Assistant asked 5.2 seconds later and got "off".
+- **Test 2, a wrong record.** The owner recorded on while the panel was off. A
+  refresh changed it to off. The owner then recorded off while the panel was
+  on. A refresh changed it to on.
+- **Test 3, a Home Assistant toggle.** A tap on the card turned the panel off.
+  Home Assistant asked 5.1 seconds later and got "off".
+- **Test 4, a remote toggle.** Two remote toggles each got a question about 5
+  seconds later, with the right answer.
+- **Test 5, fast toggles.** Three remote presses in 3.5 seconds each reached
+  Home Assistant. One question followed, 5.2 seconds after the last press. It
+  got "on", which matched the panel.
+- **Test 6, the regular check.** The owner recorded off while the panel was on,
+  then touched nothing. The regular check, then every five minutes, changed it
+  to on.
+- **Test 7, a proxy outage.** The proxy was unplugged. Home Assistant marked it
+  offline after a delay, then it stayed offline for 73 seconds. On reconnect,
+  Home Assistant cleared the power and the mode. It asked 5.1 seconds later and
+  got "on". The mode stayed unknown, as designed.
+- **Test 8, a restart.** The owner recorded off and Auto rhythm while the panel
+  was on in Auto rhythm, and Core restarted. The light came back as off and
+  Auto rhythm from its saved state. The startup check asked about 4 seconds
+  after setup and got "on". The mode stayed Auto rhythm. On the first deploy,
+  before the retry, the startup check had missed.
+- **Test 9, no regressions.** Relax, Energize, Dim −, Dim + and Auto rhythm
+  from the card all worked on the panel and recorded the right mode. They sent
+  no extra questions.
+- **The regular check after the change to once a minute** ran at 3:32:44,
+  3:33:44 and 3:34:44 PM.
+- **Not tested:** a mains power cut. A dashboard page open on
+  `homeassistant.local` showed "Configuration error" after the restarts. A
+  fresh browser drew every Skylight dashboard correctly. Clearing the page's
+  site data fixes the old copy.
+
+Rollback: the integration from `main` is in
+`/config/.skylight-backup-20261109-main` on Home Assistant. Copy it back over
+`/config/custom_components/philips_skylight`, then restart Core. Do not touch
+the sequence Store. The transmitter had used 5,120 sequence numbers by the
+end of the test.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store

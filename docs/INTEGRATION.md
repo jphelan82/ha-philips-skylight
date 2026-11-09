@@ -91,7 +91,7 @@ The [dashboard guide](DASHBOARD.md) explains the layout.
 
 Home Assistant asks the panel whether it is on or off. It asks after setup,
 5 seconds after a toggle, after a proxy outage, after a pairing burst, and
-every five minutes. The panel answers within about a second. If the power is
+once a minute. The panel answers within about a second. If the power is
 unknown, an on or off action asks the panel first.
 
 To ask now, run `philips_skylight.refresh_power` in Developer Tools → Actions:

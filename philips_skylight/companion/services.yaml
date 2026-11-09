@@ -1,6 +1,6 @@
 refresh_power:
   name: Refresh power
-  description: Ask the panel whether it is on or off. The panel answers within about a second, and Home Assistant records the answer. Does not change the light. Home Assistant also asks after setup, after a toggle, after a proxy outage, and every five minutes.
+  description: Ask the panel whether it is on or off. The panel answers within about a second, and Home Assistant records the answer. Does not change the light. Home Assistant also asks after setup, after a toggle, after a proxy outage, and once a minute.
   target:
     entity:
       integration: philips_skylight
