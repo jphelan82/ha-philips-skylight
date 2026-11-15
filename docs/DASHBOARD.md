@@ -81,8 +81,11 @@ card**. It replaces that copy with the one-line card.
 
 ## Correct the state
 
-The panel never reports its state, so the record can drift: a missed remote
-press, a power cut, a wall switch, or an outage. To fix it:
+The panel reports its power when Home Assistant asks, so a wrong power fixes
+itself within a minute. The panel does not report its mode, so the recorded
+mode can drift: a missed remote press, or a press during an outage. Correct the
+power by hand only if the panel has no mains power, because then it cannot
+answer. To fix the record:
 
 1. Select **Correct**. The card switches to the correction view.
 2. Select **Panel is on** or **Panel is off**.
@@ -91,7 +94,8 @@ press, a power cut, a wall switch, or an outage. To fix it:
 
 These change only Home Assistant's record. They do not send anything to the
 panel, and they do not use a command number. Received remote presses then keep
-the record up to date. The correction view closes after a Home Assistant
+the record up to date, and the next power check, within a minute, replaces a
+wrong power. The correction view closes after a Home Assistant
 restart.
 
 ## The entities

@@ -2,11 +2,24 @@
 
 Control your Philips Skylight from Home Assistant: power, the six modes, and
 dimming. Your own remote keeps working, and Home Assistant follows its presses.
+Home Assistant asks the panel whether it is on or off, so the shown power
+matches the real panel.
 
 You need Home Assistant OS or Supervised (2026.6 or newer) and an ESPHome
 Bluetooth proxy near the panel. You do not need an MQTT broker, a cloud account
 or HACS. The integration includes its own dashboard card. It was tested with the NatureConnect/BioUp 17.7 ×
 25.6 inch panel and an ESP32-C3 proxy.
+
+## What's new in 0.7.0
+
+Home Assistant now reads the panel's power. It asks after it starts, 5 seconds
+after any toggle, after the proxy reconnects, and once a minute. A wrong power
+fixes itself within a minute. The new **Philips Skylight: Refresh power**
+action asks at once. The update needs a Home Assistant restart and one browser
+reload, and no new firmware or pairing.
+
+Many thanks to roy1uno, who found that the panel answers this question and
+sent the first version in pull request 9 on GitHub.
 
 ## Before you start
 
@@ -21,6 +34,11 @@ or HACS. The integration includes its own dashboard card. It was tested with the
   one, any device on your home network can make the proxy control the panel.
 
 ## Get started
+
+If you have the prerequisites, the add-on walks you through the setup step by
+step. You need Home Assistant OS or Supervised 2026.6 or newer, an ESPHome
+Bluetooth proxy near the panel, and ESPHome Device Builder. The steps below
+show what to expect.
 
 1. Select **Install**. When it is installed, turn on **Start on boot**, select
    **Start**, then select **Open Web UI**.
@@ -65,13 +83,19 @@ The card uses the remote's icons and colors.
   You cannot set a brightness level, because the panel takes only these two
   commands.
 - **Rhythm set** makes the current time the start of the Auto rhythm schedule.
-- **Correct** fixes Home Assistant's record when it does not match the panel.
+- **Correct** fixes the recorded mode, or the power if the panel cannot
+  answer.
 
-## The shown state is a best guess
+## The power is read, the mode is tracked
 
-The panel never reports its state. Home Assistant guesses it from its own
-commands and the remote presses it hears. A missed press, a power cut or a wall
-switch puts the guess out of step. Then use **Correct**.
+The panel reports its power when Home Assistant asks, so a wrong power fixes
+itself within a minute. The panel does not report its mode. Home Assistant
+tracks the mode from its own commands and the remote presses it hears. A
+missed press, or a press while Home Assistant or the proxy is down, puts the
+recorded mode out of step. Then use **Correct**.
+
+A panel with no mains power cannot answer. After a wall switch or a power cut,
+Home Assistant keeps showing the last power until the power returns.
 
 Leave the panel's wall switch on, and control the panel with its remotes or Home
 Assistant. Use the wall switch or breaker only for pairing.
