@@ -27,7 +27,7 @@ I have tried to make the setup of this as easy as possible, although it required
 
 >I built this project with AI coding agents. Claude Opus 5.5 decoded the remote's Bluetooth protocol, using the [bluetooth-proxy](https://esphome.io/components/bluetooth_proxy/) to capture its messages during pairing and button presses. Codex did further development, and Opus did the refactoring and final implementation. I'm a software developer. I wrote the specifications and reviewed the code, but not with the scrutiny I'd give a high-stakes production project. Use it at your own risk.
 
-## What's new
+## What's new in 0.7.0
 
 **Real power state.** Home Assistant now asks the panel whether it is on or
 off, and the panel answers. Before, Home Assistant only guessed the power from

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.7.0
+
+This version needs a Home Assistant restart for integration 0.6.0, then one
+browser reload. The proxy firmware does not change, and the panel does not
+need a new pairing.
+
+- **Real power state.** Home Assistant asks the panel whether it is on or off,
+  and the panel answers. It asks after it starts, 5 seconds after any toggle,
+  after the proxy reconnects, and once a minute. A wrong power fixes itself
+  within a minute. Before, Home Assistant only guessed the power.
+- The panel misses about one question in four. Home Assistant asks a second
+  time when that happens.
+- If the power is unknown, "turn on" and "turn off" ask the panel first,
+  instead of stopping with an error.
+- The new **Philips Skylight: Refresh power** action
+  (`philips_skylight.refresh_power`) asks the panel at once. It reports an
+  error if the panel does not answer.
+- The panel does not report its mode. Home Assistant still tracks the mode from
+  its own commands and the remote's presses, and **Correct** still fixes it.
+- Thanks to roy1uno, who found the panel's status reply and sent the first
+  version in pull request 9.
+- The protocol notes record the status messages, the standard Bluetooth Mesh
+  commands that the light ignores, and the Vita-Up model's UV command. The
+  integration does not send the UV command.
+
 ## 0.6.1
 
 - The add-on page and the docs say to open the **By card** tab in **Add card**.
