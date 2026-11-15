@@ -183,9 +183,10 @@ is not in the card picker after the first install, reload the page in your
 browser.
 
 If a dashboard shows "Configuration error" or "Custom element doesn't exist"
-for the Skylight card, the page loaded before the update. Reload the page. In
-the Home Assistant app, go to **Settings → Companion app → Troubleshooting**
-and select **Reset frontend cache**.
+for the Skylight card right after an update, the page loaded before the update.
+Reload the page. In the Home Assistant app, go to **Settings → Companion app →
+Troubleshooting** and select **Reset frontend cache**. Before 0.7.1, Firefox
+and some phone apps showed this error on every load. Version 0.7.1 fixes that.
 
 The card shows built-in Home Assistant cards, with your real entity IDs. On the
 add-on page, **Create a Skylight dashboard** makes a dashboard with the card.

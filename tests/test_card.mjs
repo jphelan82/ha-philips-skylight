@@ -7,9 +7,21 @@ import vm from "node:vm";
 const SCRIPT = new URL("../custom_components/philips_skylight/frontend/philips-skylight-card.js",
   import.meta.url);
 
-// Just enough of a browser to define the card and build it.
-async function browser() {
+function registry() {
   const defined = new Map();
+  return {
+    defined,
+    get: (name) => defined.get(name),
+    define(name, element) {
+      if (defined.has(name)) throw new Error("already defined");
+      defined.set(name, element);
+    },
+  };
+}
+
+// Just enough of a browser to define the card and build it. With ready, the
+// frontend's own element exists before the card loads.
+async function browser({ready = true} = {}) {
   const made = [];
   const node = (tag) => {
     const item = {tag, attributes: {}, children: [], className: "", textContent: "", listeners: {},
@@ -29,23 +41,41 @@ async function browser() {
         getCardSize: () => 12, getGridOptions: () => ({columns: 12})})};
     },
   };
+  const customElements = registry();
+  if (ready) customElements.define("home-assistant", class {});
   const context = vm.createContext({
-    HTMLElement, window, String, Error,
-    customElements: {
-      get: (name) => defined.get(name),
-      define(name, element) {
-        if (defined.has(name)) throw new Error("already defined");
-        defined.set(name, element);
-      },
-    },
+    HTMLElement, window, String, Error, Date, setTimeout,
+    customElements,
     document: {createElement: node},
   });
   // A block keeps each load's names apart, as each module load does in a browser.
   const source = "{" + await readFile(SCRIPT, "utf8") + "\n}";
   vm.runInContext(source, context);
-  return {Card: defined.get("philips-skylight-card"), window, made,
+  return {Card: context.customElements.get("philips-skylight-card"), window, made, context,
     load: () => vm.runInContext(source, context)};
 }
+
+test("the card waits for the frontend, then defines itself in the registry that replaced the first", async () => {
+  const {context} = await browser({ready: false});
+  const first = context.customElements;
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  assert.equal(first.get("philips-skylight-card"), undefined);
+  // The frontend's polyfill installs a new registry and a new HTMLElement, then
+  // defines its own element in that registry.
+  class PolyfillHTMLElement {
+    constructor() { this.children = []; }
+    replaceChildren(...children) { this.children = children; }
+  }
+  const second = registry();
+  context.customElements = second;
+  context.HTMLElement = PolyfillHTMLElement;
+  second.define("home-assistant", class {});
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  const Card = second.get("philips-skylight-card");
+  assert.ok(Card);
+  assert.ok(new Card() instanceof PolyfillHTMLElement);
+  assert.equal(first.get("philips-skylight-card"), undefined);
+});
 
 test("the card is in the card picker, and a second load does not throw", async () => {
   const {Card, window, load} = await browser();

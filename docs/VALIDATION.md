@@ -481,6 +481,29 @@ Rollback: the integration from `main` is in
 the sequence Store. The transmitter had used 5,120 sequence numbers by the
 end of the test.
 
+## Card registration in Firefox (0.7.1)
+
+Found on 2026-11-15, after the 0.7.0 update. Firefox and the owner's phone app
+showed "Custom element doesn't exist: philips-skylight-card". Chrome and the
+browser pane drew the card.
+
+- The page and the card script were the same for every browser, and Firefox
+  loaded the script with status 200.
+- In the Firefox console, `document.createElement('philips-skylight-card')`
+  gave a `PhilipsSkylightCard`, but `customElements.get` gave `undefined`, and
+  `customElements.define` was not native code. The card script had run first
+  in the card list.
+- Home Assistant's `app.js` installs a scoped custom element registry polyfill
+  in browsers without native support. It replaces `window.customElements` with
+  a new registry. The card script loads before the frontend, so its definition
+  stayed in the old registry.
+- Fix: the card waits until the frontend's `home-assistant` element exists,
+  then defines itself, built on that moment's `HTMLElement`. A card test swaps
+  the registry the same way. It fails with 0.7.0's script and passes with the
+  fix.
+- With the fixed script on Home Assistant, Firefox drew the card after a
+  reload. Chrome still drew it, with no error cards.
+
 ## Rollback
 
 - Disable the light integration through HA settings. Keep its sequence Store

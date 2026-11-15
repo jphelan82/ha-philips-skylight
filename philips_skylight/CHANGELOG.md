@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.1
+
+This version needs a Home Assistant restart for integration 0.6.1, then one
+browser reload.
+
+- **The Skylight card works in Firefox again, and in phone apps that had the
+  same problem.** They showed "Configuration error: Custom element doesn't
+  exist: philips-skylight-card". Home Assistant's frontend replaces the
+  browser's list of custom elements in browsers without a newer web feature,
+  scoped custom element registries. The card registered itself before that
+  happened, so the dashboard did not find it. The card now waits for the
+  frontend, then registers itself. Chrome was never affected.
+
 ## 0.7.0
 
 This version needs a Home Assistant restart for integration 0.6.0, then one

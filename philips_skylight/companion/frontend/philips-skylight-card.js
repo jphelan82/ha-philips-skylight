@@ -6,90 +6,114 @@ const CARD_TYPE = "philips-skylight-card";
 const CARD_SIZE = 8;
 // After a failed request, such as during a restart, ask again after this long.
 const RETRY_MS = 10000;
+// Home Assistant loads this script before its own frontend. In browsers without
+// scoped custom element registries, such as Firefox, the frontend then installs a
+// polyfill that replaces window.customElements with a new, empty registry. A card
+// defined before that is lost, and the dashboard reports "Custom element doesn't
+// exist". So the card waits for the frontend's own element, then defines itself in
+// the registry that the dashboard uses, built on that moment's HTMLElement.
+const READY_ELEMENT = "home-assistant";
+const READY_CHECK_MS = 50;
+// Pages without the frontend, such as the login page, define the card anyway.
+const READY_GIVE_UP_MS = 30000;
 
-class PhilipsSkylightCard extends HTMLElement {
-  static getStubConfig() {
-    return {};
-  }
-
-  setConfig(config) {
-    if (!config || typeof config !== "object") throw new Error("The card needs a config");
-    this._config = config;
-  }
-
-  set hass(hass) {
-    this._hass = hass;
-    if (this._card) this._card.hass = hass;
-    // Home Assistant sets hass on every state change. Only the first one asks,
-    // and after a failure, the first one after the retry time.
-    if (!this._loading && (!this._card || (this._failed && Date.now() >= this._retryAt))) {
-      this._load();
+function makeCardClass(Base) {
+  return class PhilipsSkylightCard extends Base {
+    static getStubConfig() {
+      return {};
     }
-  }
 
-  get hass() {
-    return this._hass;
-  }
-
-  async _load() {
-    this._loading = true;
-    let element;
-    try {
-      const result = await this._hass.callWS({type: "philips_skylight/card"});
-      element = await this._create(result.card);
-      this._failed = false;
-    } catch (error) {
-      element = this._error(error && error.message ? error.message : String(error));
-      this._failed = true;
-      this._retryAt = Date.now() + RETRY_MS;
+    setConfig(config) {
+      if (!config || typeof config !== "object") throw new Error("The card needs a config");
+      this._config = config;
     }
-    // The newest hass, since it can change while the request runs.
-    element.hass = this._hass;
-    this._card = element;
-    this._loading = false;
-    this.replaceChildren(element);
-  }
 
-  async _create(config) {
-    const helpers = await window.loadCardHelpers();
-    const element = helpers.createCardElement(config);
-    // A card type that loads late asks for a rebuild. Build it again from the same config.
-    element.addEventListener("ll-rebuild", (event) => {
-      event.stopPropagation();
-      this._create(config).then((rebuilt) => {
-        rebuilt.hass = this._hass;
-        if (this._card === element) {
-          this._card = rebuilt;
-          this.replaceChildren(rebuilt);
-        }
-      });
-    }, {once: true});
-    return element;
-  }
+    set hass(hass) {
+      this._hass = hass;
+      if (this._card) this._card.hass = hass;
+      // Home Assistant sets hass on every state change. Only the first one asks,
+      // and after a failure, the first one after the retry time.
+      if (!this._loading && (!this._card || (this._failed && Date.now() >= this._retryAt))) {
+        this._load();
+      }
+    }
 
-  _error(message) {
-    const card = document.createElement("ha-card");
-    card.setAttribute("header", "Philips Skylight");
-    const text = document.createElement("div");
-    text.className = "card-content";
-    text.textContent = message;
-    card.append(text);
-    return card;
-  }
+    get hass() {
+      return this._hass;
+    }
 
-  getCardSize() {
-    if (this._card && typeof this._card.getCardSize === "function") return this._card.getCardSize();
-    return CARD_SIZE;
-  }
+    async _load() {
+      this._loading = true;
+      let element;
+      try {
+        const result = await this._hass.callWS({type: "philips_skylight/card"});
+        element = await this._create(result.card);
+        this._failed = false;
+      } catch (error) {
+        element = this._error(error && error.message ? error.message : String(error));
+        this._failed = true;
+        this._retryAt = Date.now() + RETRY_MS;
+      }
+      // The newest hass, since it can change while the request runs.
+      element.hass = this._hass;
+      this._card = element;
+      this._loading = false;
+      this.replaceChildren(element);
+    }
 
-  getGridOptions() {
-    if (this._card && typeof this._card.getGridOptions === "function") return this._card.getGridOptions();
-    return {};
-  }
+    async _create(config) {
+      const helpers = await window.loadCardHelpers();
+      const element = helpers.createCardElement(config);
+      // A card type that loads late asks for a rebuild. Build it again from the same config.
+      element.addEventListener("ll-rebuild", (event) => {
+        event.stopPropagation();
+        this._create(config).then((rebuilt) => {
+          rebuilt.hass = this._hass;
+          if (this._card === element) {
+            this._card = rebuilt;
+            this.replaceChildren(rebuilt);
+          }
+        });
+      }, {once: true});
+      return element;
+    }
+
+    _error(message) {
+      const card = document.createElement("ha-card");
+      card.setAttribute("header", "Philips Skylight");
+      const text = document.createElement("div");
+      text.className = "card-content";
+      text.textContent = message;
+      card.append(text);
+      return card;
+    }
+
+    getCardSize() {
+      if (this._card && typeof this._card.getCardSize === "function") return this._card.getCardSize();
+      return CARD_SIZE;
+    }
+
+    getGridOptions() {
+      if (this._card && typeof this._card.getGridOptions === "function") return this._card.getGridOptions();
+      return {};
+    }
+  };
 }
 
-// A second copy of this script, such as an old cached one, must not throw.
-if (!customElements.get(CARD_TYPE)) customElements.define(CARD_TYPE, PhilipsSkylightCard);
+function defineCard() {
+  // A second copy of this script, such as an old cached one, must not throw.
+  if (!customElements.get(CARD_TYPE)) customElements.define(CARD_TYPE, makeCardClass(HTMLElement));
+}
+
+function defineWhenReady(started) {
+  if (customElements.get(READY_ELEMENT) || Date.now() - started >= READY_GIVE_UP_MS) {
+    defineCard();
+    return;
+  }
+  setTimeout(() => defineWhenReady(started), READY_CHECK_MS);
+}
+
+defineWhenReady(Date.now());
 window.customCards = window.customCards || [];
 if (!window.customCards.some((card) => card.type === CARD_TYPE)) {
   window.customCards.push({
