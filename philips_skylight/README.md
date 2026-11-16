@@ -94,11 +94,12 @@ tracks the mode from its own commands and the remote presses it hears. A
 missed press, or a press while Home Assistant or the proxy is down, puts the
 recorded mode out of step. Then use **Correct**.
 
-A panel with no mains power cannot answer. After a wall switch or a power cut,
-Home Assistant keeps showing the last power until the power returns.
-
-Leave the panel's wall switch on, and control the panel with its remotes or Home
-Assistant. Use the wall switch or breaker only for pairing.
+You can use the panel with an ordinary wall switch. While the switch is off, the
+panel has no power and cannot answer. Home Assistant keeps showing the last
+power, and only the wall switch can switch the panel on. When the power
+returns, the panel switches on by itself, and Home Assistant reads that within
+a minute. For full control from the remotes and Home Assistant, leave the wall
+switch on.
 
 ## Pairing and unpairing
 

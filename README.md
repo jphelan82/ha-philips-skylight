@@ -118,7 +118,7 @@ This is an experimental project. Please read these limits before you install it.
 - **The panel cannot answer without power.** If a wall switch or a power cut
   turns the panel off, it cannot answer, and Home Assistant keeps showing the
   last power. When the power comes back, Home Assistant corrects it within a
-  minute.
+  minute. See [Light switches](#light-switches).
 - **The panel misses some questions.** On my panel, about one question in four
   got no answer. Home Assistant asks a second time when that happens, so a
   miss rarely matters.
@@ -174,19 +174,24 @@ This is an experimental project. Please read these limits before you install it.
 
 ## Light switches
 
+You can use the Skylight with an ordinary light switch. Home Assistant reads
+the panel's power, so it catches up after you use the switch.
 
+While the switch is off, two limits apply:
 
+- The panel has no power, so it cannot answer. Home Assistant keeps showing the
+  last power that the panel reported.
+- Home Assistant and the remotes cannot switch the panel on. Only the light
+  switch can.
 
+When you turn the switch back on, the panel switches on by itself. Home
+Assistant reads that within a minute. The mode cannot be read, so Home
+Assistant keeps the mode that it last recorded. If the panel shows a different
+mode, use **Correct** on the card.
 
-I do not advise using the Skylight with an ordinary light switch. If you have
-one, leave it on. Control the panel with its wall remote or Home Assistant. You
-need the wall switch or the breaker only for pairing.
-
-A panel with no power cannot answer Home Assistant. So after a wall switch
-cuts the power, Home Assistant keeps showing the last power. When the power
-returns, the panel switches on by itself, and Home Assistant sees that within a
-minute. The mode cannot be read, so it stays as Home Assistant last recorded
-it.
+For full control from the remotes and Home Assistant, leave the switch on. The
+switch also helps with pairing, because pairing needs the power switched off
+and on once.
 
 If the panel's power runs through a **smart** light switch in Home Assistant, an
 automation can show the "off" at once, instead of the last power. Home

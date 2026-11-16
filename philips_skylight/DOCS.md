@@ -229,7 +229,11 @@ until the power returns. A proxy reconnect within 60 seconds keeps the record.
 A longer proxy outage clears it, and Home Assistant then asks for the power. If
 the record is wrong, use **Correct** on the card.
 
-Leave the wall switch on. Control the panel with its remotes or Home Assistant.
+You can use the panel with an ordinary wall switch. When the power returns, the
+panel switches on by itself, and Home Assistant reads that within a minute.
+While the switch is off, the remotes and Home Assistant cannot switch the panel
+on. For full control, leave the wall switch on.
+
 If the panel's power runs through a smart switch in Home Assistant, an
 automation can follow it with the `philips_skylight.set_assumed_power` action.
 That action sets the shown power and sends nothing to the panel. When power
