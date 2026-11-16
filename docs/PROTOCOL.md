@@ -175,6 +175,27 @@ Level (`82 15`), Scene Register (`82 44`), Scheduler (`82 48`), Light xyL
 color temperature read 10,400 K even in Relax and Rest, which are clearly
 warmer. With the panel off, Light Lightness and the CTL brightness read 0.
 
+**No vendor message reports the mode either.** On 2026-11-16, a temporary
+probe logged every message from any sender other than Home Assistant and the
+remote. It found these facts:
+
+- The panel sends nothing by itself. In 4 minutes, the only messages were its
+  answers to the power check once a minute.
+- The panel does not answer a mode command. After a Focus command (`C9`) from
+  Home Assistant, it sent nothing.
+- No bare vendor opcode gets an answer. The probe sent 52 opcodes, each as
+  `XX 11 02 TT` with no more bytes: `CA` to `CE`, `D0` to `DF` and `E1` to
+  `FF`. It waited 2 seconds after each one. None got an answer.
+- Untried sub-commands of the known commands get no answer. The probe sent
+  `C8 11 02 TT` and `C9 11 02 TT` alone, `C8 11 02 TT` with `00`, `02`, `04` or
+  `05`, `C9 11 02 TT` with `00`, `01`, `02`, `03` or `05`, and
+  `E0 11 02 TT 02`. It waited 4 seconds after each one. None got an answer.
+  Nobody recorded a visible effect. The panel stayed on.
+
+The probe never sent `C0` to `C7`, because Telink's own firmware keeps that
+range for functions such as a network reset. It never sent `CF` (pairing) or
+the UV command either. The test code was not kept.
+
 **Light Lightness is a counter, not the real brightness.** The value moves
 with the remote's dim commands, but it knows nothing about the light. Measured
 on 2026-11-09:
@@ -308,7 +329,7 @@ panel, Home Assistant tracked the owner's one remote (`0x7FFF`).
 - Does every panel answer the Generic OnOff Get? Two panels have answered so far, from `0x3CC2` and `0x1676`.
 - Why does the panel miss about one Get in four? See [Power status](#power-status).
 - Why does the check right after a Core restart miss more often? It missed both questions once on 2026-11-09, while the proxy connection was new. The once-a-minute check fixed the power a minute later.
-- Does the panel answer other standard Get messages? Light Lightness Get (`82 4B`) can report brightness.
+- Can any message read the mode? No standard Get and no vendor message tried so far reports it. Untried: vendor opcodes `C0` to `C7`, which can hold a network reset, and longer payloads. See [Other standard lighting messages](#other-standard-lighting-messages).
 - How does a Vita-Up panel report its UV state, and what limits does it put on UV? Unknown.
 - How many dim steps does the light have between full and its lowest level, and are they equal? The light follows only the remote's `0x14` step, and each mode resets the brightness. Light Lightness cannot answer this, because it only counts commands. See [Other standard lighting messages](#other-standard-lighting-messages).
 
