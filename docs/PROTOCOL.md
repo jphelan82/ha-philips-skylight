@@ -308,9 +308,9 @@ command 30 seconds later switched the panel to Relax.
 - Unpair all removes Home Assistant too, and does not pair it again. On
   2026-10-15, right after an unpair-all burst from Home Assistant, the panel
   ignored a Home Assistant toggle and the wall remote.
-- After its mains power returns, the panel can take up to about 30 seconds to
-  light up again. It accepts `CF … 01` and `CF … 02` only for a short time after
-  that. A burst sent several seconds after the owner reported "back on" still
+- After its mains power returns, the panel almost always lights up at once. In
+  rare cases during pairing, it took up to about 30 seconds. It accepts
+  `CF … 01` and `CF … 02` only for a short time after it lights up. A burst sent several seconds after the owner reported "back on" still
   worked. How long the window stays open was not measured.
 - Send the pairing request as a short burst, like the remote's 10-second hold.
   A long stream makes the panel drop the other remote. See
