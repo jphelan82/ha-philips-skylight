@@ -263,8 +263,8 @@ they are.
 
 The Vita-Up model is a different model from the BioUp panel in this file. It
 adds a UV-B (ultraviolet B) light, and its remote has a UV control. The BioUp
-remote has no UV control. Nobody knows whether a BioUp panel accepts the UV
-command.
+remote has no UV control. The BioUp model does not support the UV command. See
+the test result at the end of this section.
 
 The UV command is `E0 11 02 TT 01`, a toggle. On and off send the same
 bytes. Two owners captured it from a Skylight Daylight Lamp Vita-Up Large
@@ -286,16 +286,18 @@ press of the UV button shows as `toggle_vita_up` in `last_command`, and changes
 no recorded power or mode.
 
 The panel does not report the UV state, so Home Assistant cannot show it.
-Untested:
+Untested on a Vita-Up panel:
 
 - Does the panel accept the command from `0x7FFE`?
 - Does power off, or the panel's 8-hour auto-off, also switch the UV off?
 - Does the panel switch the UV off by itself after a set time?
-- Does a BioUp panel do anything with the command? On 2026-11-20, Home
-  Assistant, with integration 0.7.0, sent one Toggle Vita Up from `0x7FFE` to the BioUp panel in
-  this file. The panel was on in Auto rhythm. The owner watched it, and nothing
-  changed. The panel sends no reply, so this does not show whether the panel
-  received the command or ignored it.
+
+**The BioUp model does not support the UV command.** On 2026-11-20, Home
+Assistant, with integration 0.7.0, sent one Toggle Vita Up from `0x7FFE` to the
+BioUp panel in this file. The panel was on in Auto rhythm. The owner watched
+it, and nothing changed. The panel sends no reply, so nobody knows whether it
+received the command or ignored it. Its other controls still worked: a Relax
+command 30 seconds later switched the panel to Relax.
 
 ## Pairing
 

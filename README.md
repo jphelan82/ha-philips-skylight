@@ -82,10 +82,12 @@ Testing on my panel also showed three limits:
   schedule, like holding Auto rhythm and Relax on the remote.
 - **Vita Up, for Vita-Up models (untested).** A **Toggle Vita Up** button
   toggles the UV-B light, like the Vita Up button on the remote. Nobody has
-  tried it on a panel yet. It sends the bytes that two owners captured from
-  their remotes. It starts disabled, and it is not on the card. To use it,
+  tried it on a Vita-Up panel yet. It sends the bytes that two owners captured
+  from their remotes. It starts disabled, and it is not on the card. To use it,
   enable it on the Skylight device page. The panel does not report whether the
-  UV light is on, so Home Assistant cannot show it.
+  UV light is on, so Home Assistant cannot show it. **The BioUp model does not
+  support it.** A BioUp panel has no UV light, and it shows no change when the
+  button is pressed.
 - **Your remote keeps working.** Home Assistant hears its presses and updates
   the shown power and mode.
 - **State correction.** If the shown mode is wrong, tell Home Assistant what
