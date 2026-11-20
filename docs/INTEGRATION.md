@@ -200,7 +200,7 @@ Keep that Store across integration removal/re-addition. Do not reset it, restore
 an older copy after sending newer packets, or run another transmitter as
 `0x7FFE`: sequence reuse can reuse cryptographic nonces and cause command
 rejection. The real remote uses `0x7FFF` and keeps its own counter. IV update and
-counter exhaustion recovery are outside this prototype's scope.
+counter exhaustion recovery are outside this project's scope.
 
 ### Recover a lost or older Store
 

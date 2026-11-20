@@ -1,7 +1,7 @@
 # Philips Skylight for Home Assistant
 
 
-> **Work in progress.** Early stage alpha. Back up your Home Assistant and only install on a [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) you are willing to reset if necessary.
+> **Beta.** It works for several owners. Back up your Home Assistant first, and only install on a [Bluetooth proxy](https://esphome.io/components/bluetooth_proxy/) that you are willing to reset if necessary.
 >
 > **One Skylight only.** I have tested this with one Skylight panel. Support for
 > several Skylights is not built and not tested. 
@@ -106,7 +106,7 @@ Testing on my panel also showed three limits:
 
 ## Read this first: what it cannot do
 
-This is an experimental project. Please read these limits before you install it.
+This project is in beta. Please read these limits before you install it.
 
 - **The panel reports its power, but not its mode.** We track the mode by
   listening to the wall remote. Home Assistant also records each mode that it
