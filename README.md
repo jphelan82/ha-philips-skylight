@@ -46,8 +46,8 @@ Many thanks to [roy1uno](https://github.com/roy1uno), who found that the panel
 answers the standard Bluetooth Mesh "Get" question and sent the first version
 in [pull request 9](https://github.com/jphelan82/ha-philips-skylight/pull/9).
 roy1uno also reported the remote command for the Vita-Up model's UV light. The
-[protocol notes](docs/PROTOCOL.md#vita-up-uv) record it. Home Assistant does
-not send it, for safety reasons that the notes explain.
+[protocol notes](docs/PROTOCOL.md#vita-up-uv) record it. Since 0.8.1, Home
+Assistant can send it. See [Vita Up](#vita-up).
 
 Testing on my panel also showed three limits:
 
@@ -108,11 +108,12 @@ Testing on my panel also showed three limits:
 
 This is an experimental project. Please read these limits before you install it.
 
-- **The panel reports its power, but not its mode.** Home Assistant asks the
-  panel whether it is on or off: after it starts, 5 seconds after a toggle,
-  after the proxy reconnects, and once a minute. Nobody knows how to read the
-  mode. Home Assistant tracks the mode from the commands it sends and the
-  remote presses it hears.
+- **The panel reports its power, but not its mode.** We track the mode by
+  listening to the wall remote. Home Assistant also records each mode that it
+  sends. Nobody knows how to read the mode from the panel itself. For the
+  power, Home Assistant asks the panel whether it is on or off: after it
+  starts, 5 seconds after a toggle, after the proxy reconnects, and once a
+  minute.
 - **The mode can go out of step.** A missed remote press, or a remote press
   while Home Assistant or the proxy is down, leaves the shown mode wrong. When
   that happens, you look at the panel and tell Home Assistant what you see.
