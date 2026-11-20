@@ -12,7 +12,7 @@ The skylight is a Philips LED Skylight Ceiling Panel (NatureConnect, BioUp, 17.7
 |---|---|
 | Panel radio | Bluetooth Low Energy (BLE) Mesh module, address prefix `4C:3C:8F`. That prefix belongs to Shenzhen Jingxun Technology. The panel advertises the name `BK_MESH_light`, which points to a Beken chip. |
 | Panel beacon | The panel always sends the "unprovisioned device" beacon (service `0x1827`), even after pairing. Ignore it. The panel is on the default network from the start, and it relays the remote's packets. |
-| Remote | A battery mesh node. It sends from mesh address `0x7FFF` to `0xFFFF` (all nodes). Its BLE address for the proxy advert is `AA:AA:AA:00:00:02`. The ESPHome proxy reports its command packets under `FF:FF:FF:FF:FF:FF`. |
+| Remote | A battery mesh node. The remote in this file sends from mesh address `0x7FFF` to `0xFFFF` (all nodes). Other remotes use other addresses: a Vita-Up remote sends from `0x54E5` ([issue 10](https://github.com/jphelan82/ha-philips-skylight/issues/10)). Its BLE address for the proxy advert is `AA:AA:AA:00:00:02`. The ESPHome proxy reports its command packets under `FF:FF:FF:FF:FF:FF`. |
 | FCC ID | `2AGBW929004709X`, 2402 to 2480 MHz. |
 
 ## The keys
@@ -43,7 +43,7 @@ Each command is a vendor message with company ID `0x0211` (Telink Semiconductor)
 | Rest | `C9 11 02 TT 04 FF 05 41` | |
 | Auto rhythm | `C9 11 02 TT 04 FF 06 41` | |
 | Set auto rhythm start (hold Auto rhythm and Relax together) | `E0 11 02 TT 00` | Opcode `E0` with one parameter byte. The remote sent it three times in about a second, each with a new `TT`, and the panel relayed each one. The panel blinks. The manual says this sets the current time as the start of the Auto rhythm schedule. One command from `0x7FFE` is enough. Captured and tested 2026-10-13. |
-| Vita-Up UV-B on/off (reported, not tested here) | `E0 11 02 TT 01` | Reported on 2026-11-09 by roy1uno, the author of [pull request 9](https://github.com/jphelan82/ha-philips-skylight/pull/9). The capture came from a Skylight Daylight Lamp Vita-Up Large (`929004709601`). The owner pressed only the UV button, on and off, many times. Each press sent these same bytes, so the command is a toggle. It uses the same opcode `E0` as the rhythm start. Only the last byte differs. Home Assistant does not send it. A remote press of it changes nothing in Home Assistant. See [Vita-Up UV](#vita-up-uv). |
+| Vita-Up UV-B on/off | `E0 11 02 TT 01` | A toggle on the Vita-Up remote. It uses the same opcode `E0` as the rhythm start. Only the last byte differs. Two owners captured it. See [Vita-Up UV](#vita-up-uv). |
 | Pair (hold on/off 10 s after power-on) | `CF 11 02 TT 01 11 11 11 11 11 11` | The remote repeats it about twice a second, with a new `TT` each time, for the whole hold. Six `11` parameter bytes follow `01`. The complete access payload is 11 bytes. Home Assistant sends it the same way: twice a second for 10 seconds, 20 requests. A capture on 2026-10-12 showed the remote's hold at about two requests a second. |
 | Unpair all (no remote gesture known) | `CF 11 02 TT 02 11 11 11 11 11 11` | The pairing request with `02` in place of `01`. Inside the pairing window, it makes the panel blink and forget every paired sender. Outside the window, it switches the panel off and changes no pairing. Tested 2026-10-13. |
 | Nothing found | `CF 11 02 TT 00 11 11 11 11 11 11` | No visible effect and no change to pairing, both right after power-on and at other times. Tested 2026-10-13. |
@@ -140,6 +140,17 @@ server accepts the Set and reports the light, but the light does not follow
 it. The panel has no second element at `0x1677`. Home Assistant keeps the
 captured toggle for power, and it toggles only when the reported power differs
 from the wanted power. The test code was not kept.
+
+Another owner got a different result outside the factory mesh. Before using
+this project, that owner provisioned a Vita-Up panel into a mesh of their own,
+with their own keys and bound models. There, a Generic OnOff Set from `0x7FFF`
+switched the panel on. The test in this file used the factory keys and asked
+for off. Nobody knows which difference matters: the keys, the bound models, or
+on against off. In the same mesh, the l-carta/skylight-remote format of the
+mode and dim commands did nothing. That format has `00` where this file has
+`FF` (mode) or `14` (dim step), no closing `0x41`, and `TT` below `0x80`. Reported
+in [issue 5](https://github.com/jphelan82/ha-philips-skylight/issues/5) on
+2026-10-29.
 
 ### Other standard lighting messages
 
@@ -255,17 +266,32 @@ adds a UV-B (ultraviolet B) light, and its remote has a UV control. The BioUp
 remote has no UV control. Nobody knows whether a BioUp panel accepts the UV
 command.
 
-roy1uno reported the Vita-Up remote's UV command on 2026-11-09:
-`E0 11 02 TT 01`, a toggle (see [The commands](#the-commands)). The
-integration does not send it, and it has no UV control. Reasons:
+The UV command is `E0 11 02 TT 01`, a toggle. On and off send the same
+bytes. Two owners captured it from a Skylight Daylight Lamp Vita-Up Large
+(`929004709601`):
 
-- A toggle needs a known state. Nobody knows how to read the UV state.
-- Nobody knows what safety limits the panel puts on UV, such as a timer.
-- UV-B light can harm skin and eyes. If Home Assistant shows the wrong state,
-  the UV can stay on with nobody present.
+- roy1uno, the author of
+  [pull request 9](https://github.com/jphelan82/ha-philips-skylight/pull/9),
+  on 2026-11-09. The owner pressed only the UV button, many times.
+- The owner who wrote
+  [issue 10](https://github.com/jphelan82/ha-philips-skylight/issues/10), on
+  2026-11-19. That owner pressed Relax once, then the UV button four times:
+  on, off, on, off. The transaction bytes ran `EE`, `EF`, `F0`, `F1`. The remote
+  sent from `0x54E5`. The UV stayed on when the owner selected another mode.
 
-roy1uno gave the same caution with the report. A first owner request for a UV
-switch came in issue 5, from an owner of the same Vita-Up model.
+Since integration 0.7.0, a **Toggle Vita Up** button sends this command. Nobody
+has tested the button on a panel. The button starts disabled, because only
+Vita-Up panels have the UV light. It is not on the Skylight card. A remote
+press of the UV button shows as `toggle_vita_up` in `last_command`, and changes
+no recorded power or mode.
+
+The panel does not report the UV state, so Home Assistant cannot show it.
+Untested:
+
+- Does the panel accept the command from `0x7FFE`?
+- Does power off, or the panel's 8-hour auto-off, also switch the UV off?
+- Does the panel switch the UV off by itself after a set time?
+- Does a BioUp panel accept the command?
 
 ## Pairing
 
@@ -297,7 +323,8 @@ The integration accepts recognized, authenticated access commands addressed to
 `0xFFFF` from external unicast senders (`0x0001` through `0x7FFF`). It excludes
 its own `0x7FFE` sender even when those packets return through a panel relay.
 A power toggle flips a known power state. A scene command records the mode and
-records power as on. A dim tap or hold and the rhythm start (`E0`) update only
+records power as on. A dim tap or hold, the rhythm start and the Vita-Up UV
+toggle (both `E0`) update only
 the last command. A toggle or dim command leaves unknown power unknown. A
 remote toggle makes Home Assistant ask the panel for its power 5 seconds later.
 No other receive event sends a command.
@@ -314,7 +341,8 @@ dim holds at the captured 0.6-second cadence remain accepted.
 Factory keys authenticate the protocol, but do not prove that a remote is paired
 to this particular panel. Other compatible remotes within radio range can also
 change the assumed state. Software tests cover other sender addresses. On the
-panel, Home Assistant tracked the owner's one remote (`0x7FFF`).
+panel, Home Assistant tracked the owner's one remote (`0x7FFF`). Another
+owner's remote sends from `0x54E5`, and that owner's Home Assistant tracked it.
 
 ## Open questions
 
@@ -324,13 +352,12 @@ panel, Home Assistant tracked the owner's one remote (`0x7FFF`).
 - Is two the real limit of paired senders, and what happens with a third? Two senders work together. The owner reports a limit of two. A third was never tested.
 - Why does a long stream of pairing requests drop the other remote? A short burst does not. One guess: each accepted request counts as a new pairing in one of only two places.
 - Do the other five modes turn an off panel on, as Relax does? Untested.
-- Does every remote of this model send as `0x7FFF`?
 - Do separate on and off codes exist? The standard Generic OnOff Set does not switch the light. See [Generic OnOff Set](#generic-onoff-set). Vendor candidates are untested: `C8 11 02 TT 03 00 41` and `C8 11 02 TT 03 02 41`.
 - Does every panel answer the Generic OnOff Get? Two panels have answered so far, from `0x3CC2` and `0x1676`.
 - Why does the panel miss about one Get in four? See [Power status](#power-status).
 - Why does the check right after a Core restart miss more often? It missed both questions once on 2026-11-09, while the proxy connection was new. The once-a-minute check fixed the power a minute later.
 - Can any message read the mode? No standard Get and no vendor message tried so far reports it. Untried: vendor opcodes `C0` to `C7`, which can hold a network reset, and longer payloads. See [Other standard lighting messages](#other-standard-lighting-messages).
-- How does a Vita-Up panel report its UV state, and what limits does it put on UV? Unknown.
+- How does a Vita-Up panel report its UV state, and what limits does it put on UV? See [Vita-Up UV](#vita-up-uv).
 - How many dim steps does the light have between full and its lowest level, and are they equal? The light follows only the remote's `0x14` step, and each mode resets the brightness. Light Lightness cannot answer this, because it only counts commands. See [Other standard lighting messages](#other-standard-lighting-messages).
 
 ## Paired senders

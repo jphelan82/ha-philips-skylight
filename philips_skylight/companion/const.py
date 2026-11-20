@@ -1,7 +1,7 @@
 """Configuration and protocol constants."""
 
 DOMAIN = "philips_skylight"
-VERSION = "0.6.1"
+VERSION = "0.7.0"
 CONF_TRANSMIT_SERVICE = "transmit_service"
 CONF_PROXY_ENTITY = "proxy_entity"
 RECEIVE_EVENT = "esphome.ble_adv.raw_adv"
@@ -26,6 +26,8 @@ HOLD_INTERVAL = 0.6
 DIM_ICONS = {"dim_down": "mdi:brightness-4", "dim_up": "mdi:brightness-7"}
 # Sets the current time as the start of the Auto rhythm schedule. Not a mode.
 RHYTHM_START = "set_rhythm_start"
+# Vita-Up models only: toggles the UV-B light. The panel does not report its state.
+TOGGLE_VITA_UP = "toggle_vita_up"
 # Reserved before use and retained independently of config-entry removal.
 STORAGE_KEY = f"{DOMAIN}.sequence_7ffe"
 SEQUENCE_BLOCK = 256

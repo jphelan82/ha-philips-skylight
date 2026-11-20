@@ -5,7 +5,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DIM_ICONS, EFFECT_STYLE, EFFECTS, RHYTHM_START
+from .const import DIM_ICONS, EFFECT_STYLE, EFFECTS, RHYTHM_START, TOGGLE_VITA_UP
 from .controller import SkylightConfigEntry, SkylightController
 from .entity import SkylightEntity
 
@@ -23,6 +23,7 @@ async def async_setup_entry(
             ("dim_up", "Dim up"),
             *((effect, effect) for effect in EFFECTS),
             (RHYTHM_START, "Set auto rhythm start"),
+            (TOGGLE_VITA_UP, "Toggle Vita Up"),
         )
     )
     async_add_entities(
@@ -45,6 +46,10 @@ class SkylightButton(SkylightEntity, ButtonEntity):
         if command == RHYTHM_START:
             # Sets the current time as the schedule start. The panel blinks.
             self._attr_icon = "mdi:clock-start"
+        elif command == TOGGLE_VITA_UP:
+            # Only Vita-Up panels have the UV-B light, so owners enable this button.
+            self._attr_icon = "mdi:white-balance-sunny"
+            self._attr_entity_registry_enabled_default = False
         elif command in DIM_ICONS:
             self._attr_icon = DIM_ICONS[command]
         else:

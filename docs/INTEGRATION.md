@@ -20,6 +20,10 @@ remote and Home Assistant. See the
 - A **Set auto rhythm start** button. It sets the current time as the start of
   the panel's daily schedule. It is not a mode and does not change the recorded
   effect.
+- A **Toggle Vita Up** button for Vita-Up models. **Untested on a panel.** It
+  sends the remote's UV-B toggle, `E0 11 02 TT 01`, from `0x7FFE`. It starts
+  disabled and is not on the card. It changes no recorded power or effect. The
+  panel does not report the UV state.
 - Authenticated remote press tracking across compatible factory-mesh senders,
   with duplicate filtering per sender for panel relays and rapid repeats.
 - Separate sender address `0x7FFE`, with durable sequence reservations.

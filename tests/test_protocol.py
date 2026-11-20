@@ -10,6 +10,7 @@ from custom_components.philips_skylight.const import (
     EFFECTS,
     NETWORK_KEY,
     RHYTHM_START,
+    TOGGLE_VITA_UP,
 )
 from custom_components.philips_skylight.protocol import (
     MeshCodec,
@@ -67,6 +68,15 @@ def test_rhythm_start_matches_the_captured_combo_press():
         payload = bytes.fromhex(captured)
         assert identify_command(payload) == RHYTHM_START
         assert command_payload(RHYTHM_START, payload[3]) == payload
+
+
+def test_toggle_vita_up_matches_the_captured_uv_presses():
+    # Issue 10: a Vita-Up remote's UV button, pressed four times (on, off, on, off).
+    for captured in ("e01102ee01", "e01102ef01", "e01102f001", "e01102f101"):
+        payload = bytes.fromhex(captured)
+        assert identify_command(payload) == TOGGLE_VITA_UP
+        assert command_payload(TOGGLE_VITA_UP, payload[3]) == payload
+    assert identify_command(bytes.fromhex("e01102ee02")) is None
 
 
 def test_unpair_all_changes_only_the_sub_command_byte():

@@ -27,6 +27,7 @@ from custom_components.philips_skylight.const import (
     EFFECTS,
     RECEIVE_EVENT,
     RHYTHM_START,
+    TOGGLE_VITA_UP,
     VERSION,
 )
 from custom_components.philips_skylight.protocol import (
@@ -106,6 +107,33 @@ async def setup_entry(hass, monkeypatch):
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.LOADED
     return entry, calls
+
+
+async def test_toggle_vita_up_starts_disabled_then_sends_uv_toggle(hass, monkeypatch):
+    entry, calls = await setup_entry(hass, monkeypatch)
+    registry = er.async_get(hass)
+    button = registry.async_get_entity_id("button", DOMAIN, "factory_mesh_7ffe_toggle_vita_up")
+    assert button == "button.philips_skylight_toggle_vita_up"
+    # Only Vita-Up panels have the UV light, so the button starts disabled and off the card.
+    assert registry.async_get(button).disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert hass.states.get(button) is None
+    assert button not in CARD_ENTITIES
+    assert button not in INTEGRATION_CARD_ENTITIES
+
+    registry.async_update_entity(button, disabled_by=None)
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    sent = len(calls)
+    light = registry.async_get_entity_id("light", DOMAIN, LIGHT_ID)
+    effect = hass.states.get(light).attributes["effect"]
+    await hass.services.async_call("button", "press", {"entity_id": button}, blocking=True)
+    assert len(calls) == sent + 1
+    (message,) = MeshCodec().decode(bytes.fromhex(calls[-1].data["raw"]))
+    assert message.source == 0x7FFE
+    assert message.payload == command_payload(TOGGLE_VITA_UP, message.payload[3])
+    assert hass.states.get(light).attributes["effect"] == effect
+    assert hass.states.get(light).attributes["last_command"] == TOGGLE_VITA_UP
+    await hass.config_entries.async_unload(entry.entry_id)
 
 
 async def test_real_platform_setup_actions_and_unload(hass, monkeypatch):

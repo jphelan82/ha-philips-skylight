@@ -80,6 +80,12 @@ Testing on my panel also showed three limits:
 - **Dimming.** Dim down and Dim up, one step per tap, or longer with a hold. Setting absolute brightness percentage levels is not supported due to limitations of the device, but I'm considering a hacky way to support this in the future. 
 - **The Auto rhythm schedule.** Set the current time as the start of the daily
   schedule, like holding Auto rhythm and Relax on the remote.
+- **Vita Up, for Vita-Up models (untested).** A **Toggle Vita Up** button
+  toggles the UV-B light, like the Vita Up button on the remote. Nobody has
+  tried it on a panel yet. It sends the bytes that two owners captured from
+  their remotes. It starts disabled, and it is not on the card. To use it,
+  enable it on the Skylight device page. The panel does not report whether the
+  UV light is on, so Home Assistant cannot show it.
 - **Your remote keeps working.** Home Assistant hears its presses and updates
   the shown power and mode.
 - **State correction.** If the shown mode is wrong, tell Home Assistant what

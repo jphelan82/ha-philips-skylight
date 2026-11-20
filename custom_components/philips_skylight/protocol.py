@@ -20,6 +20,7 @@ from .const import (
     NETWORK_KEY,
     RHYTHM_START,
     SOURCE,
+    TOGGLE_VITA_UP,
 )
 
 
@@ -179,6 +180,9 @@ def command_payload(command: str, transaction: int) -> bytes:
     if command == RHYTHM_START:
         # The remote sends this while Auto rhythm and Relax are held together.
         return bytes([0xE0, 0x11, 0x02, transaction, 0x00])
+    if command == TOGGLE_VITA_UP:
+        # The Vita-Up remote's UV-B button. A toggle: on and off send the same bytes.
+        return bytes([0xE0, 0x11, 0x02, transaction, 0x01])
     raise ValueError(f"Unsupported command: {command}")
 
 
@@ -202,7 +206,7 @@ def unpair_all_payload(transaction: int) -> bytes:
 def identify_command(payload: bytes) -> str | None:
     if len(payload) < 4 or not 0x80 <= payload[3] <= 0xFF:
         return None
-    for command in ("toggle", "dim_down", "dim_up", *EFFECTS, RHYTHM_START):
+    for command in ("toggle", "dim_down", "dim_up", *EFFECTS, RHYTHM_START, TOGGLE_VITA_UP):
         if payload == command_payload(command, payload[3]):
             return command
     if (

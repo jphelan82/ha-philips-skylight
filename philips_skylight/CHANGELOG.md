@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.0
+
+This version needs a Home Assistant restart for integration 0.7.0. The proxy
+firmware does not change, and the panel does not need a new pairing.
+
+- **Toggle Vita Up, for Vita-Up models. Untested.** A new **Toggle Vita Up**
+  button sends the UV-B toggle of the Vita-Up remote. Nobody has tried it on a
+  panel yet. Two owners captured the same command from their remotes, so the
+  bytes are known. Whether the panel accepts it from Home Assistant is not.
+  Please report what happens in issue 10.
+- The button starts disabled, because only Vita-Up panels have the UV light.
+  To use it, open the Skylight device page and enable **Toggle Vita Up**. It is
+  not on the Skylight card.
+- The panel does not report whether the UV light is on. A press toggles it, and
+  Home Assistant cannot show the result.
+- A press of the Vita Up button on the remote now shows as `toggle_vita_up` in
+  the light's `last_command`. It changes no recorded power or mode.
+- Thanks to the owner who wrote issue 10, and to roy1uno, who captured the
+  command first.
+
 ## 0.7.1
 
 This version needs a Home Assistant restart for integration 0.6.1, then one
