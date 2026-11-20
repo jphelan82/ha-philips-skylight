@@ -457,8 +457,8 @@ The Skylight Vita-Up models have a UV-B (ultraviolet B) light, and their remote
 has a **Vita Up** button that toggles it. The **Toggle Vita Up** button in Home
 Assistant sends the same command.
 
-**It is untested.** The project owner has a BioUp panel, not a Vita-Up panel,
-and cannot test it. Two Vita-Up owners captured the command from their remotes,
+**It is untested.** I have a BioUp panel, not a Vita-Up panel, so I cannot
+test it. Two Vita-Up owners captured the command from their remotes,
 so the bytes are known. Nobody has confirmed yet that a Vita-Up panel accepts
 the command from Home Assistant. If you have a Vita-Up panel, please try it and
 report the result in
