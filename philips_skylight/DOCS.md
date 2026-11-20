@@ -250,6 +250,10 @@ For automations, send commands that do not depend on the record:
 the wrong thing when the record is wrong. `light.turn_on` with an effect always
 sends that mode.
 
+On a Vita-Up panel, `button.press` on `button.philips_skylight_toggle_vita_up`
+toggles the UV-B light. It is untested, and the BioUp model does not support
+it. The README's **Vita Up** section has the details.
+
 ## Options and permissions
 
 - **Install the companion integration:** installs or updates the bundled

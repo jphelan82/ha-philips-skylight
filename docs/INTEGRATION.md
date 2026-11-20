@@ -22,8 +22,9 @@ remote and Home Assistant. See the
   effect.
 - A **Toggle Vita Up** button for Vita-Up models. **Untested on a Vita-Up
   panel.** It sends the remote's UV-B toggle, `E0 11 02 TT 01`, from `0x7FFE`.
-  It starts disabled and is not on the card. It changes no recorded power or
-  effect. The panel does not report the UV state. The BioUp model does not
+  Automations press it with `button.press`, like every other button. It is
+  hidden, so it stays off the card and the auto-generated dashboards. It
+  changes no recorded power or effect. The panel does not report the UV state. The BioUp model does not
   support it: a BioUp panel shows no change.
 - Authenticated remote press tracking across compatible factory-mesh senders,
   with duplicate filtering per sender for panel relays and rapid repeats.

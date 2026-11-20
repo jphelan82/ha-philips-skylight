@@ -70,12 +70,15 @@ async def test_config_flow_creates_entry_with_online_transmitter(hass):
     assert result["data"] == DATA
 
 
-async def setup_entry(hass, monkeypatch):
+async def setup_entry(hass, monkeypatch, prepare_registry=None):
     """Load the real entry with a recording ESPHome action and an online proxy."""
     loader.async_setup(hass)
     dr.async_setup(hass)
     await dr.async_load(hass)
     await er.async_load(hass)
+    if prepare_registry:
+        # Registry entries that an earlier version left behind.
+        prepare_registry(er.async_get(hass))
 
     # The ESPHome transport is represented by its real service interface. Avoid
     # opening sockets to a physical proxy or installing network integrations.
@@ -109,20 +112,20 @@ async def setup_entry(hass, monkeypatch):
     return entry, calls
 
 
-async def test_toggle_vita_up_starts_disabled_then_sends_uv_toggle(hass, monkeypatch):
+VITA_UP_ID = "factory_mesh_7ffe_toggle_vita_up"
+
+
+async def test_toggle_vita_up_is_enabled_hidden_and_sends_uv_toggle(hass, monkeypatch):
     entry, calls = await setup_entry(hass, monkeypatch)
     registry = er.async_get(hass)
-    button = registry.async_get_entity_id("button", DOMAIN, "factory_mesh_7ffe_toggle_vita_up")
+    button = registry.async_get_entity_id("button", DOMAIN, VITA_UP_ID)
     assert button == "button.philips_skylight_toggle_vita_up"
-    # Only Vita-Up panels have the UV light, so the button starts disabled and off the card.
-    assert registry.async_get(button).disabled_by is er.RegistryEntryDisabler.INTEGRATION
-    assert hass.states.get(button) is None
+    # Automations press it. Hidden keeps it off auto-generated dashboards.
+    assert registry.async_get(button).disabled_by is None
+    assert registry.async_get(button).hidden_by is er.RegistryEntryHider.INTEGRATION
     assert button not in CARD_ENTITIES
     assert button not in INTEGRATION_CARD_ENTITIES
 
-    registry.async_update_entity(button, disabled_by=None)
-    await hass.config_entries.async_reload(entry.entry_id)
-    await hass.async_block_till_done()
     sent = len(calls)
     light = registry.async_get_entity_id("light", DOMAIN, LIGHT_ID)
     effect = hass.states.get(light).attributes["effect"]
@@ -133,6 +136,37 @@ async def test_toggle_vita_up_starts_disabled_then_sends_uv_toggle(hass, monkeyp
     assert message.payload == command_payload(TOGGLE_VITA_UP, message.payload[3])
     assert hass.states.get(light).attributes["effect"] == effect
     assert hass.states.get(light).attributes["last_command"] == TOGGLE_VITA_UP
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    ("disabled_by", "expected"),
+    [
+        # Add-on 0.8.0 created the button disabled. The update enables it, hidden.
+        (er.RegistryEntryDisabler.INTEGRATION, None),
+        # An owner who disabled it keeps it disabled.
+        (er.RegistryEntryDisabler.USER, er.RegistryEntryDisabler.USER),
+    ],
+)
+async def test_toggle_vita_up_from_0_8_0(hass, monkeypatch, disabled_by, expected):
+    def disabled_button(registry):
+        registry.async_get_or_create(
+            "button",
+            DOMAIN,
+            VITA_UP_ID,
+            suggested_object_id="philips_skylight_toggle_vita_up",
+            disabled_by=disabled_by,
+        )
+
+    entry, calls = await setup_entry(hass, monkeypatch, disabled_button)
+    registry = er.async_get(hass)
+    button = registry.async_get_entity_id("button", DOMAIN, VITA_UP_ID)
+    assert registry.async_get(button).disabled_by is expected
+    if expected is None:
+        assert registry.async_get(button).hidden_by is er.RegistryEntryHider.INTEGRATION
+        assert hass.states.get(button) is not None
+    else:
+        assert hass.states.get(button) is None
     await hass.config_entries.async_unload(entry.entry_id)
 
 

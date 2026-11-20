@@ -280,8 +280,11 @@ bytes. Two owners captured it from a Skylight Daylight Lamp Vita-Up Large
   sent from `0x54E5`. The UV stayed on when the owner selected another mode.
 
 Since integration 0.7.0, a **Toggle Vita Up** button sends this command. Nobody
-has tested the button on a panel. The button starts disabled, because only
-Vita-Up panels have the UV light. It is not on the Skylight card. A remote
+has tested the button on a Vita-Up panel. Only Vita-Up panels have the UV
+light, so the button is hidden: it stays off the Skylight card and the
+auto-generated dashboards. Automations press it with `button.press`. Integration
+0.7.0 created it disabled. Since 0.7.1, it is enabled, and 0.7.1 enables a
+button that 0.7.0 disabled. A remote
 press of the UV button shows as `toggle_vita_up` in `last_command`, and changes
 no recorded power or mode.
 

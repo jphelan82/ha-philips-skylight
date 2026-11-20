@@ -81,13 +81,8 @@ Testing on my panel also showed three limits:
 - **The Auto rhythm schedule.** Set the current time as the start of the daily
   schedule, like holding Auto rhythm and Relax on the remote.
 - **Vita Up, for Vita-Up models (untested).** A **Toggle Vita Up** button
-  toggles the UV-B light, like the Vita Up button on the remote. Nobody has
-  tried it on a Vita-Up panel yet. It sends the bytes that two owners captured
-  from their remotes. It starts disabled, and it is not on the card. To use it,
-  enable it on the Skylight device page. The panel does not report whether the
-  UV light is on, so Home Assistant cannot show it. **The BioUp model does not
-  support it.** A BioUp panel has no UV light, and it shows no change when the
-  button is pressed.
+  toggles the UV-B light from your own automations. The BioUp model does not
+  support it. See [Vita Up](#vita-up).
 - **Your remote keeps working.** Home Assistant hears its presses and updates
   the shown power and mode.
 - **State correction.** If the shown mode is wrong, tell Home Assistant what
@@ -440,6 +435,8 @@ These commands work the same whatever Home Assistant shows:
 
 - `light.toggle` toggles the power.
 - `button.press` on a mode button selects that mode, and switches the panel on.
+- `button.press` on `button.philips_skylight_toggle_vita_up` toggles the UV-B
+  light of a Vita-Up panel. Untested. The BioUp model does not support it.
 - `philips_skylight.dim` with `direction: down` or `up` dims by one step. Add
   `hold: 3` to dim like a 3-second hold on the remote.
 - `philips_skylight.refresh_power` asks the panel for its power. It fails with
@@ -453,6 +450,39 @@ The light's on and off state follows the panel, so you can use it as a trigger
 or a condition. It can be wrong while the panel has no mains power, and for up
 to a minute after a remote press that the proxy missed. Do not use the recorded
 mode as a trigger or a condition. Nobody can read the mode from the panel.
+
+## Vita Up
+
+The Skylight Vita-Up models have a UV-B (ultraviolet B) light, and their remote
+has a **Vita Up** button that toggles it. The **Toggle Vita Up** button in Home
+Assistant sends the same command.
+
+**It is untested.** The project owner has a BioUp panel, not a Vita-Up panel,
+and cannot test it. Two Vita-Up owners captured the command from their remotes,
+so the bytes are known. Nobody has confirmed yet that a Vita-Up panel accepts
+the command from Home Assistant. If you have a Vita-Up panel, please try it and
+report the result in
+[issue 10](https://github.com/jphelan82/ha-philips-skylight/issues/10).
+
+**The BioUp model does not support it.** A BioUp panel has no UV light. It
+shows no change when the button is pressed, and its other controls keep
+working.
+
+Call it from an automation or a script, like any other Skylight button:
+
+```yaml
+action: button.press
+target:
+  entity_id: button.philips_skylight_toggle_vita_up
+```
+
+- Each press toggles the UV light. On and off send the same command.
+- The panel does not report whether the UV light is on, so Home Assistant
+  cannot show it.
+- The button is hidden. It is not on the Skylight card, the add-on page or the
+  dashboards.
+- A press of the Vita Up button on the remote shows as `toggle_vita_up` in the
+  light's `last_command` attribute. It changes no recorded power or mode.
 
 ## Troubleshooting
 

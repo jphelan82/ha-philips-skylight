@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.1
+
+This version needs a Home Assistant restart for integration 0.7.1.
+
+- **Toggle Vita Up works from automations without setup.** In 0.8.0 the button
+  started disabled. Now it is enabled, like every other Skylight button. Call it
+  with `button.press` on `button.philips_skylight_toggle_vita_up`. If 0.8.0
+  created it disabled, this update enables it. If you disabled it yourself, it
+  stays disabled.
+- The button is hidden, so it stays off the Skylight card and Home
+  Assistant's auto-generated dashboards.
+- It is still untested on a Vita-Up panel. The BioUp model does not support it:
+  a BioUp panel shows no change. Please report what a Vita-Up panel does in
+  issue 10.
+- The README has a new **Vita Up** section with the automation call.
+
 ## 0.8.0
 
 This version needs a Home Assistant restart for integration 0.7.0. The proxy
