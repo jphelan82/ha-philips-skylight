@@ -291,7 +291,11 @@ Untested:
 - Does the panel accept the command from `0x7FFE`?
 - Does power off, or the panel's 8-hour auto-off, also switch the UV off?
 - Does the panel switch the UV off by itself after a set time?
-- Does a BioUp panel accept the command?
+- Does a BioUp panel do anything with the command? On 2026-11-20, Home
+  Assistant, with integration 0.7.0, sent one Toggle Vita Up from `0x7FFE` to the BioUp panel in
+  this file. The panel was on in Auto rhythm. The owner watched it, and nothing
+  changed. The panel sends no reply, so this does not show whether the panel
+  received the command or ignored it.
 
 ## Pairing
 
