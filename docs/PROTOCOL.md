@@ -279,12 +279,10 @@ bytes. Two owners captured it from a Skylight Daylight Lamp Vita-Up Large
   on, off, on, off. The transaction bytes ran `EE`, `EF`, `F0`, `F1`. The remote
   sent from `0x54E5`. The UV stayed on when the owner selected another mode.
 
-Since integration 0.7.0, a **Toggle Vita Up** button sends this command. Nobody
+Since integration 0.7.1, a **Toggle Vita Up** button sends this command. Nobody
 has tested the button on a Vita-Up panel. Only Vita-Up panels have the UV
 light, so the button is hidden: it stays off the Skylight card and the
-auto-generated dashboards. Automations press it with `button.press`. Integration
-0.7.0 created it disabled. Since 0.7.1, it is enabled, and 0.7.1 enables a
-button that 0.7.0 disabled. A remote
+auto-generated dashboards. Automations press it with `button.press`. A remote
 press of the UV button shows as `toggle_vita_up` in `last_command`, and changes
 no recorded power or mode.
 
@@ -296,7 +294,7 @@ Untested on a Vita-Up panel:
 - Does the panel switch the UV off by itself after a set time?
 
 **The BioUp model does not support the UV command.** On 2026-11-20, Home
-Assistant, with integration 0.7.0, sent one Toggle Vita Up from `0x7FFE` to the
+Assistant sent one Toggle Vita Up from `0x7FFE` to the
 BioUp panel in this file. The panel was on in Auto rhythm. The owner watched
 it, and nothing changed. The panel sends no reply, so nobody knows whether it
 received the command or ignored it. Its other controls still worked: a Relax
