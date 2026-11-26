@@ -55,7 +55,8 @@ again.
    - It adds `skylight: !include skylight-transmitter.yaml` under `packages:`.
 
    Then install the firmware in ESPHome Device Builder: open the proxy, then
-   **⋮ → Install → Wirelessly**. The page continues when the proxy is back.
+   **⋮ → Install → On the network**. Older versions of Device Builder call
+   the last item **Wirelessly**. The page continues when the proxy is back.
 
    Device Builder builds the firmware first, on the computer that runs Home
    Assistant. The first build can take up to 15 minutes, and longer if that
@@ -108,7 +109,8 @@ needs you.
      keeps a backup of the old files.
    - Then, or if the proxy reports an older number, the page asks you to
      install: in ESPHome Device Builder, open the proxy, then **⋮ → Install →
-     Wirelessly**. The proxy is offline for a minute or two, and Home Assistant
+     On the network**. Older versions of Device Builder call the last item
+     **Wirelessly**. The proxy is offline for a minute or two, and Home Assistant
      misses remote presses in that time.
    - If the firmware did not change, the page shows nothing.
 4. **Update the card, if the page asks.** A card on a dashboard never changes

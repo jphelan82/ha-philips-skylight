@@ -48,7 +48,8 @@ show what to expect.
    1. **Prepare your Bluetooth proxy.** The step checks for ESPHome Device
       Builder, a Bluetooth proxy in it, and Home Assistant's connection to that
       proxy, and says how to fix anything missing. Select **Add Skylight firmware**, then
-      install it in ESPHome Device Builder: **⋮ → Install → Wirelessly**. The
+      install it in ESPHome Device Builder: **⋮ → Install → On the network**.
+      Older versions of Device Builder call the last item **Wirelessly**. The
       Device Builder window never says that it has finished. Come back to the
       add-on page, which says "The install is complete".
    2. **Connect Home Assistant to the proxy.** With one proxy, this happens by

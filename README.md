@@ -274,7 +274,8 @@ setup. The setup checklist has a step for it.
       Skylight firmware**. The add-on copies the firmware files into your
       ESPHome folder and adds one line to the proxy's YAML. It keeps a backup.
       Then install it in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/): open the proxy, then **⋮ →
-      Install → Wirelessly**. The page continues by itself when the proxy is
+      Install → On the network**. Older versions of Device Builder call the
+      last item **Wirelessly**. The page continues by itself when the proxy is
       back. See [When is the install done?](#when-is-the-install-done) A proxy
       that already has the firmware skips this step.
    2. **Connect Home Assistant to the proxy.** With one compatible proxy, the
@@ -338,7 +339,8 @@ If you don't already have a Bluetooth proxy, creating one is relatively simple. 
      keeps a backup of the old files.
    - Then, or if the proxy reports an older number, the page asks you to
      install: in [ESPHome Device Builder](https://esphome.io/guides/getting_started_hassio/), open the proxy, then **⋮ → Install →
-     Wirelessly**. The proxy is offline for a minute or two, and Home Assistant
+     On the network**. Older versions of Device Builder call the last item
+     **Wirelessly**. The proxy is offline for a minute or two, and Home Assistant
      misses remote presses in that time. See
      [When is the install done?](#when-is-the-install-done)
    - If the firmware did not change, the page shows nothing.
