@@ -38,7 +38,12 @@ async def application():
             logging.exception("Companion integration was not installed")
     session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=25))
     ha = HAClient(session, token)
-    panel = Panel(ha, installer, ROOT)
+    panel = Panel(
+        ha,
+        installer,
+        ROOT,
+        auto_update_firmware=options.get("auto_update_firmware_files", True),
+    )
     app = panel.app()
 
     async def start(app):

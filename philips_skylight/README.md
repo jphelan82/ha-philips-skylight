@@ -66,9 +66,11 @@ show what to expect.
    **Add card**, open the **By card** tab, and search for **Philips Skylight**. If the card is not in the
    list, reload the page in your browser.
 
-To update, update the add-on in **Settings → Apps**, then open its page. A
-**Needs attention** section lists any step left: a Home Assistant restart, new
-proxy firmware, or a newer card. It shows only the steps that apply.
+To update, update the add-on in **Settings → Apps**, then open its page. The
+add-on copies new firmware files into your ESPHome folder by itself. When the
+proxy needs a firmware install, Home Assistant also shows a notification under
+the bell in the sidebar. A **Needs attention** section lists any step left: a Home Assistant restart, a firmware
+install on the proxy, or a newer card. It shows only the steps that apply.
 
 ## Use the card
 

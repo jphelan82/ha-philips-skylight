@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 import yaml
+from skylight_addon import esphome_files
 from skylight_addon.ha import HAError
 from skylight_addon.server import Panel
 
@@ -553,6 +554,139 @@ async def test_firmware_updates_cover_new_files_and_an_install(setup_panel, tmp_
     ha.states["sensor.proxy_skylight_firmware"] = {"state": "unavailable"}
     ha.states["sensor.proxy_ble_adv_proxy_name"]["state"] = "unavailable"
     assert setup_panel.snapshot()["firmware"]["status"] == "current"
+
+
+async def test_firmware_status_waits_for_the_first_file_check(setup_panel, tmp_path):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
+    await setup_panel.perform({"action": "prepare_firmware", "file": "proxy.yaml"})
+    (tmp_path / "skylight-transmitter.yaml").write_text("# older package\n")
+    setup_panel.firmware_files_current = None  # As right after the add-on starts.
+    # Before the first comparison, the page must not say that the firmware is current.
+    assert setup_panel.snapshot()["firmware"]["status"] == "checking"
+    await setup_panel.check()
+    assert setup_panel.snapshot()["firmware"]["status"] == "files"
+
+
+async def test_firmware_files_update_once_after_the_add_on_starts(setup_panel, tmp_path):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
+    await setup_panel.perform({"action": "prepare_firmware", "file": "proxy.yaml"})
+    proxy_yaml = (tmp_path / "proxy.yaml").read_text()
+    # An add-on update brings newer files than the ESPHome folder holds.
+    (tmp_path / "skylight-transmitter.yaml").write_text("# older package\n")
+    setup_panel.auto_update_firmware = True
+    await setup_panel.check()
+    bundled = (ROOT.parent / "firmware" / "skylight-transmitter.yaml").read_text()
+    assert (tmp_path / "skylight-transmitter.yaml").read_text() == bundled
+    backups = list(tmp_path.glob("skylight-transmitter.yaml.bak-*"))
+    assert [path.read_text() for path in backups] == ["# older package\n"]
+    assert (tmp_path / "proxy.yaml").read_text() == proxy_yaml  # The node YAML stays.
+    assert setup_panel.snapshot()["firmware"]["status"] != "files"
+
+    # Only once per start: a later hand edit stays, and the page offers the button.
+    (tmp_path / "skylight-transmitter.yaml").write_text("# edited by hand\n")
+    await setup_panel.check()
+    assert (tmp_path / "skylight-transmitter.yaml").read_text() == "# edited by hand\n"
+    assert setup_panel.snapshot()["firmware"]["status"] == "files"
+
+
+async def test_firmware_files_are_not_added_to_a_proxy_without_the_package(
+    setup_panel, tmp_path
+):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
+    setup_panel.auto_update_firmware = True
+    await setup_panel.check()
+    # The setup checklist adds the package. The add-on start does not.
+    assert not (tmp_path / "skylight-transmitter.yaml").exists()
+    assert not (tmp_path / "components").exists()
+
+
+async def test_firmware_files_wait_for_home_assistants_proxy_list(setup_panel, tmp_path):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    # A ready-made proxy: only Home Assistant's scanner list says that it is a proxy.
+    (tmp_path / "sensor.yaml").write_text(
+        "esphome:\n  name: apollo-msr-2\npackages:\n  apollo: github://a/b.yaml\n"
+    )
+    setup_panel.ha.bluetooth_entries = [{"title": "apollo-msr-2 (88:56:A6:40:4A:76)"}]
+    await setup_panel.check()
+    await setup_panel.perform({"action": "prepare_firmware", "file": "sensor.yaml"})
+    (tmp_path / "skylight-transmitter.yaml").write_text("# older package\n")
+    setup_panel.auto_update_firmware = True
+    http = setup_panel.ha.http
+
+    async def failing(method, path, *args, **kwargs):
+        raise HAError("not ready")
+
+    setup_panel.ha.http = failing
+    await setup_panel.check()  # The list could not be read, so nothing is tried yet.
+    assert (tmp_path / "skylight-transmitter.yaml").read_text() == "# older package\n"
+    setup_panel.ha.http = http
+    await setup_panel.check()
+    assert (tmp_path / "skylight-transmitter.yaml").read_text() != "# older package\n"
+
+
+async def test_a_notification_asks_for_the_install_and_goes_away_after(setup_panel, tmp_path):
+    ha = setup_panel.ha
+    ha.states = {name: dict(item) for name, item in ha.states.items()}  # Keep changes local.
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
+    await setup_panel.perform({"action": "prepare_firmware", "file": "proxy.yaml"})
+    bundled = esphome_files.firmware_version((tmp_path / "skylight-transmitter.yaml").read_text())
+    ha.states["sensor.proxy_skylight_firmware"] = {"state": str(int(bundled) - 1)}
+    ha.calls.clear()
+
+    await setup_panel.check()
+    notices = [call for call in ha.calls if call[0][0] == "persistent_notification"]
+    assert [call[0][1] for call in notices] == ["create"]
+    data = notices[0][1]
+    assert data["notification_id"] == "philips_skylight_firmware"
+    assert f"Skylight firmware {bundled} is ready for proxy" in data["message"]
+    assert "On the network" in data["message"] and "Wirelessly" in data["message"]
+    assert "[ESPHome Device Builder](/5c53de3b_esphome)" in data["message"]
+
+    ha.calls.clear()
+    await setup_panel.check()  # Sent once, so a user can dismiss it.
+    assert not [call for call in ha.calls if call[0][0] == "persistent_notification"]
+
+    ha.states["sensor.proxy_skylight_firmware"] = {"state": bundled}
+    await setup_panel.check()
+    await setup_panel.check()
+    assert [call for call in ha.calls if call[0][0] == "persistent_notification"] == [
+        (("persistent_notification", "dismiss"), {"notification_id": "philips_skylight_firmware"})
+    ]
+
+
+async def test_the_notification_names_the_button_when_files_are_old(setup_panel, tmp_path):
+    ha = setup_panel.ha
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "firmware").symlink_to(ROOT.parent / "firmware")
+    setup_panel.root = root
+    (tmp_path / "proxy.yaml").write_text("esphome:\n  name: proxy\n\nbluetooth_proxy:\n")
+    await setup_panel.perform({"action": "prepare_firmware", "file": "proxy.yaml"})
+    (tmp_path / "skylight-transmitter.yaml").write_text("# older package\n")
+    ha.calls.clear()
+    await setup_panel.check()  # The option is off, as when a user turns it off.
+    notices = [call for call in ha.calls if call[0][0] == "persistent_notification"]
+    assert len(notices) == 1
+    assert "**Update the firmware files**" in notices[0][1]["message"]
 
 
 async def test_pairing_burst_reports_seconds_left(setup_panel):

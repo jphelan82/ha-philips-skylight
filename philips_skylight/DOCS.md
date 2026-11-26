@@ -105,9 +105,14 @@ needs you.
 3. **Update the proxy firmware, if the page asks.** The page compares three
    things: the add-on's firmware files, the copies in your ESPHome folder, and
    the firmware number that the proxy reports.
-   - If the copies are older, the page shows **Update the firmware files**. It
-     keeps a backup of the old files.
+   - If the copies are older, the add-on copies the new files when it starts.
+     It keeps a backup of the old files and does not change the proxy's own
+     YAML. It does this only for a proxy that already uses the Skylight
+     package. If the copy fails, or if you turned off the **Update the firmware
+     files** option, the page shows an **Update the firmware files** button.
    - Then, or if the proxy reports an older number, the page asks you to
+     install. Home Assistant also shows a notification under the bell in the
+     sidebar, which goes away when the proxy reports the new firmware. To
      install: in ESPHome Device Builder, open the proxy, then **⋮ → Install →
      On the network**. Older versions of Device Builder call the last item
      **Wirelessly**. The proxy is offline for a minute or two, and Home Assistant
@@ -261,11 +266,18 @@ it. The README's **Vita Up** section has the details.
 - **Install the companion integration:** installs or updates the bundled
   integration at start. Turn it off if you manage the integration by hand or
   with HACS. A newer installed version is never replaced.
+- **Update the firmware files:** at start, copies new Skylight firmware files
+  into the `esphome` folder for each proxy that uses the Skylight package. It
+  keeps backups of the old files and never changes the proxy's own YAML. Turn
+  it off if you change the firmware files by hand. You still install the
+  firmware on the proxy in ESPHome Device Builder.
 - **Log level:** debug, info, warning or error.
 
 The add-on needs the Home Assistant API and write access to the configuration
-folder. It writes only to `custom_components/philips_skylight` and, when you
-select **Add Skylight firmware**, to the `esphome` folder, always with backups.
+folder. It writes only to `custom_components/philips_skylight` and to the `esphome`
+folder, always with backups. It writes to the `esphome` folder when you select
+**Add Skylight firmware** or **Update the firmware files**, and at start for a
+proxy that already uses the Skylight package.
 It never edits `configuration.yaml`, `.storage` or credentials. Its own backups
 of older integration code live in the add-on's `/data` folder, which Supervisor
 backups include.

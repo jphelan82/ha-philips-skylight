@@ -1,5 +1,5 @@
 name: Philips Skylight
-version: "0.8.2"
+version: "0.8.3"
 slug: philips_skylight
 description: Local Skylight control, pairing and setup through your ESPHome Bluetooth proxy
 url: https://github.com/jphelan82/ha-philips-skylight
@@ -21,8 +21,10 @@ map:
     path: /homeassistant
 options:
   auto_install_integration: true
+  auto_update_firmware_files: true
   log_level: info
 schema:
   auto_install_integration: bool
+  auto_update_firmware_files: bool
   log_level: list(debug|info|warning|error)
 stage: experimental

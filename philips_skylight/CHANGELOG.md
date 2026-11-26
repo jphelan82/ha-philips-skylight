@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.8.3
+
+Home Assistant does not need a restart, and the proxy firmware does not
+change.
+
+- **The add-on copies new firmware files by itself.** Before, an add-on update
+  only offered an **Update the firmware files** button. If you installed in
+  ESPHome Device Builder without that click, the proxy built the old files.
+  With 0.8.2 and ESPHome 2026.11, that build failed. Now the add-on copies the
+  new files when it starts, for each proxy that already uses the Skylight
+  package. It keeps backups of the old files and does not change the proxy's
+  own YAML. You still install the firmware in Device Builder.
+- **Home Assistant tells you when the proxy needs new firmware.** A
+  notification appears under the bell in the sidebar. It names the proxy and
+  the steps in ESPHome Device Builder. It goes away by itself when the proxy
+  reports the new firmware. Before, only the add-on page said so.
+- A new **Update the firmware files** option turns off the file copy. It is
+  on by default. With the option off, the page shows the button as before.
+- Right after the add-on started, the page sometimes reported the firmware as
+  current before it had compared the files. Now it says nothing until it has
+  compared them.
+- The new ESPHome Device Builder names the install option **On the network**.
+  The add-on page now gives that name, and says that older versions call it
+  **Wirelessly**.
+
 ## 0.8.2
 
 This version needs an install of Skylight firmware 4 on the proxy. Home

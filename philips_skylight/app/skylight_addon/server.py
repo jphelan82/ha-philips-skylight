@@ -32,6 +32,12 @@ CARD_CHECK_INTERVAL = 300
 NEVER = float("-inf")
 SWITCH = "switch.philips_skylight_state_correction"
 FIRMWARE_SENSOR = re.compile(r"sensor\.\w*skylight_firmware(?:_\d+)?")
+# One Home Assistant notification asks for the firmware install, and the add-on clears it.
+FIRMWARE_NOTICE = "philips_skylight_firmware"
+INSTALL_STEPS = (
+    "open the proxy, then choose **⋮ → Install → On the network**. "
+    "Older versions of Device Builder call the last item **Wirelessly**."
+)
 
 LIGHT_ID = unique_id("light")
 SCENE_ID = unique_id("recorded_scene")
@@ -62,7 +68,15 @@ def _version(text):
 
 
 class Panel:
-    def __init__(self, ha, installer, root: Path, allowed_ips=None, esphome_dir=None):
+    def __init__(
+        self,
+        ha,
+        installer,
+        root: Path,
+        allowed_ips=None,
+        esphome_dir=None,
+        auto_update_firmware=False,
+    ):
         self.ha = ha
         self.installer = installer
         self.root = root
@@ -72,6 +86,11 @@ class Panel:
         self.tracking = None
         self.device_builder = None
         self.firmware_files_current = None
+        # Copy new firmware files into the ESPHome folder once after the add-on starts.
+        self.auto_update_firmware = auto_update_firmware
+        self._firmware_auto_tried = False
+        # The firmware notification last sent: None before the first, False once cleared.
+        self._firmware_notice = None
         self.outdated_cards = []
         # Dashboards whose card update failed to save. They are not offered again.
         self._cards_unsaved = set()
@@ -262,6 +281,7 @@ class Panel:
 
     async def check(self):
         """Refresh the cached remote-tracking setting and the Device Builder link."""
+        scanners_read = False
         try:
             entries = self.proxy_entries(self.proxies())
             values = [await self.ha.read_options(entry) for entry in entries]
@@ -286,6 +306,7 @@ class Panel:
             self.bluetooth_scanners = frozenset(
                 str(item.get("title", "")).split(" (")[0] for item in scanners or []
             ) - {""}
+            scanners_read = True
             devices = await self.ha.request("config/device_registry/list")
             # A ready-made ESPHome proxy reports the project esphome.bluetooth-proxy.
             self.proxy_devices = sorted(
@@ -300,12 +321,20 @@ class Panel:
         except (HAError, aiohttp.ClientError, TimeoutError, KeyError, TypeError):
             pass  # Read-only; the next poll tries again.
         if self.esphome_dir:
+            # A proxy found only through Home Assistant needs the scanner list, so wait for it.
+            if self.auto_update_firmware and scanners_read and not self._firmware_auto_tried:
+                self._firmware_auto_tried = True
+                await self._auto_update_firmware()
             try:
                 self.firmware_files_current = await asyncio.to_thread(
                     esphome_files.files_current, self.esphome_dir, self.root / "firmware"
                 )
             except OSError:
                 self.firmware_files_current = None
+            try:
+                await self._notify_firmware()
+            except (HAError, aiohttp.ClientError, TimeoutError):
+                pass  # The next check tries again.
         if (
             self.light()
             and not self.restart_required()
@@ -382,9 +411,12 @@ class Panel:
             self.ha.states.get(item["entity_id"], {}).get("state") not in (None, "unavailable")
             for item in self.proxies()
         )
-        if self.firmware_files_current is False:
+        if self.firmware_files_current is None:
+            # The files are not compared yet, as right after the add-on starts.
+            status = "checking"
+        elif self.firmware_files_current is False:
             status = "files"
-        elif self.firmware_files_current and online and reported != [bundled]:
+        elif online and reported != [bundled]:
             # Firmware older than version 1 reports no number at all.
             status = "install"
         else:
@@ -695,6 +727,82 @@ class Panel:
         )
         self._checked = NEVER  # Look for the Device Builder link again.
         return result
+
+    async def _notify_firmware(self):
+        """Tell Home Assistant's users when the proxy needs new firmware, and clear it after.
+
+        A notification reaches users who never open the add-on page after an update.
+        It is sent once per firmware version, so a user can dismiss it.
+        """
+        firmware = self.firmware_status()
+        if not firmware:
+            return
+        status, version = firmware["status"], firmware["version"]
+        if status in ("files", "install"):
+            key = (status, version, tuple(firmware["nodes"]))
+            if key == self._firmware_notice:
+                return
+            names = ", ".join(firmware["nodes"]) or "your proxy"
+            builder = (
+                f"[ESPHome Device Builder]({self.device_builder})"
+                if self.device_builder
+                else "ESPHome Device Builder"
+            )
+            if status == "files":
+                message = (
+                    f"Skylight firmware {version} is ready for {names}. Open the Skylight "
+                    "add-on page and select **Update the firmware files**. Then install the "
+                    f"firmware in {builder}: {INSTALL_STEPS}"
+                )
+            else:
+                message = (
+                    f"Skylight firmware {version} is ready for {names}. Install it in "
+                    f"{builder}: {INSTALL_STEPS} This notification goes away when the proxy "
+                    "reports the new firmware."
+                )
+            await self.ha.call(
+                "persistent_notification",
+                "create",
+                title="Install the new Skylight firmware",
+                message=message,
+                notification_id=FIRMWARE_NOTICE,
+            )
+            self._firmware_notice = key
+        elif firmware["reported"] == [version] and self._firmware_notice is not False:
+            # The proxy runs the add-on's firmware. Clear a notice from this or an earlier start.
+            await self.ha.call(
+                "persistent_notification", "dismiss", notification_id=FIRMWARE_NOTICE
+            )
+            self._firmware_notice = False
+
+    async def _auto_update_firmware(self):
+        """Copy new firmware files for proxies that already use the Skylight package.
+
+        Runs once after the add-on starts, so a later hand edit of the files stays until
+        the next add-on start. The page still offers Update the firmware files if this fails.
+        """
+        firmware = self.root / "firmware"
+        try:
+            nodes = await asyncio.to_thread(
+                esphome_files.list_nodes, self.esphome_dir, self.bluetooth_scanners
+            )
+            if not any(node["uses_package"] for node in nodes):
+                return  # The setup checklist adds the package to a new proxy.
+            async with self.lock:
+                result = await asyncio.to_thread(
+                    esphome_files.update_files,
+                    self.esphome_dir,
+                    firmware,
+                    self.bluetooth_scanners,
+                )
+        except (OSError, ValueError) as err:
+            LOG.warning("Skylight firmware files were not updated: %s", err)
+            return
+        if result["changed"]:
+            LOG.info(
+                "Skylight firmware files updated in the ESPHome folder. Backups: %s",
+                ", ".join(result["backups"]) or "none",
+            )
 
     async def _update_firmware(self, body):
         if not self.esphome_dir:
