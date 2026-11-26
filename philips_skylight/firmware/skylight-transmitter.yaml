@@ -9,7 +9,7 @@ esphome:
 # The proxy reports the number, and the add-on compares it with its own copy to
 # tell when the proxy needs an install.
 substitutions:
-  skylight_firmware: "3"
+  skylight_firmware: "4"
 
 text_sensor:
   - platform: template
@@ -40,7 +40,13 @@ external_components:
       path: components
     components: [ble_adv_proxy]
 
+# The window equals the interval, so the proxy listens all the time and hears
+# every remote press. Wi-Fi shares the radio. ESPHome 2026.9 and newer warn about
+# a window longer than 600ms, because a long window holds the radio and can drop
+# Wi-Fi on some access points. Firmware 3 and older used 1100ms. ESPHome 2026.11
+# picks 320ms for both when they are not set, but ESPHome 2026.4 does not, so
+# the package sets them.
 esp32_ble_tracker:
   scan_parameters:
-    interval: 1100ms
-    window: 1100ms
+    interval: 320ms
+    window: 320ms

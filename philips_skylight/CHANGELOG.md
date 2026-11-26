@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.2
+
+This version needs an install of Skylight firmware 4 on the proxy. Home
+Assistant does not need a restart, and the panel does not need a new pairing.
+
+**Skylight firmware 4**
+
+- The firmware builds with ESPHome 2026.11. Before, the build stopped with
+  "'str_snprintf' was not declared in this scope" and "'format_hex' is not a
+  member of 'esphome'". ESPHome 2026.11 moved these two functions to a
+  different header file, and the proxy component now includes that file.
+- The proxy scans in 320 ms windows instead of 1100 ms windows. It still
+  listens all the time, so it still hears every remote press. A long window
+  holds the radio that Wi-Fi shares, and on some access points Wi-Fi drops.
+  ESPHome 2026.9 and newer warn about a window longer than 600 ms. ESPHome
+  2026.11 uses 320 ms by default.
+- The firmware still builds with ESPHome 2026.4.5.
+
 ## 0.8.1
 
 This version needs a Home Assistant restart for integration 0.7.1.

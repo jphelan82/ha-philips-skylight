@@ -14,7 +14,10 @@ that the patch used to force on. The raw API actions and receive event format
 are unchanged. The proxy forwards only adverts that carry a Bluetooth mesh
 message (AD type 0x2A). Upstream forwards every advert it hears, which puts
 every nearby phone and watch into Home Assistant's event log.
-The local component targets ESPHome 2026.4.5.
+The local component targets ESPHome 2026.4.5 and builds on 2026.11.1. ESPHome
+2026.11 stopped declaring `str_snprintf` and `format_hex` in `helpers.h`, so the
+component includes `alloc_helpers.h` when that file exists. Upstream made the
+same change for 2026.11 in `87f08e51`, but requires ESPHome 2026.6 or newer.
 
 Copy this directory to `/config/esphome/components/ble_adv_proxy` on the HA server
 before building a proxy with the local external component configuration.

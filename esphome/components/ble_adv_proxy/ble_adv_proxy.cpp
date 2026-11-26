@@ -1,6 +1,12 @@
 #include "ble_adv_proxy.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
+// ESPHome 2026.5 moved str_snprintf and format_hex, which return std::string, from
+// helpers.h to alloc_helpers.h. ESPHome 2026.11 stopped including it from helpers.h.
+// ESPHome 2026.4 has no alloc_helpers.h, and helpers.h still declares both.
+#if __has_include("esphome/core/alloc_helpers.h")
+#include "esphome/core/alloc_helpers.h"
+#endif
 #include <esp_err.h>
 #include <esp_bt.h>
 #include <esp_bt_device.h>
